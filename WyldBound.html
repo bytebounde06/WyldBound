@@ -2933,10 +2933,7 @@ async function memorialScreen(){const gr=G.nuz.grave;
 
 // =====================================================================
 //  TRADING
-//   - Between two phones: trade codes (copy/paste through Messages, AirDrop, Notes...).
-//       1. You OFFER a Wyldkin → it leaves your team and you get an offer code.
-//       2. Your friend pastes it, picks what to send back → they receive yours and get a reply code.
-//       3. You paste the reply code → you receive theirs. (You can cancel an offer until then.)
+//   - Between two phones: trade codes (copy/paste through Messages, AirDrop, Notes...). See tradeMenu.
 //   - Between two files on the same phone: swap directly.
 //   Nuzlocke files can't trade.
 // =====================================================================
@@ -2962,35 +2959,54 @@ function tradePanel(title,code,note){return new Promise(res=>{const ov=document.
 });}
 async function pickToTrade(prompt){if(G.party.length<2){await say('You need at least two Wyldkin on your team to trade one away.');return null;}
   const i=await teamScreen('pick',{msg:prompt});if(i==null||i<0||!G.party[i])return null;return i;}
+// Four codes keep a trade honest even with no internet:
+//   OFFER (A→B)  →  REPLY (B→A)  →  CONFIRM (A→B)          … or, if A backs out:  CANCEL (A→B)
+// Nobody receives anything until the other side has committed, so nothing can be duplicated.
 async function tradeMenu(){
   if(nuzOn())return say('Trading is turned off in Nuzlocke runs. Every Wyldkin has to be your own.');
   gameId();
-  while(true){const pend=G.tradePending;
-    const items=pend?['FINISH MY OFFER','CANCEL MY OFFER','TRADE ON THIS PHONE','BACK']:['OFFER A WYLDKIN','ANSWER A FRIEND\'S OFFER','TRADE ON THIS PHONE','HOW IT WORKS','BACK'];
-    const r=await choose(items,{x:40,y:10,w:180});if(r<0)return;const it=items[r];
+  while(true){const pend=G.tradePending,ans=G.tradeAnswer;const items=[];
+    if(pend)items.push('FINISH MY OFFER','CANCEL MY OFFER');else items.push('OFFER A WYLDKIN');
+    if(ans)items.push('COMPLETE MY ANSWER');else items.push('ANSWER A FRIEND\'S OFFER');
+    items.push('TRADE ON THIS PHONE','HOW IT WORKS','BACK');
+    const r=await choose(items,{x:30,y:6,w:190});if(r<0)return;const it=items[r];
     if(it==='BACK')return;
-    if(it==='HOW IT WORKS'){await say('Trading with another phone: 1. One of you picks OFFER A WYLDKIN and sends the code. 2. The other picks ANSWER A FRIEND\'S OFFER, pastes it, and picks a Wyldkin to send back.');await say('3. They send you their reply code. Pick FINISH MY OFFER and paste it. Send codes any way you like: Messages, AirDrop, Notes.');continue;}
+    if(it==='HOW IT WORKS'){
+      await say('1. One of you picks OFFER A WYLDKIN and sends the offer code.');
+      await say('2. The other picks ANSWER A FRIEND\'S OFFER, pastes it, picks a Wyldkin to send back, and sends a reply code.');
+      await say('3. The first player picks FINISH MY OFFER and pastes the reply. They get a confirm code to send back.');
+      await say('4. The second player picks COMPLETE MY ANSWER and pastes the confirm code. Done! Send codes any way you like.');
+      await say('If the first player cancels instead, they get a cancel code. Pasting it into COMPLETE MY ANSWER returns the other Wyldkin.');continue;}
     if(it==='OFFER A WYLDKIN'){const i=await pickToTrade('Which Wyldkin will you offer?');if(i==null)continue;const m=G.party[i];
       if(!await yesno(`Offer ${monName(m)}? It leaves your team until the trade finishes or you cancel.`))continue;
       const id=Math.random().toString(36).slice(2,10);G.party.splice(i,1);G.tradePending={id,mon:m};writeSave('manual');
-      await tradePanel(`Offer code for ${monName(m)}`,packTrade({k:'offer',id,gid:G.gid,from:G.name,mon:m}),'Send this to your friend. When they reply with their code, choose TRADE → FINISH MY OFFER.');continue;}
+      await tradePanel(`Offer code for ${monName(m)}`,packTrade({k:'offer',id,gid:G.gid,from:G.name,mon:m}),'Send this to your friend. When they send back a reply code, choose TRADE → FINISH MY OFFER.');continue;}
     if(it==='ANSWER A FRIEND\'S OFFER'){const o=await tradePanel('Paste your friend\'s offer code');if(!o)continue;
-      if(o.k!=='offer'){await say('That\'s a reply code, not an offer. The person who made the offer should paste it.');continue;}
+      if(o.k!=='offer'){await say('That isn\'t an offer code.');continue;}
       if(o.gid===G.gid){await say('That\'s your own offer! Send it to a friend instead.');continue;}
       if((G.tradesDone||[]).includes(o.id)){await say('You already answered that offer.');continue;}
       const theirs=cleanMon(o.mon);if(!theirs){await say('Something is wrong with that Wyldkin\'s data. The trade can\'t happen.');continue;}
       await say(`${o.from} is offering ${monName(theirs)} (${SPECIES[theirs.sid].name}, Lv${theirs.lvl}).`);
       const i=await pickToTrade(`What will you send ${o.from} for ${monName(theirs)}?`);if(i==null)continue;const mine=G.party[i];
-      if(!await yesno(`Trade your ${monName(mine)} for ${o.from}'s ${monName(theirs)}?`))continue;
-      G.party.splice(i,1);receiveMon(theirs,o.from);G.tradesDone=(G.tradesDone||[]).concat(o.id).slice(-50);writeSave('manual');
-      await tradeScene(mine,theirs,o.from);
-      await tradePanel('Reply code',packTrade({k:'reply',id:o.id,from:G.name,mon:mine}),`Send this back to ${o.from} so they receive ${monName(mine)}.`);continue;}
+      if(!await yesno(`Send your ${monName(mine)} for ${o.from}'s ${monName(theirs)}? ${monName(mine)} will wait in the trade until ${o.from} confirms.`))continue;
+      G.party.splice(i,1);G.tradeAnswer={id:o.id,from:o.from,theirs,mine};G.tradesDone=(G.tradesDone||[]).concat(o.id).slice(-50);writeSave('manual');
+      await tradePanel('Reply code',packTrade({k:'reply',id:o.id,gid:G.gid,from:G.name,mon:mine}),`Send this back to ${o.from}. They'll send you a confirm code. Paste it in TRADE → COMPLETE MY ANSWER to receive ${monName(theirs)}.`);continue;}
     if(it==='FINISH MY OFFER'){const o=await tradePanel('Paste your friend\'s reply code');if(!o)continue;
+      if(o.k==='reply'&&(G.tradeCancelled||[]).includes(o.id)){await say('You cancelled that trade, so it can\'t be finished. Send your friend the cancel code so they get their Wyldkin back.');continue;}
       if(o.k!=='reply'||o.id!==pend.id){await say('That code doesn\'t match your current offer.');continue;}
       const theirs=cleanMon(o.mon);if(!theirs){await say('Something is wrong with that Wyldkin\'s data.');continue;}
-      receiveMon(theirs,o.from);G.tradePending=null;writeSave('manual');await tradeScene(pend.mon,theirs,o.from);continue;}
-    if(it==='CANCEL MY OFFER'){if(!await yesno(`Cancel the offer and take ${monName(pend.mon)} back? Only do this if your friend hasn't answered it yet.`))continue;
-      receiveMon(pend.mon,G.name);G.tradePending=null;writeSave('manual');await say(`${monName(pend.mon)} came back to your team.`);continue;}
+      receiveMon(theirs,o.from);G.tradePending=null;writeSave('manual');await tradeScene(pend.mon,theirs,o.from);
+      await tradePanel('Confirm code',packTrade({k:'confirm',id:pend.id,from:G.name}),`Send this to ${o.from} so they receive ${monName(pend.mon)}.`);continue;}
+    if(it==='CANCEL MY OFFER'){if(!await yesno(`Cancel the offer and take ${monName(pend.mon)} back?`))continue;
+      receiveMon(pend.mon,G.name);G.tradeCancelled=(G.tradeCancelled||[]).concat(pend.id).slice(-50);const id=pend.id;G.tradePending=null;writeSave('manual');
+      await say(`${monName(pend.mon)} came back to your team. This trade is blocked now, even if your friend already answered.`);
+      await tradePanel('Cancel code',packTrade({k:'cancel',id,from:G.name}),'If your friend already answered, send them this so their Wyldkin goes back to them.');continue;}
+    if(it==='COMPLETE MY ANSWER'){const o=await tradePanel(`Paste ${ans.from}'s confirm or cancel code`);if(!o)continue;
+      if(o.id!==ans.id||(o.k!=='confirm'&&o.k!=='cancel')){await say('That code doesn\'t match the trade you answered.');continue;}
+      G.tradeAnswer=null;
+      if(o.k==='confirm'){receiveMon(ans.theirs,ans.from);writeSave('manual');await tradeScene(ans.mine,ans.theirs,ans.from);}
+      else{receiveMon(ans.mine,G.name);writeSave('manual');await say(`${ans.from} cancelled the trade. ${monName(ans.mine)} came back to your team.`);}
+      continue;}
     if(it==='TRADE ON THIS PHONE'){await localTrade();continue;}
   }
 }
@@ -3266,7 +3282,7 @@ function choose(items,o={}){
   return new Promise(res=>{
     const w=o.w||Math.max(...items.map(s=>{font(ctx,9);return ctx.measureText(s).width;}))+26,h=items.length*14+10;
     const x=o.x!=null?o.x:W-w-2,y=o.y!=null?o.y:H-46-h;
-    const el={sel:o.start||0,update(p){
+    const el={items,sel:o.start||0,update(p){
       if(dirP(p,'up')){this.sel=(this.sel+items.length-1)%items.length;SFX.sel();o.onMove&&o.onMove(this.sel);}
       if(dirP(p,'down')){this.sel=(this.sel+1)%items.length;SFX.sel();o.onMove&&o.onMove(this.sel);}
       if(p.has('a')){SFX.ok();popUI(this);res(this.sel);}else if(p.has('b')&&o.cancel!==false){SFX.sel();popUI(this);res(-1);}},
