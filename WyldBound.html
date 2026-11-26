@@ -2312,6 +2312,7 @@ async function regionStarter(r){
 // ---------- rivals: Rowan takes the partner strong against yours, Wren takes the one that's left ----------
 function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].evo;if(e&&e.lvl&&e.lvl<=lvl)s=e.to;else break;}return s;}
 async function rivalPicks(r,sid){
+  if(nuzOn()){G.nuz.active=false;await nuzNickAll();}
   const ids=STARTERS.slice(r*3,r*3+3),f0=FR();let pool=ids.filter(s=>s!==sid),rsid=null,wsid=null;
   const take=s=>{pool=pool.filter(x=>x!==s);return s;};
   const rk=eggKind(f0.riv.name),wk=eggKind(f0.pal.name);if(rk)rsid=eggPartnerId(rk,r);if(wk)wsid=eggPartnerId(wk,r);
@@ -2351,6 +2352,7 @@ async function rivalPicks(r,sid){
   if(bf&&r===0){await say(`${bf}: Aww, look at its little face! Don\'t you worry, sweetie, I\'ll take such good care of you.`);await say(`${bf}: Hey ${G.name}... have you ever noticed the TV static sometimes looks like it\'s smiling? N-never mind! Forget I said anything!`);}
   await say(r===0?`Wren: Remember when we used to pretend sticks were Wyldkin? Now they're real! I'll be training up ahead, ${G.name}.`:`Wren: New region, same three of us. I'll be training up ahead, ${G.name}.`);
   await say('Rowan: Smell ya-- I mean, see you around!');
+  if(nuzOn()){G.nuz.active=true;G.party.forEach(healMon);await say('NUZLOCKE: The rules are now in effect. Good luck.',{style:'dark'});}
 }
 // Rowan and Wren's Wyldkin spar in the lab for a few seconds. Returns true if Wren wins.
 function labSpar(rsid,wsid){
@@ -2875,6 +2877,57 @@ function speakerLook(str){const m=/^([^:]{1,26}):\s/.exec(str||'');if(!m)return 
 function drawPortraitBox(c,look,talking,x,y,scale){scale=scale||1;const p=portraitOf(look);const img=talking&&Math.floor(frame/5)%2?p.open:p.closed;
   box(c,x,y,64*scale+8,64*scale+8,'info');c.save();c.imageSmoothingEnabled=false;c.drawImage(img,0,0,64,64,x+4,y+4,64*scale,64*scale);c.restore();}
 
+// =====================================================================
+//  NUZLOCKE MODE (chosen when starting a new game; the rules are fixed)
+//   1. A Wyldkin that faints is gone for good. It's laid to rest in the Memorial.
+//   2. Only the first wild Wyldkin you meet in each area can be caught.
+//      Dupes clause: a first encounter from a family you already caught doesn't count.
+//   3. Every Wyldkin you get must be nicknamed.
+//   4. Revives don't work.
+//   5. If your whole team falls, the run is over.
+//  The rules switch on after the lab battles in each region (the starter fights are safe).
+// =====================================================================
+function nuzOn(){return!!(G&&G.nuz);}
+function nuzActive(){return!!(G&&G.nuz&&G.nuz.active&&!G.nuz.over);}
+const NUZ_RULES=['A Wyldkin that faints is gone for good.','You can only catch the first wild Wyldkin you meet in each area. (If it\'s from a family you already caught, it doesn\'t count.)','You must nickname every Wyldkin you get.','Revives don\'t work.','If your whole team falls, the run is over. No second chances.'];
+async function chooseMode(){
+  await say('Before we begin: how do you want to play?');
+  while(true){const r=await choose(['NORMAL','NUZLOCKE'],{x:150,y:H-92,w:88,prompt:'Choose a mode.'});
+    if(r!==1)return false;
+    for(const l of ['NUZLOCKE MODE. The rules can\'t be changed once you start:',...NUZ_RULES.map((t,i)=>`${i+1}. ${t}`)])await say(l,{style:'dark'});
+    if(await yesno('Play in Nuzlocke mode?'))return true;}}
+// ---------- nicknames ----------
+async function nuzNickname(m){if(!nuzOn()||m.nick)return;const sp=SPECIES[m.sid].name;
+  const n=await domPanel('nick',{species:sp});m.nick=n;await say(`${sp} will be known as ${n}.`);}
+async function nuzNickAll(){if(!nuzOn())return;for(const m of [...G.party,...G.box])if(!m.nick)await nuzNickname(m);}
+// ---------- first encounter per area ----------
+function famCaught(sid){const f=SPECIES[sid].fam;return G.caught.some(id=>SPECIES[id]&&SPECIES[id].fam===f);}
+function nuzWildStart(mon){if(!nuzActive())return null;const a=G.nuz.areas[MAPID];
+  if(a)return{catchable:false,msg:'NUZLOCKE: You already had your encounter here. No catching.'};
+  if(famCaught(mon.sid))return{catchable:false,dupe:true,msg:'NUZLOCKE: You already caught this family. Dupes clause: this one doesn\'t count, so your encounter here is still open.'};
+  G.nuz.areas[MAPID]='pending';return{catchable:true,msg:`NUZLOCKE: First encounter in ${friendText(MAP.name)}! This is your only chance to catch here.`};}
+function nuzWildEnd(info,result){if(!info||!info.catchable)return;G.nuz.areas[MAPID]=result==='caught'?'caught':'missed';}
+// ---------- deaths ----------
+async function nuzAfterBattle(tr,result){if(!nuzActive())return false;
+  const dead=G.party.filter(m=>m.hp<=0);
+  for(const m of dead){G.party.splice(G.party.indexOf(m),1);
+    G.nuz.grave.push({nick:monName(m),sid:m.sid,lvl:m.lvl,where:friendText((MAP&&MAP.name)||'?'),by:tr?`${tr.cls} ${friendText(tr.name)}`:'a wild Wyldkin',t:G.time});}
+  for(const m of dead){await say(`${monName(m)} has fallen. Rest in peace, ${monName(m)}.`,{style:'dark'});}
+  if(!G.party.length){await nuzGameOver();return true;}
+  return false;}
+async function nuzGameOver(){G.nuz.over=true;writeSave('manual');writeSave('auto');
+  await new Promise(res=>{const el={full:1,bgc:'#0c0a10',t:0,update(p){this.t++;if(this.t>60&&(p.has('a')||p.has('b'))){popUI(el);res();}},
+    draw(c){text(c,'THE RUN IS OVER',120,14,'#e04a5a',12,true,'center');text(c,`${G.name}'s whole team has fallen.`,120,32,'#c8c0d0',8,true,'center');
+      G.nuz.grave.slice(-8).forEach((g,i)=>text(c,`${g.nick}  (${SPECIES[g.sid].name} Lv${g.lvl})`,120,50+i*11,'#a098b0',7,true,'center'));
+      if(this.t>60&&Math.floor(frame/20)%2)text(c,'Press A',120,148,'#ffffff',8,true,'center');}};pushUI(el);});
+  location.reload();await new Promise(()=>{});}
+async function memorialScreen(){const gr=G.nuz.grave;
+  if(!gr.length)return say('MEMORIAL: Nobody has fallen yet. Keep it that way.');
+  let top=0;await new Promise(res=>{const el={full:1,bgc:'#14121c',update(p){if(dirP(p,'down')&&top<gr.length-6)top++;if(dirP(p,'up')&&top>0)top--;if(p.has('a')||p.has('b')){popUI(el);res();}},
+    draw(c){text(c,`MEMORIAL  (${gr.length} fallen)`,120,6,'#e8d8f0',10,true,'center');
+      gr.slice(top,top+6).forEach((g,i)=>{const y=22+i*22;box(c,8,y,224,20,'dark');c.drawImage(spriteOf(g.sid).front,0,0,64,64,12,y+1,18,18);
+        text(c,`${g.nick}  ${SPECIES[g.sid].name} Lv${g.lvl}`,36,y+3,'#ffffff',8);text(c,`Fell at ${g.where} to ${g.by}`,36,y+12,'#a8a0b8',6);});}};pushUI(el);});}
+
 'use strict';
 // ===================== ASSEMBLE WORLD =====================
 const BIOME_W={meadow:{Normal:3,Grass:2,Bug:2,Flying:2,Electric:1,Poison:1,Fighting:1,Ground:1},forest:{Bug:3,Grass:3,Poison:2,Ghost:1,Normal:1,Psychic:1,Dark:1},
@@ -3104,7 +3157,7 @@ function wait(n){return new Promise(r=>timers.push({t:n,r}));}
 function fadeTo(t,frames=12){fadeTarget=t;fadeSpeed=1/frames;return new Promise(r=>{const chk=()=>{if(Math.abs(fade-fadeTarget)<.001)r();else timers.push({t:1,r:chk});};chk();});}
 function pushUI(el){ui.push(el);return el;}
 function popUI(el){const i=ui.indexOf(el);if(i>=0)ui.splice(i,1);}
-function runScript(fn){lock=true;return Promise.resolve().then(fn).catch(e=>{console.error(e);}).finally(()=>{lock=false;refreshNPCs();});}
+function runScript(fn){lock=true;return Promise.resolve().then(fn).then(()=>nuzNickAll()).catch(e=>{console.error(e);}).finally(()=>{lock=false;refreshNPCs();});}
 
 // say(): GBA style 2-line text box
 function say(str,opts={}){str=glitchText(friendText(str));window.LASTSAY=str;
@@ -3442,8 +3495,9 @@ async function startMenu(){
   SFX.ok();
   let sel=0;
   while(true){
-    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase(),'SAVE','OPTIONS','EXIT');
+    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase());if(nuzOn())items.push('MEMORIAL');items.push('SAVE','OPTIONS','EXIT');
     const r=await choose(items,{x:W-84,y:2,w:82,start:sel});if(r<0||items[r]==='EXIT')return;sel=r;const it=items[r];
+    if(it==='MEMORIAL')await memorialScreen();
     if(it==='CODEX')await codexScreen();
     else if(it==='TEAM')await teamScreen('view');
     else if(it==='BAG')await bagScreen('field');
@@ -3483,6 +3537,9 @@ function domPanel(kind,opt){return new Promise(res=>{
     sugRow(opt&&opt.sugs,n=>{i.value=n;});
     const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close((i.value.trim()||'Kit').slice(0,11));setTimeout(()=>{i.focus();i.select();},50);
     i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
+  else if(kind==='nick'){h.textContent=`Nickname your ${opt.species}`;const i=document.createElement('input');i.maxLength=10;i.value='';i.placeholder='Required in Nuzlocke';i.autocomplete='off';card.appendChild(i);
+    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>{const v=i.value.trim();if(!v){i.style.outline='2px solid #e04a5a';return;}close(v.slice(0,10));};
+    setTimeout(()=>i.focus(),50);i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
   else if(kind==='friend'){h.textContent=opt.title;const i=document.createElement('input');i.maxLength=11;i.value=opt.def;i.autocomplete='off';card.appendChild(i);
     sugRow(opt.sugs,n=>{i.value=n;});
     const row=document.createElement('div');row.className='row';row.style.marginTop='8px';let gv=opt.g;const bs=[['m','Boy'],['f','Girl']].map(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.type='button';b.onclick=()=>{gv=v;paint();};row.appendChild(b);return[v,b];});
@@ -3557,7 +3614,7 @@ function applyItem(k,m){
   const it=ITEMS[k];
   if(it.kind==='heal'){if(m.hp<=0||m.hp>=m.stats[0])return null;const h=Math.min(it.amt,m.stats[0]-m.hp);m.hp+=h;return`${monName(m)}'s HP was restored by ${h} point(s).`;}
   if(it.kind==='cure'){if(!m.status||m.hp<=0)return null;m.status=null;m.slp=0;return`${monName(m)} is cured!`;}
-  if(it.kind==='revive'){if(m.hp>0)return null;m.hp=Math.floor(m.stats[0]/2);return`${monName(m)} was revived!`;}
+  if(it.kind==='revive'){if(nuzOn())return null;if(m.hp>0)return null;m.hp=Math.floor(m.stats[0]/2);return`${monName(m)} was revived!`;}
   return null;
 }
 async function bagScreen(ctxMode){
@@ -3571,7 +3628,7 @@ async function bagScreen(ctxMode){
     if(it.kind==='ball'){await say('You can\'t use that here. Throw it during a wild battle!');continue;}
     if(it.kind==='repel'){if(G.repel>0){await say('A Repel is already working.');continue;}G.repel=it.steps;G.bag[k]--;SFX.heal();await say(`${G.name} used the ${it.name}. Weak wild Wyldkin will stay away.`);continue;}
     const t=await teamScreen('target',{msg:`Use ${it.name} on which?`});if(t<0)continue;
-    const msg=applyItem(k,G.party[t]);if(!msg){await say('It won\'t have any effect.');continue;}
+    const msg=applyItem(k,G.party[t]);if(!msg){await say(ITEMS[k].kind==='revive'&&nuzOn()?'Revives don\'t work in a Nuzlocke.':'It won\'t have any effect.');continue;}
     G.bag[k]--;SFX.heal();await say(msg);
   }
 }
@@ -3674,15 +3731,16 @@ async function titleFlow(){
   scene='title';await fadeTo(0,20);await waitKey();
   while(true){
     const slots=await readAllSlots();
-    const items=slots.map((sv,i)=>{const n=newest(sv);return n?`FILE ${i+1}  ${n.G.name}`:`FILE ${i+1}  - empty -`;});items.push('LOAD SAVE CODE');
+    const items=slots.map((sv,i)=>{const n=newest(sv);return n?`FILE ${i+1}  ${n.G.name}${n.G.nuz?(n.G.nuz.over?'  (RIP)':'  [NUZ]'):''}`:`FILE ${i+1}  - empty -`;});items.push('LOAD SAVE CODE');
     const r=await choose(items,{x:20,y:MY+60,w:200,cancel:false,onDraw:(c,s)=>{const sv=slots[s];const n=newest(sv);if(n){const g=n.G,y=MY+2;box(c,20,y,200,56);text(c,`${g.name}   Badges: ${g.badges.length}   Codex: ${g.caught.length}/${SPECIES.length}`,28,y+7,'#404040',8);text(c,`Time: ${fmtTime(g.time)}   ${MAPS[g.map]?MAPS[g.map].name:''}`,28,y+20,'#404040',8);
       text(c,`Saved: ${sv.manual?new Date(sv.manual.t).toLocaleString():'—'}`,28,y+32,'#606060',7);text(c,`Autosave: ${sv.auto?new Date(sv.auto.t).toLocaleString():'—'}`,28,y+42,'#606060',7);}}});
     if(r===NSLOTS){const o=await domPanel('import');if(!o)continue;const t=await choose(slots.map((sv,i)=>`FILE ${i+1}`+(newest(sv)?' (overwrite)':'')),{x:60,y:MY+30,w:130});if(t<0)continue;SLOT=t+1;loadState(o);writeSave('manual');break;}
     const sv=slots[r];SLOT=r+1;
     if(!newest(sv)){await newGameFlow();return;}
-    const opts=[];if(sv.manual)opts.push(['CONTINUE','manual']);if(sv.auto)opts.push(['CONTINUE (AUTOSAVE)','auto']);opts.push(['NEW GAME','new'],['DELETE FILE','del'],['BACK','back']);
+    const opts=[];const ended=newest(sv).G.nuz&&newest(sv).G.nuz.over;if(ended)opts.push(['MEMORIAL','mem']);else{if(sv.manual)opts.push(['CONTINUE','manual']);if(sv.auto)opts.push(['CONTINUE (AUTOSAVE)','auto']);}opts.push(['NEW GAME','new'],['DELETE FILE','del'],['BACK','back']);
     const k=await choose(opts.map(o=>o[0]),{x:60,y:MY+40,w:150});if(k<0)continue;const kind=opts[k][1];
     if(kind==='back')continue;
+    if(kind==='mem'){const keep=G;G=newest(sv).G;await memorialScreen();G=keep;continue;}
     if(kind==='del'){if(await yesno(`Delete FILE ${SLOT}? This can't be undone.`)){await deleteSlot(SLOT);}continue;}
     if(kind==='new'){if(!(await yesno(`Start over in FILE ${SLOT}? Its saves will be replaced when you next save.`)))continue;await newGameFlow();return;}
     loadState(sv[kind]);break;
@@ -3697,10 +3755,11 @@ async function newGameFlow(){
   await say('This world is full of Wyldkin, from the valleys of Aldera to the shores of Coralmere and the peaks of Frostfell.');
   await say('Some people keep them as pets, others battle with them. Lately, ByteBound has even linked them to its ByteNet.');
   await say('And me? I study them. Now, tell me about yourself.');
+  const nuz=await chooseMode();
   const eggOrder=['Static','BunnyRX','SmashedAtom'].sort(()=>Math.random()-.5);
   const sug=(pool,egg)=>{const n=2+Math.floor(Math.random()*2);const pick=pool.slice().sort(()=>Math.random()-.5).slice(0,n);pick.splice(Math.floor(Math.random()*(n+1)),0,egg);return pick;};
   const name=await domPanel('name',{sugs:sug(['Kit','Ash','Remy','Nova','Sky','Jun','Rory','Sage'],eggOrder[0])});
-  G=newGame(name);G.friends={riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};applyFriendLooks();introSpr=LOOK.player;
+  G=newGame(name);if(nuz)G.nuz={active:false,over:false,areas:{},grave:[]};G.friends={riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};applyFriendLooks();introSpr=LOOK.player;
   await say(`${name}, is it? Wonderful.`);introSpr=LOOK.prof;
   await say('Now, you have two best friends you\'ve known since you were little. First, my grandchild. Your rival since the day you could walk. What\'s their name?');
   introSpr=LOOK.rival;
@@ -3783,7 +3842,7 @@ async function startBattle(opts){
   B.f=mkBattler(B.foes[0],'f');B.p=mkBattler(G.party[pi],'p');B.p.hidden=true;if(tr)B.f.hidden=true;
   await fadeTo(0,12);
   for(let t=30;t>=0;t--){B.fx.slide=t/30;await wait(1);}
-  if(!tr){addSeen(B.f.mon.sid);await bsay(`A wild ${monName(B.f.mon)} appeared!`);}
+  if(!tr){addSeen(B.f.mon.sid);await bsay(`A wild ${monName(B.f.mon)} appeared!`);B.nuz=nuzWildStart(B.f.mon);if(B.nuz)await bsay(B.nuz.msg);}
   else{await bsay(`${tr.cls} ${tr.name} would like to battle!`);for(let t=0;t<16;t++){B.fx.tf.x=t*6;await wait(1);}B.fx.tf=null;
     addSeen(B.f.mon.sid);await bsay(`${tr.cls} ${tr.name} sent out ${monName(B.f.mon)}!`);await appearAnim(B.f);}
   for(let t=0;t<14;t++){B.fx.tp.x=-t*6;await wait(1);}B.fx.tp=null;
@@ -3800,7 +3859,8 @@ async function startBattle(opts){
   }
   await fadeTo(1,12);
   for(const m of B.leveled){const sp=SPECIES[m.sid];if(G.party.includes(m)&&m.hp>0&&sp.evo&&m.lvl>=sp.evo.lvl)await evolveScene(m);}
-  scene='world';B=null;EVO=null;
+  const nzInfo=B.nuz;scene='world';B=null;EVO=null;nuzWildEnd(nzInfo,result);
+  if(nuzActive()){await fadeTo(0,12);if(await nuzAfterBattle(tr,result))return result;if(result==='lose'){if(!opts.story&&!opts.noWhiteout){const h=G.lastHeal;await fadeTo(1,10);loadMap(h.map,h.x,h.y,'down');await fadeTo(0,10);}return result;}autosave();return result;}
   if(result==='lose'&&opts.story){G.party.forEach(m=>{if(m.hp<=0){m.hp=1;m.status=null;}});await fadeTo(0,12);return result;}
   if(result==='lose'&&!opts.noWhiteout){await whiteout();return result;}
   if(result==='lose')G.party.forEach(healMon);
@@ -3954,6 +4014,8 @@ async function switchIn(i,vol){
 }
 async function useBattleItem(act){
   const it=ITEMS[act.item];G.bag[act.item]--;
+  if(it.kind==='revive'&&nuzOn()){G.bag[act.item]++;await bsay('Revives don\'t work in a Nuzlocke.');return null;}
+  if(it.kind==='ball'&&B.nuz&&!B.nuz.catchable){G.bag[act.item]++;await bsay('NUZLOCKE: You can\'t catch this one.');return null;}
   if(it.kind==='ball')return await throwOrb(act.item);
   const m=G.party[act.t];await bsay(`${G.name} used ${it.name}!`);const msg=applyItem(act.item,m);SFX.heal();
   if(m===B.p.mon)await tweenHP(B.p);await bsay(msg||'It had no effect.');return null;
@@ -3971,6 +4033,7 @@ async function throwOrb(k){
   await wait(14);
   if(shakes>=4){o.caught=1;SFX.lvl();const isNew=!G.caught.includes(m.sid);await say(`Gotcha! ${sp.name} was caught!`);addCaught(m.sid);
     if(isNew)await say(`${sp.name}'s data was added to the CODEX.`);
+    if(nuzOn())await nuzNickname(m);
     m.status=m.status;if(G.party.length<6){G.party.push(m);}else{G.box.push(m);await say(`Your team is full, so ${sp.name} was sent to ByteNet Storage.`);}
     return'caught';}
   B.fx.orb=null;flashA=.5;B.f.hidden=false;for(let t=0;t<=10;t++){B.f.scale=t/10;await wait(1);}
