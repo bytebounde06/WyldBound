@@ -1579,7 +1579,8 @@ async function profTalk(){
   await say(`Prof. Hazel: Ah, ${G.name}! You came. I study Wyldkin from three regions: Aldera, Coralmere and Frostfell.`);
   await say('These three are the partner Wyldkin of Aldera. Coralmere and Frostfell have partners of their own. Choose the one you like best!');
   let sid=-1;
-  if(isStatic(G.name)){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Hm. What\'s my lab PC doing?');await staticGetsPartner('you');sid=staticPartnerId();}
+  const pk=eggKind(G.name);if(pk==='static'){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Hm. What\'s my lab PC doing?');await eggGetsPartner('static',0,'you');sid=eggPartnerId('static',0);}
+  else if(pk==='bunny'){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Wait. Is something in the air vent?');await eggGetsPartner('bunny',0,'you');sid=eggPartnerId('bunny',0);}
   else sid=await chooseStarter(0);
   const sp=SPECIES[sid];
   const mon=makeMon(sid,5);G.party.push(mon);addSeen(sid);addCaught(sid);
@@ -2298,7 +2299,7 @@ async function regionStarter(r){
   await say(`Professor ${PROF[r]}: You must be ${G.name}! Professor Hazel told me all about you. The border lock trapped your team, didn\'t it?`);
   await say(`Your friends Rowan and Wren got here an hour ago. Same story, their teams are locked too. So all three of you need new partners.`);
   let sid;
-  if(isStatic(G.name)){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await staticGetsPartner('you');sid=staticPartnerId();}
+  const pk=eggKind(G.name);if(pk==='static'||pk==='bunny'){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await eggGetsPartner(pk,r,'you');sid=eggPartnerId(pk,r);}
   else{await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
   sid=await chooseStarter(r);}
   const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
@@ -2312,19 +2313,16 @@ function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].ev
 async function rivalPicks(r,sid){
   const ids=STARTERS.slice(r*3,r*3+3),f0=FR();let pool=ids.filter(s=>s!==sid),rsid=null,wsid=null;
   const take=s=>{pool=pool.filter(x=>x!==s);return s;};
-  if(isStatic(f0.riv.name))rsid=staticPartnerId();if(isStatic(f0.pal.name))wsid=staticPartnerId();
-  const sm=smashedFriend(),fire=fireStarter(r);
-  if(sm==='riv'&&rsid==null&&pool.includes(fire))rsid=take(fire);if(sm==='pal'&&wsid==null&&pool.includes(fire))wsid=take(fire);
+  const rk=eggKind(f0.riv.name),wk=eggKind(f0.pal.name);if(rk)rsid=eggPartnerId(rk,r);if(wk)wsid=eggPartnerId(wk,r);
+  const sm=smashedFriend(),fire=fireStarter(r);if(sm)take(fire);
   if(rsid==null){const k=ids.indexOf(sid);const counter=k>=0?ids[(k+1)%3]:null;rsid=take(pool.includes(counter)?counter:pool[0]);}
   if(wsid==null)wsid=take(pool[0]);
   G.rivals=G.rivals||{};G.rivals[r]={rowan:rsid,wren:wsid};if(r===0)G.rivalStarter=rsid;
   const prof=r===0?'Prof. Hazel':`Professor ${PROF[r]}`;
-  for(const [w,n] of [['Rowan',f0.riv.name],['Wren',f0.pal.name]])if(isStatic(n))await staticGetsPartner(w);
+  for(const [w,n] of [['Rowan',f0.riv.name],['Wren',f0.pal.name]]){const kd=eggKind(n);if(kd)await eggGetsPartner(kd,r,w);}
   for(const [w,n] of [['Rowan',f0.riv.name],['Wren',f0.pal.name]]){const kd=eggKind(n);if(kd&&eggHates(kd))await say(hateLine(kd,w));}
-  if(sm==='riv'){await say(`Rowan: ${SPECIES[rsid].name}'s with me. Obviously. Look at it. It's on fire.`);await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
-  else if(sm==='pal'){await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);await say(`Wren: ${SPECIES[wsid].name} and I already understand each other. Fire's honest. Unlike Rowan's battle plans.`);}
-  else{if(!isStatic(f0.riv.name))await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
-  if(!isStatic(f0.pal.name))await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
+  if(!rk)await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
+  if(!wk)await say(`Wren: ${rk?'I\'ll take':'And that leaves'} ${SPECIES[wsid].name} for me. Hi there, little one!`);
   await say(`Wren: Okay, here's the deal. Winner stays on, just like when we were kids!`);
   await say(`Rowan: ${r===0?'':'Champion or not, '}I'm first! Come on, ${G.name}!`);
   const rowanBattle=()=>startBattle({trainer:{name:'Rowan',cls:'RIVAL',party:[[SPECIES[rsid].name,5]],reward:12,lose:'What?! I picked the wrong one!',look:LOOK.rival},noWhiteout:1});
@@ -2678,9 +2676,20 @@ function cuteOrCreepy(s){return CUTE_RX.test(s.name)||CREEPY_RX.test(s.name)||s.
 function bunnyParty(party){if(party.length<2)return party;const out=party.map(p=>p.slice());
   out.forEach((p,i)=>{if(i===out.length-1)return;const sp=SPECIES[SP_BY[p[0]].id];if(cuteOrCreepy(sp))return;const t=pickTeam(null,p[1],1,'bunny'+i+p[0],{filter:cuteOrCreepy});out[i]=[t[0][0],p[1]];});return out;}
 // ---------- Static's partner comes out of a computer ----------
-function staticPartnerId(){return SP_BY.Pixelon.id;}
-async function staticGetsPartner(who){glitchNow(30);await say('The lab PC sparks. ERROR E06. Something made of pixels climbs out of the screen!',{style:'dark'});
-  await say(`${who==='you'?G.name:who}: ...Hey there. You came out of the computer for me, huh? Pixelon it is.`);}
+// ---------- each of them starts with a partner that fits their story (a different one in each region) ----------
+const EGG_PARTNERS={static:['Pixelon','Boltnut','Steelorb'],bunny:['Batling','Bubbun','Puppetshade'],smashed:['Cinderpup','Duskit','Ashkit']};
+function eggPartnerId(kind,r){return SP_BY[EGG_PARTNERS[kind][r||0]].id;}
+function staticPartnerId(r){return eggPartnerId('static',r);}
+async function eggGetsPartner(kind,r,who){const n=who==='you'?G.name:who,sp=EGG_PARTNERS[kind][r||0];
+  if(kind==='static'){glitchNow(30);
+    await say(['The lab PC sparks. ERROR E06. Something made of pixels climbs out of the screen!','The lab PC sparks. ERROR E06. A little gear-bodied Wyldkin clanks out of the server cabinet beside it!','The lab PC sparks. ERROR E06. A floating steel orb drifts out of the monitor, humming like a cooling fan!'][r||0],{style:'dark'});
+    await say(`${n}: ...Hey there. You came out of the machine for me, huh? ${sp} it is.`);return;}
+  if(kind==='bunny'){
+    await say(['A tiny Batling flutters out of the air vent and lands right on top of '+n+'\'s head.','A Bubbun splashes out of the lab aquarium straight into '+n+'\'s arms. '+n+' shrieks at the water... then hugs it anyway.','A Puppetshade drifts out of the professor\'s storage closet, button eyes glowing, and curls up in '+n+'\'s lap.'][r||0]);
+    await say(`${n}: Oh! Hi, sweetie! Look at you, you're perfect. Mama's got you now. ${sp}, okay?`);return;}
+  await say(['A Cinderpup bounds in through the open door, tail blazing, and skids to a stop at '+n+'\'s feet.','A Duskit slinks out of the shadows by the bookshelf, flames flickering on its tail, and sits beside '+n+' like it was always there.','An Ashkit trots in from the snow, steaming, and plops itself down on '+n+'\'s boots.'][r||0]);
+  await say(`${n}: ...Huh. You picked me? Fine. ${sp}. You're with me now. Don't make it weird.`);}
+async function staticGetsPartner(who,r){return eggGetsPartner('static',r,who);}
 // ---------- edge-of-town houses ----------
 function lineOf(a){return a[Math.floor(Math.random()*a.length)];}
 async function eggHouse(kind,spot){const h=eggHolder(kind),name=eggDisplay(kind),all=allThreeEggs();
@@ -3512,8 +3521,8 @@ function codexScreen(){
 async function chooseStarter(r){const sm=smashedFriend();const fire=fireStarter(r);const excl=[];
   while(true){const sid=await starterPicker(r,excl);if(sid<0)continue;
     if(sm&&sid===fire){const n=sm==='riv'?FR().riv.name:FR().pal.name;
-      await say(`${n}: Whoa. Nope. Hands off.`);await say(`${n} grabs ${SPECIES[fire].name} right out of the Professor\'s hands.`);
-      await say(`${n}: Fire types are mine. Always have been. Honestly? You\'d get it singed in a week. Pick something else.`);excl.push(fire);continue;}
+      await say(`${n}: Whoa. Nope. Hands off.`);await say(`${n} snatches ${SPECIES[fire].name} right out of your hands.`);
+      await say(`${n}: Fire types aren\'t for people who don\'t respect them. Honestly? You\'d get it singed in a week.`);await say(`${n} sets ${SPECIES[fire].name} back on the Professor\'s desk. "Nobody\'s taking that one. Pick something else."`);excl.push(fire);continue;}
     return sid;}}
 // ----- starter picker: the three partners native to region r -----
 function starterPicker(r,excl){
