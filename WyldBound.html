@@ -1487,7 +1487,7 @@ MAPS.hearthollow={name:'Hearthollow',bg:'grass',rows:[
  signs:{'3,8':'HEARTHOLLOW\nWhere every journey begins.'},
  triggers:[{x:9,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:10,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
  npcs:[{id:'hh_girl',x:14,y:8,dir:'down',look:LOOK.girl,wander:1,text:'Wyldkin live in the tall grass. Stay on the path if you don\'t have one with you!'},
-       {id:'hh_old',x:4,y:13,dir:'right',look:LOOK.oldman,text:'People say Wyldkin from faraway lands sometimes wander in. Once I saw a seabird up on Route 1!'}]};
+       {id:'hh_old',x:3,y:12,dir:'right',look:LOOK.oldman,text:'People say Wyldkin from faraway lands sometimes wander in. Once I saw a seabird up on Route 1!'}]};
 async function blockNorth(){
   await say('???: Hold on!');
   await say('Prof. Hazel\'s aide: The tall grass is dangerous without a Wyldkin of your own. The Professor\'s lab is just south of here!');
@@ -2590,6 +2590,7 @@ function assembleWorld(){
   });
   assignEncounters();
   STORY_AFTER_BUILD.forEach(f=>f());
+  fixNpcSpots();
 }
 function buildLeague(r,exit){
   const E=ELITE_DEF[r];const first=`league${r}_1`;
@@ -2647,6 +2648,19 @@ function assignEncounters(){
   MAPS.route2.enc.fish=[['Flopfish',5,8,14],['Finnow',6,9,10],['Jellume',6,9,6],['Drifthorse',7,9,4]];
   MAPS.hearthollow.enc={grass:[],fish:[['Flopfish',4,6,14],['Finnow',4,6,8],['Puddlepup',5,5,0]]};
   MAPS.ferrowick.enc={grass:[],fish:[['Flopfish',12,16,12],['Starlet',12,15,6],['Clamlet',12,15,6],['Sealpup',13,16,4]]};
+}
+
+// Any NPC that ended up on a solid tile (table, wall, gym obstacle, roof) moves to the nearest free floor tile.
+function fixNpcSpots(){
+  for(const id in MAPS){const m=prepMap(id);if(!m.npcs||!m.npcs.length)continue;const R=m.rows;
+    const solid=(x,y)=>x<0||y<0||x>=m._w||y>=m._h||SOLID.has(R[y][x]);
+    const bad=(x,y)=>(m.warps||[]).some(w=>w.x===x&&w.y===y)||(m.triggers||[]).some(t=>t.x===x&&t.y===y)||'DmE{h'.includes(R[y][x]);
+    const occ=new Set(m.npcs.map(n=>n.x+','+n.y));
+    for(const n of m.npcs){if(!solid(n.x,n.y))continue;
+      const seen=new Set([n.x+','+n.y]),q=[[n.x,n.y]];let found=null;
+      while(q.length&&!found){const[x,y]=q.shift();for(const[dx,dy]of[[0,1],[1,0],[0,-1],[-1,0]]){const X=x+dx,Y=y+dy,k=X+','+Y;if(seen.has(k)||X<0||Y<0||X>=m._w||Y>=m._h)continue;seen.add(k);
+        if(!solid(X,Y)&&!bad(X,Y)&&!occ.has(k)){found=[X,Y];break;}q.push([X,Y]);}}
+      if(found){occ.delete(n.x+','+n.y);n.x=found[0];n.y=found[1];occ.add(found.join(','));}}}
 }
 
 'use strict';
