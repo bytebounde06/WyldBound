@@ -2382,7 +2382,7 @@ function labSpar(rsid,wsid){
         text(c,'VS',120,62,'#f8d048',10,true,'center');c.restore();}};
     pushUI(el);});
 }
-const WREN_SPOTS=[['route1','route3','route6'],['route22','route25','route27'],['route31','route34','route37']];
+const WREN_SPOTS=[['route2','route3','route6'],['route22','route25','route27'],['route32','route34','route37']];
 const WREN_LINES=[
  ['I caught my first wild Wyldkin! Want to see how strong my team is?','Wow, you\'re good! I\'ll keep training.','Yay! My first trainer win!'],
  ['I\'ve been studying type matchups. Let\'s test my notes!','My notes said I\'d win... I need better notes!','Ha! The notes were right!'],
@@ -2568,7 +2568,7 @@ async function c4Event(n){
 
 // ---------- FROSTFELL: Project Zero ----------
 STORY_AFTER_BUILD.push(()=>{
-  MAPS.route32.onEnter={cond:()=>!G.flags.f1&&G.flags.starter2,run:f1Event};
+  MAPS.route32.onEnter=[{cond:()=>!G.flags.f1&&G.flags.starter2,run:f1Event}].concat(MAPS.route32.onEnter||[]);
   MAPS.deepmine.onEnter={cond:()=>!G.flags.f2&&G.flags.starter2,run:f2Event};
   // league closed until climax
   const lg=MAPS.frostleague;if(lg)(lg.triggers=lg.triggers||[]);
