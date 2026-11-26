@@ -2312,7 +2312,7 @@ async function regionStarter(r){
 // ---------- rivals: Rowan takes the partner strong against yours, Wren takes the one that's left ----------
 function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].evo;if(e&&e.lvl&&e.lvl<=lvl)s=e.to;else break;}return s;}
 async function rivalPicks(r,sid){
-  if(nuzOn()){G.nuz.active=false;await nuzNickAll();}
+  if(nuzOn()){G.nuz.active=false;await nuzNickAll();}else{const st=G.party[G.party.length-1];if(st)await offerNickname(st);}
   const ids=STARTERS.slice(r*3,r*3+3),f0=FR();let pool=ids.filter(s=>s!==sid),rsid=null,wsid=null;
   const take=s=>{pool=pool.filter(x=>x!==s);return s;};
   const rk=eggKind(f0.riv.name),wk=eggKind(f0.pal.name);if(rk)rsid=eggPartnerId(rk,r);if(wk)wsid=eggPartnerId(wk,r);
@@ -2890,6 +2890,7 @@ function drawPortraitBox(c,look,talking,x,y,scale){scale=scale||1;const p=portra
 function nuzOn(){return!!(G&&G.nuz);}
 function nuzActive(){return!!(G&&G.nuz&&G.nuz.active&&!G.nuz.over);}
 const NUZ_RULES=['A Wyldkin that faints is gone for good.','You can only catch the first wild Wyldkin you meet in each area. (If it\'s from a family you already caught, it doesn\'t count.)','You must nickname every Wyldkin you get.','Revives don\'t work.','If your whole team falls, the run is over. No second chances.'];
+async function nuzRulesIntro(){for(const l of ['This is a NUZLOCKE file. The rules can\'t be changed:',...NUZ_RULES.map((t,i)=>`${i+1}. ${t}`)])await say(l,{style:'dark'});}
 async function chooseMode(){
   await say('Before we begin: how do you want to play?');
   while(true){const r=await choose(['NORMAL','NUZLOCKE'],{x:150,y:H-92,w:88,prompt:'Choose a mode.'});
@@ -2899,6 +2900,8 @@ async function chooseMode(){
 // ---------- nicknames ----------
 async function nuzNickname(m){if(!nuzOn()||m.nick)return;const sp=SPECIES[m.sid].name;
   const n=await domPanel('nick',{species:sp});m.nick=n;await say(`${sp} will be known as ${n}.`);}
+// Normal games: nicknames are optional
+async function offerNickname(m){if(nuzOn()||m.nick)return;const sp=SPECIES[m.sid].name;if(!await yesno(`Give a nickname to ${sp}?`))return;const n=await domPanel('nick',{species:sp,optional:true});if(n){m.nick=n;await say(`${sp} will be known as ${n}.`);}}
 async function nuzNickAll(){if(!nuzOn())return;for(const m of [...G.party,...G.box])if(!m.nick)await nuzNickname(m);}
 // ---------- first encounter per area ----------
 function famCaught(sid){const f=SPECIES[sid].fam;return G.caught.some(id=>SPECIES[id]&&SPECIES[id].fam===f);}
@@ -3288,7 +3291,8 @@ async function healAll(fx){G.party.forEach(healMon);if(fx){jingle('heal');await 
 function article(w){return /^[AEIOU]/i.test(w)?'an':'a';}
 
 // ===================== SAVE / LOAD =====================
-const SAVE_KEY='wildbound_v2_';const NSLOTS=5;let SLOT=1;let dbRef=null;const dbChain={};
+const SAVE_KEY='wildbound_v2_';const NSLOTS=5;let SLOT=1;
+function slotLabel(){return SLOT>NSLOTS?`NUZLOCKE FILE ${SLOT-NSLOTS}`:`FILE ${SLOT}`;}let dbRef=null;const dbChain={};
 (async()=>{try{if(typeof claude==='undefined'||!claude.use)return;const db=await claude.use('db');const user=await claude.use('user');if(!db||!user)return;const id=await user.id();if(!id)return;dbRef={db,id};}catch(e){}})();
 // migrate v1 saves into file 1
 try{['manual','auto'].forEach(k=>{const o=localStorage.getItem('wildbound_v1_'+k);if(o&&!localStorage.getItem(SAVE_KEY+'1_'+k))localStorage.setItem(SAVE_KEY+'1_'+k,o);});}catch(e){}
@@ -3372,7 +3376,7 @@ function worldUpdate(p){
   if(lock||ui.length)return;
   if(pendingEnter){pendingEnter=false;const oe=[].concat(MAP.onEnter||[]).find(o=>!o.cond||o.cond());if(oe){runScript(oe.run);return;}}
   if(p.has('start')){runScript(startMenu);return;}
-  if(p.has('select')&&G.party.length){runScript(async()=>{writeSave('manual');SFX.ok();await say(`Quick saved to FILE ${SLOT}.`);});return;}
+  if(p.has('select')&&G.party.length){runScript(async()=>{writeSave('manual');SFX.ok();await say(`Quick saved to ${slotLabel()}.`);});return;}
   if(p.has('a')){interact();return;}
   let d=null;for(const k of ['up','down','left','right'])if(held[k]){d=k;break;}
   if(!d){player.wasMoving=false;player.turnT=0;return;}
@@ -3512,7 +3516,7 @@ async function trainerCard(){const el=pushUI({update(p){if(p.has('a')||p.has('b'
 async function saveConfirm(){
   const card=pushUI({update(){},draw:drawCard});
   const ok=await yesno('Would you like to save the game?');
-  if(ok){writeSave('manual');popUI(card);await say(`${G.name} saved the game to FILE ${SLOT}.`);return true;}
+  if(ok){writeSave('manual');popUI(card);await say(`${G.name} saved the game to ${slotLabel()}.`);return true;}
   popUI(card);return false;
 }
 async function optionsMenu(){
@@ -3537,8 +3541,10 @@ function domPanel(kind,opt){return new Promise(res=>{
     sugRow(opt&&opt.sugs,n=>{i.value=n;});
     const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close((i.value.trim()||'Kit').slice(0,11));setTimeout(()=>{i.focus();i.select();},50);
     i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
-  else if(kind==='nick'){h.textContent=`Nickname your ${opt.species}`;const i=document.createElement('input');i.maxLength=10;i.value='';i.placeholder='Required in Nuzlocke';i.autocomplete='off';card.appendChild(i);
-    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>{const v=i.value.trim();if(!v){i.style.outline='2px solid #e04a5a';return;}close(v.slice(0,10));};
+  else if(kind==='nick'){h.textContent=`Nickname your ${opt.species}`;const i=document.createElement('input');i.maxLength=10;i.value=opt.cur||'';i.placeholder=opt.optional?'Leave blank for no nickname':'Required in Nuzlocke';i.autocomplete='off';card.appendChild(i);
+    const row=document.createElement('div');row.className='row';row.style.marginTop='10px';card.appendChild(row);
+    const b=document.createElement('button');b.textContent='OK';row.appendChild(b);b.onclick=()=>{const v=i.value.trim();if(!v&&!opt.optional){i.style.outline='2px solid #e04a5a';return;}close(v.slice(0,10));};
+    if(opt.optional){const cb=document.createElement('button');cb.textContent='Cancel';row.appendChild(cb);cb.onclick=()=>close(null);}
     setTimeout(()=>i.focus(),50);i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
   else if(kind==='friend'){h.textContent=opt.title;const i=document.createElement('input');i.maxLength=11;i.value=opt.def;i.autocomplete='off';card.appendChild(i);
     sugRow(opt.sugs,n=>{i.value=n;});
@@ -3582,11 +3588,12 @@ function teamScreen(mode,opts={}){
         box(c,2,140,166,18);text(c,this.swap>=0?'Move to where?':this.msg,10,144,'#404040',8);}};
     async function runSub(el,idx){
       const m=list[idx];let items;
-      if(mode==='view')items=['SUMMARY','SWITCH','CANCEL'];else if(mode==='battle'||mode==='force')items=['SHIFT','SUMMARY','CANCEL'];else items=['SELECT','SUMMARY','CANCEL'];
+      if(mode==='view')items=['SUMMARY','SWITCH','NICKNAME','CANCEL'];else if(mode==='battle'||mode==='force')items=['SHIFT','SUMMARY','CANCEL'];else items=['SELECT','SUMMARY','CANCEL'];
       if(mode==='force')items=['SHIFT','SUMMARY'];
       const r=await choose(items,{x:170,y:MY+110-items.length*14,w:66,cancel:mode!=='force'});
       const it=items[r];
-      if(it==='SUMMARY')await summaryScreen(idx);
+      if(it==='NICKNAME'){const n=await domPanel('nick',{species:SPECIES[m.sid].name,optional:!nuzOn(),cur:m.nick||''});if(n!==null){m.nick=n||null;el.msg=`${monName(m)} it is!`;}}
+      else if(it==='SUMMARY')await summaryScreen(idx);
       else if(it==='SWITCH'){el.swap=idx;}
       else if(it==='SHIFT'||it==='SELECT'){popUI(el);res(idx);}
     }
@@ -3730,32 +3737,35 @@ function newest(sv){if(!sv)return null;const a=sv.manual,b=sv.auto;return a&&b?(
 async function titleFlow(){
   scene='title';await fadeTo(0,20);await waitKey();
   while(true){
-    const slots=await readAllSlots();
-    const items=slots.map((sv,i)=>{const n=newest(sv);return n?`FILE ${i+1}  ${n.G.name}${n.G.nuz?(n.G.nuz.over?'  (RIP)':'  [NUZ]'):''}`:`FILE ${i+1}  - empty -`;});items.push('LOAD SAVE CODE');
-    const r=await choose(items,{x:20,y:MY+60,w:200,cancel:false,onDraw:(c,s)=>{const sv=slots[s];const n=newest(sv);if(n){const g=n.G,y=MY+2;box(c,20,y,200,56);text(c,`${g.name}   Badges: ${g.badges.length}   Codex: ${g.caught.length}/${SPECIES.length}`,28,y+7,'#404040',8);text(c,`Time: ${fmtTime(g.time)}   ${MAPS[g.map]?MAPS[g.map].name:''}`,28,y+20,'#404040',8);
-      text(c,`Saved: ${sv.manual?new Date(sv.manual.t).toLocaleString():'—'}`,28,y+32,'#606060',7);text(c,`Autosave: ${sv.auto?new Date(sv.auto.t).toLocaleString():'—'}`,28,y+42,'#606060',7);}}});
-    if(r===NSLOTS){const o=await domPanel('import');if(!o)continue;const t=await choose(slots.map((sv,i)=>`FILE ${i+1}`+(newest(sv)?' (overwrite)':'')),{x:60,y:MY+30,w:130});if(t<0)continue;SLOT=t+1;loadState(o);writeSave('manual');break;}
-    const sv=slots[r];SLOT=r+1;
-    if(!newest(sv)){await newGameFlow();return;}
+    const top=await choose(['NORMAL FILES','NUZLOCKE FILES','LOAD SAVE CODE'],{x:50,y:MY+70,w:140,cancel:false});
+    if(top===2){const o=await domPanel('import');if(!o)continue;const base=o.G&&o.G.nuz?NSLOTS:0;const all=[];for(let i=1;i<=NSLOTS;i++)all.push(await readSlot(base+i));
+      const t=await choose(all.map((sv,i)=>`${base?'NUZLOCKE ':''}FILE ${i+1}`+(newest(sv)?' (overwrite)':'')),{x:40,y:MY+30,w:170});if(t<0)continue;SLOT=base+t+1;loadState(o);writeSave('manual');break;}
+    const base=top===1?NSLOTS:0,nuzFiles=top===1;const slots=[];for(let i=1;i<=NSLOTS;i++)slots.push(await readSlot(base+i));
+    const items=slots.map((sv,i)=>{const n=newest(sv);return n?`FILE ${i+1}  ${n.G.name}${n.G.nuz&&n.G.nuz.over?'  (RIP)':''}`:`FILE ${i+1}  - empty -`;});items.push('BACK');
+    const r=await choose(items,{x:20,y:MY+60,w:200,onDraw:(c,s)=>{box(c,64,MY+44,112,15,nuzFiles?'dark':'std');text(c,nuzFiles?'NUZLOCKE FILES':'NORMAL FILES',120,MY+48,nuzFiles?'#ff6a7a':'#404040',8,false,'center');const sv=slots[s];const n=newest(sv);if(n){const g=n.G,y=MY+2;box(c,20,y,200,44);text(c,`${g.name}   Badges: ${g.badges.length}   Codex: ${g.caught.length}/${SPECIES.length}`,28,y+6,'#404040',8);text(c,`Time: ${fmtTime(g.time)}   ${MAPS[g.map]?friendText(MAPS[g.map].name):''}${g.nuz?'   Fallen: '+g.nuz.grave.length:''}`,28,y+18,'#404040',7);
+      text(c,`Saved: ${sv.manual?new Date(sv.manual.t).toLocaleString():(sv.auto?new Date(sv.auto.t).toLocaleString():'—')}`,28,y+30,'#606060',7);}}});
+    if(r<0||r===NSLOTS)continue;
+    const sv=slots[r];SLOT=base+r+1;
+    if(!newest(sv)){await newGameFlow(nuzFiles);return;}
     const opts=[];const ended=newest(sv).G.nuz&&newest(sv).G.nuz.over;if(ended)opts.push(['MEMORIAL','mem']);else{if(sv.manual)opts.push(['CONTINUE','manual']);if(sv.auto)opts.push(['CONTINUE (AUTOSAVE)','auto']);}opts.push(['NEW GAME','new'],['DELETE FILE','del'],['BACK','back']);
     const k=await choose(opts.map(o=>o[0]),{x:60,y:MY+40,w:150});if(k<0)continue;const kind=opts[k][1];
     if(kind==='back')continue;
     if(kind==='mem'){const keep=G;G=newest(sv).G;await memorialScreen();G=keep;continue;}
-    if(kind==='del'){if(await yesno(`Delete FILE ${SLOT}? This can't be undone.`)){await deleteSlot(SLOT);}continue;}
-    if(kind==='new'){if(!(await yesno(`Start over in FILE ${SLOT}? Its saves will be replaced when you next save.`)))continue;await newGameFlow();return;}
+    if(kind==='del'){if(await yesno(`Delete ${slotLabel()}? This can't be undone.`)){await deleteSlot(SLOT);}continue;}
+    if(kind==='new'){if(!(await yesno(`Start over in ${slotLabel()}? Its saves will be replaced when you next save.`)))continue;await newGameFlow(nuzFiles);return;}
     loadState(sv[kind]);break;
   }
   await fadeTo(1,15);scene='world';if(!MAPS[G.map]){G.map=G.lastHeal.map;G.x=G.lastHeal.x;G.y=G.lastHeal.y;}loadMap(G.map,G.x,G.y,G.dir);if(solidAt(player.x,player.y)){const h=G.lastHeal;loadMap(h.map,h.x,h.y,'down');}await fadeTo(0,15);
 }
 let introSpr=null;
 function drawIntro(c){if(introSpr){const sc=H-58>=140?2:1,w=64*sc+8;c.save();c.translate(0,-MY);drawPortraitBox(c,introSpr,!!window.TALKING,Math.floor((W-w)/2),Math.max(4,Math.floor((H-46-w)/2)),sc);c.restore();}}
-async function newGameFlow(){
+async function newGameFlow(nuz){
   await fadeTo(1,15);scene='intro';introSpr=LOOK.prof;await fadeTo(0,15);
   await say('Hello there! Welcome to the world of Wyldkin. My name is Hazel, but people call me the Wyldkin Professor.');
   await say('This world is full of Wyldkin, from the valleys of Aldera to the shores of Coralmere and the peaks of Frostfell.');
   await say('Some people keep them as pets, others battle with them. Lately, ByteBound has even linked them to its ByteNet.');
   await say('And me? I study them. Now, tell me about yourself.');
-  const nuz=await chooseMode();
+  if(nuz)await nuzRulesIntro();
   const eggOrder=['Static','BunnyRX','SmashedAtom'].sort(()=>Math.random()-.5);
   const sug=(pool,egg)=>{const n=2+Math.floor(Math.random()*2);const pick=pool.slice().sort(()=>Math.random()-.5).slice(0,n);pick.splice(Math.floor(Math.random()*(n+1)),0,egg);return pick;};
   const name=await domPanel('name',{sugs:sug(['Kit','Ash','Remy','Nova','Sky','Jun','Rory','Sage'],eggOrder[0])});
@@ -4033,7 +4043,7 @@ async function throwOrb(k){
   await wait(14);
   if(shakes>=4){o.caught=1;SFX.lvl();const isNew=!G.caught.includes(m.sid);await say(`Gotcha! ${sp.name} was caught!`);addCaught(m.sid);
     if(isNew)await say(`${sp.name}'s data was added to the CODEX.`);
-    if(nuzOn())await nuzNickname(m);
+    if(nuzOn())await nuzNickname(m);else await offerNickname(m);
     m.status=m.status;if(G.party.length<6){G.party.push(m);}else{G.box.push(m);await say(`Your team is full, so ${sp.name} was sent to ByteNet Storage.`);}
     return'caught';}
   B.fx.orb=null;flashA=.5;B.f.hidden=false;for(let t=0;t<=10;t++){B.f.scale=t/10;await wait(1);}
