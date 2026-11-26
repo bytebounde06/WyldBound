@@ -1349,7 +1349,7 @@ function buildTiles(){TILES.r=[getTile('r',()=>'r',0,0,0,false)];}
 const CHARS={};
 function charSprite(look){
   const key=JSON.stringify(look);if(CHARS[key])return CHARS[key];
-  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0},look);
+  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0,glow:null,trim:null,gloves:null},look);
   const res={};
   ['down','up','left'].forEach(dir=>{res[dir]=[0,1,2].map(frame=>{
     const g=[];for(let y=0;y<21;y++)g.push(new Array(16).fill(null));
@@ -1365,12 +1365,14 @@ function charSprite(look){
       R(4,10,8,6,'shirt');R(3,10,1,4,'shirt');R(12,10,1,4,'shirt');P(3,14-(frame===1?1:0),'skin');P(12,14-(frame===2?1:0),'skin');
       if(L.coat){R(3,10,3,8,'coat');R(10,10,3,8,'coat');R(4,10,8,1,'coat');if(dir==='down'){R(6,11,4,5,'shirt');}else R(4,11,8,6,'coat');}
       if(!L.dress&&!L.coat)R(4,15,8,1,'belt');
+      if(L.trim&&L.coat&&dir==='down'){R(5,11,1,5,'trim');R(10,11,1,5,'trim');P(6,16,'trim');P(9,16,'trim');P(5,10,'trim');P(10,10,'trim');}
+      if(L.gloves){P(3,14-(frame===1?1:0),'glove');P(12,14-(frame===2?1:0),'glove');P(3,13,'glove');P(12,13,'glove');}
       if(L.bag&&dir==='up')R(4,10,8,5,'bag');if(L.bag&&dir==='down'){P(4,10,'bag');P(11,10,'bag');P(4,11,'bag');P(11,11,'bag');}
       if(L.badge&&dir==='down')P(9,11,'badge');
       // head
       R(4,3,8,7,'skin');P(4,3,null);P(11,3,null);
       if(dir==='down'){R(4,2,8,3,'hair');R(3,4,1,4,'hair');R(12,4,1,4,'hair');P(5,5,'hair');P(8,5,'hair');P(10,5,'hair');R(4,5,1,2,'hair');R(11,5,1,2,'hair');
-        P(6,6,'eye');P(6,7,'eye');P(9,6,'eye');P(9,7,'eye');P(6,6,'eyeh');P(9,6,'eyeh');P(5,8,'blush');P(10,8,'blush');P(7,9,'mouth');P(8,9,'mouth');
+        P(6,6,'eye');P(6,7,'eye');P(9,6,'eye');P(9,7,'eye');P(6,6,'eyeh');P(9,6,'eyeh');if(!L.glow){P(5,8,'blush');P(10,8,'blush');P(7,9,'mouth');P(8,9,'mouth');}else{P(6,9,'mouth');P(7,9,'teeth');P(8,9,'teeth');P(9,9,'mouth');P(8,0,'hair');P(9,1,'hair');}
         if(L.visor){R(4,6,8,2,'visor');P(5,6,'visorh');}
         if(L.bandana){R(4,8,8,2,'band');}}
       else{R(3,2,10,8,'hair');R(4,9,8,1,'hair');P(3,2,null);P(12,2,null);R(6,9,4,1,'skin');}
@@ -1385,9 +1387,9 @@ function charSprite(look){
       R(5,10,6,6,'shirt');if(L.coat){R(4,10,7,8,'coat');}
       if(!L.dress&&!L.coat)R(5,15,6,1,'belt');
       if(L.bag)R(10,10,2,5,'bag');
-      R(7+(a===1?1:a===2?-1:0),10,2,4,'arm');P(7+(a===1?1:a===2?-1:0),14,'skin');
+      R(7+(a===1?1:a===2?-1:0),10,2,4,'arm');P(7+(a===1?1:a===2?-1:0),14,L.gloves?'glove':'skin');if(L.trim&&L.coat){R(10,11,1,5,'trim');}
       R(5,3,7,7,'skin');P(5,3,null);P(11,3,null);R(5,2,7,3,'hair');R(9,4,3,5,'hair');P(5,5,'hair');P(11,9,'hair');
-      P(6,6,'eye');P(6,7,'eye');P(6,6,'eyeh');P(4,7,'skin');P(7,8,'blush');P(5,9,'mouth');
+      P(6,6,'eye');P(6,7,'eye');P(6,6,'eyeh');P(4,7,'skin');if(!L.glow){P(7,8,'blush');P(5,9,'mouth');}else{P(5,9,'teeth');P(6,9,'mouth');P(8,1,'hair');}
       if(L.hairStyle===2)R(10,7,2,4,'hair');
       if(L.visor){R(4,6,5,2,'visor');P(5,6,'visorh');}
       if(L.bandana){R(4,8,5,2,'band');}
@@ -1399,12 +1401,12 @@ function charSprite(look){
     const at=(X,Y)=>(Y>=0&&Y<21&&X>=0&&X<16)?g[Y][X]:null;
     for(let Y=0;Y<21;Y++)for(let X=0;X<16;X++){const k=g[Y][X];
       if(k){let col;
-        if(k==='eye')col=[36,28,40];else if(k==='eyeh')col=[250,250,255];else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
+        if(k==='eye')col=L.glow?hex2rgb(L.glow):[36,28,40];else if(k==='eyeh')col=L.glow?[240,255,255]:[250,250,255];else if(k==='trim')col=hex2rgb(L.trim);else if(k==='teeth')col=[236,242,244];else if(k==='glove')col=hex2rgb(L.gloves);else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
         else{const r=rp(k==='arm'?(L.coat?'coat':'shirt'):k);let t=2;const same=(dx,dy)=>{const n=at(X+dx,Y+dy);return n===k;};
           if(!same(-1,0)||!same(0,-1))t=3;if(!same(1,0)||!same(0,1))t=1;if(k==='hair'&&((X+Y)%3===0)&&t===2)t=3;if(k==='brim'||k==='belt')t=1;if(k==='arm')t=1;col=r[t];}
         px(x,col,X,Y);}
       else{let nc=null;for(const[dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){const n=at(X+dx,Y+dy);if(n){nc=n;break;}}
-        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'?'skin':nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
+        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'||nc==='trim'||nc==='glove'||nc==='teeth'?'skin':nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
     }
     return c;});});
   res.right=res.left.map(cn=>{const m=mkCanvas(16,21),x=m.getContext('2d');x.translate(16,0);x.scale(-1,1);x.drawImage(cn,0,0);return m;});
@@ -1662,7 +1664,7 @@ MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
    {id:'rl_note',x:9,y:8,dir:'down',look:LOOK.bb_sci,cond:()=>!!G.flags.s3,run:async()=>{await say(G.flags.s3==='won'?'Technician: The Tether core is cold. Dr. Vasquez cleared out her office and left for Coralmere. I\'m... updating my résumé.':'Technician: Tether is online and the network\'s stable. Commander Hale says your Wyldkin is "in good hands." I wouldn\'t count on it.');}}]};
 
 // ===================== STORY =====================
-async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
+async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
 // Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
@@ -2765,7 +2767,7 @@ function popUI(el){const i=ui.indexOf(el);if(i>=0)ui.splice(i,1);}
 function runScript(fn){lock=true;return Promise.resolve().then(fn).catch(e=>{console.error(e);}).finally(()=>{lock=false;refreshNPCs();});}
 
 // say(): GBA style 2-line text box
-function say(str,opts={}){str=friendText(str);window.LASTSAY=str;
+function say(str,opts={}){str=glitchText(friendText(str));window.LASTSAY=str;
   return new Promise(res=>{
     const lines=wrapText(ctx,str,214,9);const pages=[];for(let i=0;i<lines.length;i+=2)pages.push(lines.slice(i,i+2));
     const el={pi:0,ch:0,t:0,update(p){const pg=pages[this.pi],full=pg.join('').length+pg.length;
@@ -2824,7 +2826,31 @@ function friendText(s){if(typeof s!=='string')return s;const f=FR();const pr=(g,
   return s.replace(/\{(R|P)(HE|HIS|HIM)\}/g,(m,w,k,o,all)=>{const v=pr(w==='R'?f.riv.g:f.pal.g,k.toLowerCase());return(o===0||/[.!?:]\s*$/.test(all.slice(Math.max(0,o-3),o)))?v[0].toUpperCase()+v.slice(1):v;}).replace(/\bRowan\b/g,'\u0001R').replace(/\bWren\b/g,'\u0001P').replace(/\u0001R/g,f.riv.name).replace(/\u0001P/g,f.pal.name);}
 const FRIEND_LOOKS={riv:{m:{hair:'#c87830',shirt:'#3868c8',pants:'#303030'},f:{hair:'#c87830',shirt:'#3868c8',pants:'#3868c8',dress:1,hairStyle:2}},
   pal:{f:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',hairStyle:2},m:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',cap:'#3aa070'}}};
-function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);Object.assign(o,FRIEND_LOOKS[k][f[k].g]);}}
+function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);Object.assign(o,isStatic(f[k].name)?STATIC_LOOK:FRIEND_LOOKS[k][f[k].g]);}
+  const pl=LOOK.player;Object.keys(pl).forEach(x=>delete pl[x]);Object.assign(pl,G&&isStatic(G.name)?STATIC_LOOK:PLAYER_BASE);}
+// ===================== EASTER EGG: "Static" =====================
+// Naming yourself or a friend Static makes ByteNet notice. Cosmetic glitches only; saves and gameplay are never affected.
+const PLAYER_BASE=Object.assign({},LOOK.player);
+const STATIC_LOOK={hair:'#26262e',skin:'#7d909e',shirt:'#1a1a20',coat:'#33363f',pants:'#18181c',shoes:'#0e0e10',glow:'#8ff6ff',trim:'#2fd6f2',gloves:'#141418',hairStyle:1};
+function isStatic(n){return typeof n==='string'&&n.trim().toLowerCase()==='static';}
+function staticEgg(){return!!G&&(isStatic(G.name)||(G.friends&&(isStatic(G.friends.riv.name)||isStatic(G.friends.pal.name))));}
+const GL={t:0,len:0,cd:900,err:0};
+function glitchNow(len){GL.t=GL.len=len||18;if(AC&&G&&G.opts.sound){for(let i=0;i<4;i++)setTimeout(()=>beep(80+Math.random()*1800,.03,'sawtooth',.03),i*40);}}
+function glitchTick(){if(!staticEgg()||scene==='title')return;if(GL.t>0)GL.t--;if(GL.err>0)GL.err--;
+  if(--GL.cd<=0){GL.cd=1500+Math.floor(Math.random()*2400);glitchNow(10+Math.floor(Math.random()*20));if(Math.random()<.35)GL.err=110;}}
+function glitchDraw(c){if(!staticEgg()||scene==='title')return;
+  if(GL.t>0){const cv=c.canvas;c.save();c.setTransform(1,0,0,1,0,0);const Wd=cv.width,Hd=cv.height;
+    for(let i=0;i<5;i++){const y=Math.floor(Math.random()*Hd),h=Math.floor(4+Math.random()*Hd/10),dx=Math.floor((Math.random()-.5)*Wd*.12);c.drawImage(cv,0,y,Wd,h,dx,y,Wd,h);}
+    c.globalCompositeOperation='screen';c.globalAlpha=.18;c.fillStyle='#00f0ff';c.fillRect(0,Math.random()*Hd,Wd,Hd*.06);c.fillStyle='#ff2ad4';c.fillRect(0,Math.random()*Hd,Wd,Hd*.04);
+    c.globalCompositeOperation='source-over';c.globalAlpha=.5;for(let i=0;i<260;i++){const v=Math.random()*255|0;c.fillStyle=`rgb(${v},${v},${v})`;c.fillRect(Math.random()*Wd|0,Math.random()*Hd|0,S*2,S);}c.restore();}
+  if(GL.err>0&&Math.floor(GL.err/6)%4!==0){box(c,W-74,4,70,26,'dark');text(c,'ERROR E06',W-70,8,'#ff5a6a',8);text(c,'0x5747_STATIC',W-70,19,'#7ff4ff',6);}}
+function glitchText(s){if(!staticEgg()||typeof s!=='string'||Math.random()>.1)return s;const g='#%/?0116E';const a=s.split('');const n=1+Math.floor(Math.random()*3);
+  for(let i=0;i<n;i++){const k=Math.floor(Math.random()*a.length);if(/[a-z]/i.test(a[k]))a[k]=g[Math.floor(Math.random()*g.length)];}s=a.join('');if(Math.random()<.25)s+=' ...E06';glitchNow(8);return s;}
+async function staticBoot(who){
+  glitchNow(40);await wait(30);glitchNow(30);
+  await say('ERROR E06: UNREGISTERED PROCESS DETECTED ON BYTENET. DESIGNATION: STATIC.',{style:'dark'});
+  glitchNow(24);await say('...Resuming normal operation.',{style:'dark'});
+  await say(`Hazel: ${who==='you'?'Static? What an unusual name.':'Static? What an unusual name for a friend.'} My CODEX just flickered when you said it. Strange.`);}
 function newGame(name){return{friends:{riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}},keys:[],confiscated:[],champs:[],locked:[],hof:[],visited:[],repel:0,name,party:[],box:[],bag:{tonic:2},money:3000,badges:[],seen:[],caught:[],flags:{},defeated:{},map:'house1',x:5,y:2,dir:'up',lastHeal:{map:'house1',x:4,y:5},time:0,opts:{autosave:true,textFast:false,sound:true},rivalStarter:null};}
 function addItem(k,n){G.bag[k]=(G.bag[k]||0)+n;}
 function addSeen(sid){if(!G.seen.includes(sid))G.seen.push(sid);}
@@ -2994,7 +3020,7 @@ const TV_LINES=['A nature show is on. Flocks of Chirpip are migrating over the v
  'A stream from The Network is on. The host is a floating TV with a flickering hologram body. He\'s playing a game and answering viewers in on-screen text.',
  'An ad: "ByteBound Capture Orbs! Technology that brings people and Wyldkin closer."',
  'A quiz show is on. "Which type is immune to Ground moves?" ...Flying, obviously!'];
-async function tvTalk(){const L=TV_LINES.slice();if(G.flags.s3==='lost')L.push('A ByteBound ad: "Tether: a stronger network for a stronger Aldera!" The screen glitches. E06... E06...');if(G.flags.s3==='won')L.push('News: "ByteBound denies any incident at its Ferrowick Relay Station. A spokesperson called it routine maintenance."');if(G.flags.s1==='lost')L.push('A Brookvale local news segment: "ByteBound sponsors the Rest Center! Healing is now a premium service."');await say(L[Math.floor(Math.random()*L.length)]);}
+async function tvTalk(){const L=TV_LINES.slice();if(staticEgg()){glitchNow(30);L.length=0;L.push('The TV switches on by itself. Static fills the screen, then a line of text: "HEY. NICE NAME." ERROR E06. The screen goes dark.','A floating TV with a flickering hologram body is streaming on The Network. He glances at the camera for a second. "...Huh. Somebody out there has my name. Bold." E06.','The screen shows nothing but static. For a moment it almost looks like a grin. ERROR E06.','Scrolling text: "I CAN ONLY TALK THROUGH THESE. SORRY ABOUT THE GLITCHES. -S" Then: E06.');}if(G.flags.s3==='lost')L.push('A ByteBound ad: "Tether: a stronger network for a stronger Aldera!" The screen glitches. E06... E06...');if(G.flags.s3==='won')L.push('News: "ByteBound denies any incident at its Ferrowick Relay Station. A spokesperson called it routine maintenance."');if(G.flags.s1==='lost')L.push('A Brookvale local news segment: "ByteBound sponsors the Rest Center! Healing is now a premium service."');await say(L[Math.floor(Math.random()*L.length)]);}
 
 // ===================== WORLD RENDER =====================
 function camera(){
@@ -3287,6 +3313,7 @@ async function newGameFlow(){
   await say('And these two have been your best friends since you were little. What are their names?');
   const fr=await domPanel('friends');G.friends=fr;applyFriendLooks();
   await say(`Right! ${fr.riv.name}, my grandchild, and ${fr.pal.name}, from the blue-roofed house down the lane. The three of you have been inseparable forever.`);
+  if(staticEgg())await staticBoot(isStatic(name)?'you':'friend');
   introSpr=charSprite(LOOK.player).down[0];
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
   await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
@@ -3301,9 +3328,10 @@ function draw(){
   if(saveIcon>0){saveIcon--;box(ctx,2,H-18,56,16,'std');text(ctx,'Saving...',8,H-15,'#404040',8);}
   if(flashA>0){ctx.fillStyle=`rgba(255,255,255,${flashA})`;ctx.fillRect(0,0,W,H);flashA=Math.max(0,flashA-.08);}
   if(fade>0){ctx.fillStyle=`rgba(0,0,0,${fade})`;ctx.fillRect(0,0,W,H);}
+  glitchDraw(ctx);
 }
 function tick(){
-  frame++;if(G&&scene!=='title')G.time++;
+  frame++;if(G&&scene!=='title')G.time++;glitchTick();
   for(const k of ['up','down','left','right'])holdF[k]=held[k]?(holdF[k]||0)+1:0;
   const p=pressed;pressed=new Set();
   if(fade!==fadeTarget){fade+=Math.sign(fadeTarget-fade)*fadeSpeed;if(Math.abs(fade-fadeTarget)<fadeSpeed)fade=fadeTarget;}
