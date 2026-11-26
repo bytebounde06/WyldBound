@@ -1225,6 +1225,17 @@ function genSprite(sp){
   return{front:c,back:b,float:!!A.float};
 }
 function spriteOf(sid){return SPRITES[sid]||(SPRITES[sid]=genSprite(SPECIES[sid]));}
+// Pink versions of a Wyldkin's sprites (BunnyRX easter egg)
+const PINKSPR={};
+function pinkCanvas(src){const c=mkCanvas(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);const im=x.getImageData(0,0,c.width,c.height),d=im.data;
+  for(let i=0;i<d.length;i+=4){if(d[i+3]<20)continue;const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b);let l=(mx+mn)/2,s=mx===mn?0:l>.5?(mx-mn)/(2-mx-mn):(mx-mn)/(mx+mn);
+    if(l<.13||(s<.1&&l>.86))continue;let h=0;if(mx!==mn){h=mx===r?((g-b)/(mx-mn))%6:mx===g?(b-r)/(mx-mn)+2:(r-g)/(mx-mn)+4;h*=60;}
+    const nh=(322+((h%360)+360)%360*0.06)/360,ns=Math.min(.85,Math.max(.4,s*.55+.38)),nl=Math.min(.93,l*.9+.1);
+    const q=nl<.5?nl*(1+ns):nl+ns-nl*ns,p=2*nl-q,f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
+    d[i]=f(nh+1/3)*255;d[i+1]=f(nh)*255;d[i+2]=f(nh-1/3)*255;}
+  x.putImageData(im,0,0);return c;}
+function pinkSpriteOf(sid){if(PINKSPR[sid])return PINKSPR[sid];const s=spriteOf(sid);return PINKSPR[sid]={front:pinkCanvas(s.front),back:pinkCanvas(s.back),float:s.float};}
+function monSpr(m){return m&&typeof monIsPink==='function'&&monIsPink(m)?pinkSpriteOf(m.sid):spriteOf(m.sid);}
 
 // ===================== TILES (shaded, neighbor-aware) =====================
 const TS=16;const TCACHE={};
@@ -1233,7 +1244,7 @@ function tileCanvas(fn){const c=mkCanvas(TS,TS),x=c.getContext('2d');fn(x);retur
 const RP=h=>makeRamp(hex2rgb(h));
 const PAL={snow:RP('#e8f0f8'),sand:RP('#ecd8a0'),cave:RP('#9a8470'),cwall:RP('#6a5848'),pine:RP('#2f7a5a'),palm:RP('#4aa848'),gold:RP('#e0b040'),grass:RP('#80c860'),path:RP('#e0c690'),tree:RP('#3c9a44'),trunk:RP('#8a5a34'),water:RP('#4c94e4'),rock:RP('#9a94a4'),wood:RP('#c08a58'),wall:RP('#efe0c0'),
   floor:RP('#d6a46a'),gym:RP('#c4bcae'),metal:RP('#8a9ab0'),steel:RP('#5a6c88'),glass:RP('#80c0f0'),reed:RP('#a8c860'),mud:RP('#7ab49c')};
-const ROOFC={G:'#d8a838',R:'#d05040',B:'#4878d0',Q:'#8890a8',L:'#3ca08c',M:'#e09030',Z:'#405878'};
+const ROOFC={N:'#f08cc8',G:'#d8a838',R:'#d05040',B:'#4878d0',Q:'#8890a8',L:'#3ca08c',M:'#e09030',Z:'#405878'};
 function hsh(x,y,s){let h=(x*374761393+y*668265263+s*1442695041)|0;h=(h^(h>>>13))*1274126177;return((h^(h>>>16))>>>0)/4294967296;}
 function grassBase(x,seed=0){const g=PAL.grass;px(x,g[2],0,0,16,16);
   for(let i=0;i<22;i++){const X=Math.floor(hsh(i,1,seed)*16),Y=Math.floor(hsh(i,2,seed)*16);px(x,hsh(i,3,seed)<.5?g[3]:g[1],X,Y);}
@@ -1318,7 +1329,7 @@ function getTile(ch,nb,X,Y,frame,indoor){
     case 'S':return variant('S'+GROUND,x=>{groundBase(x,3);const w=PAL.wood;px(x,'rgba(0,0,0,.2)',4,14,9,2);px(x,w[0],7,9,2,6);px(x,w[0],2,2,12,8);px(x,w[2],3,3,10,6);px(x,w[3],3,3,10,1);px(x,w[1],4,5,8,1);px(x,w[1],4,7,6,1);});
     case '=':return variant('=',x=>{px(x,PAL.water[2],0,0,16,16);const w=PAL.wood;px(x,w[2],0,1,16,14);for(let i=0;i<16;i+=4){px(x,w[1],i+3,1,1,14);px(x,w[3],i,1,1,14);}px(x,w[0],0,1,16,1);px(x,w[0],0,14,16,1);});
     case 'o':return indoor?variant('gO',x=>{gymBase(x);drawRock(x);}):variant('o'+GROUND,x=>{groundBase(x,2);drawRock(x);});
-    case 'R':case 'B':case 'Q':case 'L':case 'M':case 'Z':case 'G':{const up=nb(0,-1)===ch,dn=nb(0,1)===ch,l=nb(-1,0)===ch,r=nb(1,0)===ch;return variant(ch+(+up)+(+dn)+(+l)+(+r),x=>drawRoof(x,ch,up,dn,l,r));}
+    case 'R':case 'B':case 'N':case 'Q':case 'L':case 'M':case 'Z':case 'G':{const up=nb(0,-1)===ch,dn=nb(0,1)===ch,l=nb(-1,0)===ch,r=nb(1,0)===ch;return variant(ch+(+up)+(+dn)+(+l)+(+r),x=>drawRoof(x,ch,up,dn,l,r));}
     case '#':case 'w':case 'D':case '[':case ']':case '{':{const st='[]{'.includes(ch);const set=st?'[]{':'#wD';const l=set.includes(nb(-1,0)||'-'),r=set.includes(nb(1,0)||'-');
       return variant(ch+(+l)+(+r),x=>{wallBase(x,l,r,st);if(ch==='w'||ch===']')drawWindow(x,st);if(ch==='D'||ch==='{')drawDoor(x,st);});}
     case '_':return variant('_'+((X*3+Y)%5),x=>floorBase(x,(X*3+Y)%5,Y%3));
@@ -1341,7 +1352,7 @@ function getTile(ch,nb,X,Y,frame,indoor){
   }
   return variant('%',x=>px(x,'#181818',0,0,16,16));
 }
-const SOLID=new Set(['P','p','W','G','V','T','~','f','S','o','R','B','Q','L','M','Z','#','w','[',']','X','k','t','b','c','P','H','Y','C','K','J','%']);
+const SOLID=new Set(['P','p','W','G','V','T','~','f','S','o','R','B','N','Q','L','M','Z','#','w','[',']','X','k','t','b','c','P','H','Y','C','K','J','%']);
 const TILES={'"':[variant('"0',x=>drawTall(x,0))],'r':[null]};
 function buildTiles(){TILES.r=[getTile('r',()=>'r',0,0,0,false)];}
 
@@ -1349,7 +1360,7 @@ function buildTiles(){TILES.r=[getTile('r',()=>'r',0,0,0,false)];}
 const CHARS={};
 function charSprite(look){
   const key=JSON.stringify(look);if(CHARS[key])return CHARS[key];
-  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0,glow:null,trim:null,gloves:null},look);
+  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0,glow:null,trim:null,gloves:null,bow:null,ribs:null,shorts:null,eyec:null},look);
   const res={};
   ['down','up','left'].forEach(dir=>{res[dir]=[0,1,2].map(frame=>{
     const g=[];for(let y=0;y<21;y++)g.push(new Array(16).fill(null));
@@ -1379,6 +1390,9 @@ function charSprite(look){
       if(L.hairStyle===1&&dir==='down'){P(3,3,'hair');P(12,3,'hair');P(4,1,'hair');P(7,1,'hair');P(10,1,'hair');}
       if(L.hairStyle===2){R(3,7,1,4,'hair');R(12,7,1,4,'hair');}
       if(L.cap){R(4,1,8,3,'cap');P(4,1,null);P(11,1,null);if(dir==='down'){R(3,4,10,1,'brim');}}
+      if(L.ribs&&dir==='down'){P(7,11,'ribs');P(8,11,'ribs');R(5,12,6,1,'ribs');P(7,12,'shirt');P(8,12,'ribs');R(5,14,6,1,'ribs');P(7,13,'ribs');P(8,13,'ribs');}
+      if(L.shorts){R(5,15,6,1,'shorts');if(!L.dress){R(5,16,3,1,'shorts');R(8,16,3,1,'shorts');}}
+      if(L.bow){R(3,0,4,3,'bow');R(9,0,4,3,'bow');P(3,0,null);P(12,0,null);P(4,1,'bowin');P(11,1,'bowin');R(7,1,2,2,'bow');}
     } else {
       const a=frame;
       if(L.dress){R(5,15,6,2,'shirt');}
@@ -1394,19 +1408,22 @@ function charSprite(look){
       if(L.visor){R(4,6,5,2,'visor');P(5,6,'visorh');}
       if(L.bandana){R(4,8,5,2,'band');}
       if(L.cap){R(5,1,7,3,'cap');R(3,4,4,1,'brim');}
+      if(L.ribs){R(6,12,4,1,'ribs');R(6,14,4,1,'ribs');}
+      if(L.shorts){R(5,15,6,1,'shorts');}
+      if(L.bow){R(6,0,5,3,'bow');P(6,0,null);P(8,1,'bowin');}
     }
-    const base={hair:L.hair,skin:L.skin,shirt:L.shirt,pants:L.pants,shoes:L.shoes,cap:L.cap||'#ffffff',brim:L.cap||'#ffffff',coat:L.coat||'#f4f4f4',visor:L.visor||'#40e0d0',band:L.bandana||'#c03030',bag:L.bag||'#c08040',belt:'#4a3a30',arm:L.coat||L.shirt,badge:'#f8d048'};
+    const base={bow:L.bow||'#f7a6d6',shorts:L.shorts||'#f4f0fa',hair:L.hair,skin:L.skin,shirt:L.shirt,pants:L.pants,shoes:L.shoes,cap:L.cap||'#ffffff',brim:L.cap||'#ffffff',coat:L.coat||'#f4f4f4',visor:L.visor||'#40e0d0',band:L.bandana||'#c03030',bag:L.bag||'#c08040',belt:'#4a3a30',arm:L.coat||L.shirt,badge:'#f8d048'};
     const ramp={};const rp=k=>ramp[k]||(ramp[k]=makeRamp(hex2rgb(base[k]||'#888888')));
     const c=mkCanvas(16,21),x=c.getContext('2d');
     const at=(X,Y)=>(Y>=0&&Y<21&&X>=0&&X<16)?g[Y][X]:null;
     for(let Y=0;Y<21;Y++)for(let X=0;X<16;X++){const k=g[Y][X];
       if(k){let col;
-        if(k==='eye')col=L.glow?hex2rgb(L.glow):[36,28,40];else if(k==='eyeh')col=L.glow?[240,255,255]:[250,250,255];else if(k==='trim')col=hex2rgb(L.trim);else if(k==='teeth')col=[236,242,244];else if(k==='glove')col=hex2rgb(L.gloves);else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
+        if(k==='eye')col=L.glow?hex2rgb(L.glow):L.eyec?hex2rgb(L.eyec):[36,28,40];else if(k==='eyeh')col=L.glow?[240,255,255]:[250,250,255];else if(k==='trim')col=hex2rgb(L.trim);else if(k==='teeth')col=[236,242,244];else if(k==='bowin')col=hex2rgb(L.bow&&L.bowIn||'#b48cf0');else if(k==='ribs')col=hex2rgb(L.ribs);else if(k==='glove')col=hex2rgb(L.gloves);else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
         else{const r=rp(k==='arm'?(L.coat?'coat':'shirt'):k);let t=2;const same=(dx,dy)=>{const n=at(X+dx,Y+dy);return n===k;};
           if(!same(-1,0)||!same(0,-1))t=3;if(!same(1,0)||!same(0,1))t=1;if(k==='hair'&&((X+Y)%3===0)&&t===2)t=3;if(k==='brim'||k==='belt')t=1;if(k==='arm')t=1;col=r[t];}
         px(x,col,X,Y);}
       else{let nc=null;for(const[dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){const n=at(X+dx,Y+dy);if(n){nc=n;break;}}
-        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'||nc==='trim'||nc==='glove'||nc==='teeth'?'skin':nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
+        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'||nc==='trim'||nc==='glove'||nc==='teeth'||nc==='ribs'||nc==='bowin'?'skin':nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
     }
     return c;});});
   res.right=res.left.map(cn=>{const m=mkCanvas(16,21),x=m.getContext('2d');x.translate(16,0);x.scale(-1,1);x.drawImage(cn,0,0);return m;});
@@ -1485,6 +1502,7 @@ MAPS.hearthollow={name:'Hearthollow',bg:'grass',rows:[
 'TT*.....~~~~......TT',
 'TTTTTTTTTTTTTTTTTTTT'],
  conn:{n:{to:'route1',off:-3}},
+ mods:()=>bunnyRoofs(),
  warps:[{x:6,y:5,to:'house1',tx:3,ty:5,dir:'up'},{x:14,y:5,to:'house2',tx:3,ty:5,dir:'up'},{x:12,y:11,to:'lab',tx:5,ty:8,dir:'up'},{x:4,y:15,to:'wrenhouse',tx:3,ty:5,dir:'up'}],
  signs:{'3,8':'HEARTHOLLOW\nWhere every journey begins.'},
  triggers:[{x:9,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:10,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
@@ -1505,6 +1523,7 @@ MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warp
        {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that {RHE}\'ll beat you. Typical.'}]};
 MAPS.wrenhouse={name:'Wren\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:4,ty:16,dir:'down'}],
  npcs:[{id:'wrenmom',x:5,y:3,dir:'left',look:{hair:'#2c2438',shirt:'#c86090',pants:'#584868',dress:1},run:async()=>{
+   if(isBunny(FR().pal.name)){await say(['Wren\'s Mom: We took Wren in years ago. She showed up on our porch one rainy night, shivering, with little bat wings. She never talks about where she came from.','Wren\'s Mom: That girl mothers everyone. She tucked the mail carrier in for a nap last week.','Wren\'s Mom: Wren leaves the TV on all night. Says she\'s waiting for someone named Static to say hi. Teenagers!','Wren\'s Mom: Whatever you do, don\'t say the word "doctor" around Wren. She\'ll hide under the bed for a day.'][Math.floor(Math.random()*4)]);if(G.flags.starter&&!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say(`${G.name} received 3 Tonics!`);}return;}
    if(!G.flags.starter){await say('Wren\'s Mom: Oh, hello dear! Wren ran off to the lab at sunrise. {PHE} couldn\'t sleep a wink last night!');return;}
    if(!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say('Wren\'s Mom: You three are finally trainers! Here, take these Tonics. Keep an eye on Wren for me, okay?');await say(`${G.name} received 3 Tonics!`);return;}
    await say(['Wren\'s Mom: Wren writes me every time {PHE} catches something new. The CODEX this, the CODEX that!','Wren\'s Mom: Remember when you three built that fort out of couch cushions and called it a Wyldkin gym?','Wren\'s Mom: Rowan stopped by looking for Wren. Those two still bicker like when they were five.'][Math.floor(Math.random()*3)]);}},
@@ -1570,8 +1589,9 @@ MAPS.house3={name:'Brookvale House',indoor:1,bg:'indoor',rows:houseRows(),warps:
 function restRows(){return['XXXXXXXXXXX','XV__H_____X','X_ccccc__PX','X_________X','X_________X','Xt_______tX','X_________X','XXXXXmXXXXX'];}
 function nurse(map,x,y){return{id:'nurse_'+map,x:5,y:1,dir:'down',look:LOOK.nurse,run:async()=>{
   const rg=MAPS[map]?MAPS[map].region:0;const fee=(G.flags.s1==='lost'&&map==='rest1'?100:0)+(rg===0&&G.flags.s3==='lost'&&!G.flags.tetherOff?150:0)+(rg===1&&G.flags.c4==='lost'?150:0);
+  if(bunnyWho()==='you'&&!G.flags.bunnyNurse){G.flags.bunnyNurse=1;await say(`${G.name} freezes in the doorway. White walls. That clean smell. It feels like the lab all over again...`);await say('Nurse: Oh, sweetheart, it\'s okay! No needles, no doctors. Just a warm blanket for your Wyldkin. I promise.');}
   await say(fee?`Welcome to the Rest Center, proudly sponsored by ByteBound. Healing costs $${fee}. Shall I restore your Wyldkin?`:'Welcome to the Rest Center! Shall I restore your Wyldkin to full health?');
-  if(await yesno()){if(fee){if(G.money<fee){await say('I\'m sorry, you can\'t cover the fee. Maybe try resting at home?');return;}G.money-=fee;}await say('OK, one moment...');await healAll(true);G.lastHeal={map,x:5,y:4};await say('Your Wyldkin are fully rested. We hope to see you again!');autosave();}
+  if(await yesno()){if(fee){if(G.money<fee){await say('I\'m sorry, you can\'t cover the fee. Maybe try resting at home?');return;}G.money-=fee;}await say('OK, one moment...');await healAll(true);G.lastHeal={map,x:5,y:4};if(bunnyWho()==='you')await say(`${G.name} hugs each Wyldkin before letting them go. "Mama\'s right here. All better."`);await say('Your Wyldkin are fully rested. We hope to see you again!');autosave();}
   else await say('We hope to see you again!');}};}
 MAPS.rest1={name:'Brookvale Rest Center',indoor:1,bg:'indoor',rows:restRows(),warps:[{x:5,y:7,to:'brookvale',tx:10,ty:12,dir:'down'}],
  npcs:[nurse('rest1'),{id:'r1v',x:8,y:5,dir:'left',look:LOOK.lass,text:'The PC in the corner stores Wyldkin when your team is full. You can carry six at a time.'}]};
@@ -1664,7 +1684,7 @@ MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
    {id:'rl_note',x:9,y:8,dir:'down',look:LOOK.bb_sci,cond:()=>!!G.flags.s3,run:async()=>{await say(G.flags.s3==='won'?'Technician: The Tether core is cold. Dr. Vasquez cleared out her office and left for Coralmere. I\'m... updating my résumé.':'Technician: Tether is online and the network\'s stable. Commander Hale says your Wyldkin is "in good hands." I wouldn\'t count on it.');}}]};
 
 // ===================== STORY =====================
-async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
+async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(bunnyWho()==='you'&&/SCIENT|DR\.|DOCTOR/i.test((tr.cls||'')+' '+(tr.name||''))&&!G.flags.bunnyLab){G.flags.bunnyLab=1;await say(`${G.name}\'s little bat wings tremble under the pink hair. Lab coats. Clipboards. It wasn\'t ByteBound\'s lab she escaped from... but it looked just like this.`);await say(`${G.name}: Okay. Deep breath. Nobody\'s locking me in a tank ever again.`);}if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
 // Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
@@ -1672,6 +1692,8 @@ async function friendAssist(tr){
   G.assistN=(G.assistN||0)+1;if(G.assistN%2===0)return null; // every other ByteBound fight
   const who=(G.assistN>>1)%2===0?'Wren':'Rowan';const sid=who==='Wren'?fr.wren:fr.rowan;
   const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
+  const bunnyFr=(who==='Wren'&&isBunny(FR().pal.name))||(who==='Rowan'&&isBunny(FR().riv.name));
+  if(bunnyFr)await say(`${who}: Sweetie, are those ByteBound creeps bothering you? Nobody hurts my friends. Mama Bunny is here!`);else
   await say(who==='Wren'?`Wren: ${G.name}! I saw ByteBound come this way. Want me to back you up, like old times?`:`Rowan: Tch, ByteBound again? Fine. Want a hand, ${G.name}? Don't make it weird.`);
   if(!await yesno(`Battle with ${who}'s help?`)){await say(`${who}: Okay! I'll be right here cheering.`);return null;}
   return{name:who,mon:makeMon(evolvedAt(sid,lvl),lvl)};
@@ -2198,7 +2220,7 @@ async function championWin(r){
 function hallOfFame(r){return new Promise(res=>{let t=0;const el={full:1,bgc:'#201838',update(p){t++;if(t>60&&(p.has('a')||p.has('b'))){popUI(this);res();}},
   draw(c){c.fillStyle='#201838';c.fillRect(0,0,W,160);for(let i=0;i<40;i++){c.fillStyle=`rgba(255,230,140,${.3+.3*Math.sin(frame/20+i)})`;c.fillRect((i*37+frame*.3)%W,(i*23)%160,1,1);}
     text(c,`${REGIONS[r].toUpperCase()} HALL OF FAME`,120,8,'#f8d048',11,true,'center');text(c,`Champion ${G.name}`,120,24,'#ffffff',9,true,'center');
-    G.party.forEach((m,i)=>{const x=10+(i%3)*76,y=40+Math.floor(i/3)*58;c.drawImage(spriteOf(m.sid).front,0,0,64,64,x+14,y,44,44);text(c,`${monName(m)} Lv${m.lvl}`,x+36,y+45,'#fff',7,true,'center');});
+    G.party.forEach((m,i)=>{const x=10+(i%3)*76,y=40+Math.floor(i/3)*58;c.drawImage(monSpr(m).front,0,0,64,64,x+14,y,44,44);text(c,`${monName(m)} Lv${m.lvl}`,x+36,y+45,'#fff',7,true,'center');});
     if(t>60&&Math.floor(frame/30)%2)text(c,'A',230,150,'#f8d048',8,false,'right');}};SFX.lvl();pushUI(el);});}
 
 // ---------- labs ----------
@@ -2244,6 +2266,8 @@ async function rivalPicks(r,sid){
       if(r2==='win')await say('Wren: Okay, okay, you\'re good!');else await say('Wren: Hehe, I\'m on a roll!');}
     else await say('Wren: Next time, then!');
   }
+  const bf=isBunny(FR().pal.name)?'Wren':isBunny(FR().riv.name)?'Rowan':null;
+  if(bf&&r===0){await say(`${bf}: Aww, look at its little face! Don\'t you worry, sweetie, I\'ll take such good care of you.`);await say(`${bf}: Hey ${G.name}... have you ever noticed the TV static sometimes looks like it\'s smiling? N-never mind! Forget I said anything!`);}
   await say(r===0?`Wren: Remember when we used to pretend sticks were Wyldkin? Now they're real! I'll be training up ahead, ${G.name}.`:`Wren: New region, same three of us. I'll be training up ahead, ${G.name}.`);
   await say('Rowan: Smell ya-- I mean, see you around!');
 }
@@ -2260,7 +2284,7 @@ function labSpar(rsid,wsid){
       if(t===hits[5].at+24)SFX.bump();
       if(t>hits[5].at+70){popUI(el);res(wWins);}},
       draw(c){c.save();c.translate(0,MY);box(c,14,10,212,104,'dark');c.beginPath();c.rect(16,12,208,100);c.clip();text(c,'ROWAN',28,18,'#8fb8ff',8);text(c,'WREN',212,18,'#8fe0b0',8,true,'right');
-        const dr=(sid,x,flip,hp,lunge,hit,gone)=>{if(gone>0)c.globalAlpha=Math.max(0,1-gone/30);c.save();c.translate(x+(flip?64:0)+lunge,34+(gone>0?gone:0));if(flip)c.scale(-1,1);if(!(hit>0&&hit%2))c.drawImage(spriteOf(sid).front,0,0,64,64,0,0,64,64);c.restore();c.globalAlpha=1;};
+        const dr=(sid,x,flip,hp,lunge,hit,gone)=>{if(gone>0)c.globalAlpha=Math.max(0,1-gone/30);c.save();c.translate(x+(flip?64:0)+lunge,34+(gone>0?gone:0));if(flip)c.scale(-1,1);if(!(hit>0&&hit%2))c.drawImage(((sid===rsid&&isBunny(FR().riv.name))||(sid===wsid&&isBunny(FR().pal.name))?pinkSpriteOf(sid):spriteOf(sid)).front,0,0,64,64,0,0,64,64);c.restore();c.globalAlpha=1;};
         let lr=0,lw=0,hr=0,hw=0;for(const h of hits){const d=t-h.at;if(d>=-8&&d<0){if(h.who==='r')lr=6;else lw=-6;}if(d>=0&&d<10){if(h.who==='w')hr=10-d;else hw=10-d;}}
         const fin=hits[5].at+24;const gr=wWins&&t>fin?t-fin:0,gw=!wWins&&t>fin?t-fin:0;
         dr(rsid,30,true,hpR.v,lr,hr,gr);dr(wsid,146,false,hpW.v,lw,hw,gw);
@@ -2826,13 +2850,23 @@ function friendText(s){if(typeof s!=='string')return s;const f=FR();const pr=(g,
   return s.replace(/\{(R|P)(HE|HIS|HIM)\}/g,(m,w,k,o,all)=>{const v=pr(w==='R'?f.riv.g:f.pal.g,k.toLowerCase());return(o===0||/[.!?:]\s*$/.test(all.slice(Math.max(0,o-3),o)))?v[0].toUpperCase()+v.slice(1):v;}).replace(/\bRowan\b/g,'\u0001R').replace(/\bWren\b/g,'\u0001P').replace(/\u0001R/g,f.riv.name).replace(/\u0001P/g,f.pal.name);}
 const FRIEND_LOOKS={riv:{m:{hair:'#c87830',shirt:'#3868c8',pants:'#303030'},f:{hair:'#c87830',shirt:'#3868c8',pants:'#3868c8',dress:1,hairStyle:2}},
   pal:{f:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',hairStyle:2},m:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',cap:'#3aa070'}}};
-function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);Object.assign(o,isStatic(f[k].name)?STATIC_LOOK:FRIEND_LOOKS[k][f[k].g]);}
-  const pl=LOOK.player;Object.keys(pl).forEach(x=>delete pl[x]);Object.assign(pl,G&&isStatic(G.name)?STATIC_LOOK:PLAYER_BASE);}
+function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);if(isStatic(f[k].name))f[k].g='m';if(isBunny(f[k].name))f[k].g='f';Object.assign(o,isStatic(f[k].name)?STATIC_LOOK:isBunny(f[k].name)?BUNNY_LOOK:FRIEND_LOOKS[k][f[k].g]);}
+  const pl=LOOK.player;Object.keys(pl).forEach(x=>delete pl[x]);Object.assign(pl,G&&isStatic(G.name)?STATIC_LOOK:G&&isBunny(G.name)?BUNNY_LOOK:PLAYER_BASE);FOLIMG_CLEAR();}
+function FOLIMG_CLEAR(){for(const k in FOLIMG)delete FOLIMG[k];}
 // ===================== EASTER EGG: "Static" =====================
 // Naming yourself or a friend Static makes ByteNet notice. Cosmetic glitches only; saves and gameplay are never affected.
 const PLAYER_BASE=Object.assign({},LOOK.player);
 const STATIC_LOOK={hair:'#26262e',skin:'#7d909e',shirt:'#1a1a20',coat:'#33363f',pants:'#18181c',shoes:'#0e0e10',glow:'#8ff6ff',trim:'#2fd6f2',gloves:'#141418',hairStyle:1};
 function isStatic(n){return typeof n==='string'&&n.trim().toLowerCase()==='static';}
+// ===================== EASTER EGG: "Bunny" / "BunnyRX" =====================
+// A sea bunny / bat hybrid who escaped a (non-ByteBound) lab. Kind, motherly, hates hospitals and doctors, and has a crush on Static.
+const BUNNY_LOOK={hair:'#f39ac8',skin:'#fbe2e8',shirt:'#f4a8d8',pants:'#f6bde0',shoes:'#f8d6ea',hairStyle:2,bow:'#f7a6d6',bowIn:'#b48cf0',ribs:'#fff6fb',shorts:'#f6f0fb',eyec:'#7a4ab8'};
+function isBunny(n){return typeof n==='string'&&/^bunny(rx)?$/i.test(n.trim());}
+function bunnyWho(){if(!G)return null;if(isBunny(G.name))return'you';const f=FR();if(isBunny(f.riv.name))return'riv';if(isBunny(f.pal.name))return'pal';return null;}
+function bunnyName(){const w=bunnyWho();return w==='you'?G.name:w==='riv'?FR().riv.name:w==='pal'?FR().pal.name:'Bunny';}
+function monIsPink(m){if(!m)return false;if(m._pink)return true;return!!G&&isBunny(G.name)&&(G.party.includes(m)||G.box.includes(m)||(G.locked||[]).includes(m));}
+function bunnyRoofs(){const out=[];const w=[];if(G&&isBunny(G.name))w.push([3,3]);const f=FR();if(isBunny(f.riv.name))w.push([13,3]);if(isBunny(f.pal.name))w.push([3,13]);
+  w.forEach(([x0,y0])=>{for(let y=y0;y<y0+2;y++)for(let x=x0;x<x0+4;x++)out.push([x,y,'N']);});return out;}
 function staticEgg(){return!!G&&(isStatic(G.name)||(G.friends&&(isStatic(G.friends.riv.name)||isStatic(G.friends.pal.name))));}
 const GL={t:0,len:0,cd:900,err:0};
 function glitchNow(len){GL.t=GL.len=len||18;if(AC&&G&&G.opts.sound){for(let i=0;i<4;i++)setTimeout(()=>beep(80+Math.random()*1800,.03,'sawtooth',.03),i*40);}}
@@ -2846,6 +2880,18 @@ function glitchDraw(c){if(!staticEgg()||scene==='title')return;
   if(GL.err>0&&Math.floor(GL.err/6)%4!==0){box(c,W-74,4,70,26,'dark');text(c,'ERROR E06',W-70,8,'#ff5a6a',8);text(c,'0x5747_STATIC',W-70,19,'#7ff4ff',6);}}
 function glitchText(s){if(!staticEgg()||typeof s!=='string'||Math.random()>.1)return s;const g='#%/?0116E';const a=s.split('');const n=1+Math.floor(Math.random()*3);
   for(let i=0;i<n;i++){const k=Math.floor(Math.random()*a.length);if(/[a-z]/i.test(a[k]))a[k]=g[Math.floor(Math.random()*g.length)];}s=a.join('');if(Math.random()<.25)s+=' ...E06';glitchNow(8);return s;}
+async function bunnyDiary(){const n=bunnyName();const P=[
+  `A pink diary with a bat-wing sticker on the cover. "${n}'s Diary. PRIVATE!!"`,
+  '"Dear Diary, the TV glitched again last night. ERROR E06. Then words showed up. I think someone named Static lives in there."',
+  '"I left the TV on and said goodnight to him. The static flickered twice. That means goodnight back, right?"',
+  '"Someday I want to meet Static for real. I\'ll make him soup. Everyone likes soup. <3"',
+  '"P.S. My wings still hurt when it rains. I don\'t miss that lab. No more doctors. Ever."'];
+  for(const p of P)await say(p);}
+async function bunnyBoot(){const w=bunnyWho(),n=bunnyName();
+  if(w==='you'){await say(`Hazel: ${n}! What a sweet name. ...Oh, you're trembling, dear. Is it the lab equipment?`);
+    await say('Hazel: Don\'t worry. I\'m not a doctor, and nobody here is going to poke you with anything. I promise.');}
+  else await say(`Hazel: ${n}, the sweet one with the little bat wings! She mothers everyone in town. Just don\'t ever say the word "checkup" around her.`);
+  if(staticEgg())await say(`Hazel: Funny... every time I mention Static, ${n} turns as pink as her hair.`);}
 async function staticBoot(who){
   glitchNow(40);await wait(30);glitchNow(30);
   await say('ERROR E06: UNREGISTERED PROCESS DETECTED ON BYTENET. DESIGNATION: STATIC.',{style:'dark'});
@@ -2903,12 +2949,13 @@ function folOn(){return G&&G.opts&&G.opts.follow!==false&&!(MAP&&MAP.noFollow);}
 function folLead(){return G&&G.party.find(m=>m.hp>0);}
 function folStep(){if(fol.hide){fol.x=player.x;fol.y=player.y;fol.hide=false;}fol.px=fol.x;fol.py=fol.y;fol.x=player.x;fol.y=player.y;
   const dx=fol.x-fol.px,dy=fol.y-fol.py;if(dx||dy)fol.dir=dx>0?'right':dx<0?'left':dy>0?'down':'up';}
-function folImg(sid){if(FOLIMG[sid])return FOLIMG[sid];const sp=spriteOf(sid),mk=(src,flip)=>{const k=document.createElement('canvas');k.width=k.height=28;const g=k.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';if(flip){g.translate(28,0);g.scale(-1,1);}g.drawImage(src,0,0,64,64,0,0,28,28);return k;};
-  return FOLIMG[sid]={down:mk(sp.front),left:mk(sp.front),right:mk(sp.front,1),up:mk(sp.back),float:sp.float};}
+function folImg(m){const sid=m.sid,key=sid+(monIsPink(m)?'p':'');if(FOLIMG[key])return FOLIMG[key];const sp=monSpr(m),mk=(src,flip)=>{const k=document.createElement('canvas');k.width=k.height=28;const g=k.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';if(flip){g.translate(28,0);g.scale(-1,1);}g.drawImage(src,0,0,64,64,0,0,28,28);return k;};
+  return FOLIMG[key]={down:mk(sp.front),left:mk(sp.front),right:mk(sp.front,1),up:mk(sp.back),float:sp.float};}
 function folVisible(){return folOn()&&folLead()&&!fol.hide&&!(fol.x===player.x&&fol.y===player.y&&!player.moving);}
 async function followerTalk(){const m=folLead();const n=monName(m);const r=m.hp/m.stats[0];
   const L=r<.35?[`${n} looks tired. A rest would help.`,`${n} is hanging in there, but it's hurting.`]:m.status?[`${n} doesn't feel well...`]:[`${n} is happy to be walking with you!`,`${n} looks around excitedly.`,`${n} nuzzles your hand.`,`${n} is full of energy!`,`${n} sniffs the air curiously.`,`${n} stays close to your side.`];
-  if(G.party[0]!==m)L.push(`${n} is leading the team today.`);await say(L[Math.floor(Math.random()*L.length)]);}
+  if(G.party[0]!==m)L.push(`${n} is leading the team today.`);
+  if(isBunny(G.name)){L.length=0;L.push(r<.35?`You scoop ${n} into a gentle hug. "Shh, Mama's got you. No doctors. We'll rest at home."`:`${n} snuggles into your arms. "Who's my sweet baby? You are!"`,`You fix ${n}'s fur and give it a little kiss on the head.`,`${n} is glowing pink with happiness.`);}await say(L[Math.floor(Math.random()*L.length)]);}
 function loadMap(id,x,y,dir){
   const prev=MAPID;MAP=prepMap(id);MAPID=id;applyMods();GROUND=MAP.ground||(MAP.indoor?'_':'.');pendingEnter=prev!==id;
   if(MAP.town&&!MAP.indoor){G.visited=G.visited||[];if(!G.visited.includes(id))G.visited.push(id);}
@@ -3003,7 +3050,7 @@ function interact(){
   if(MAP.signs&&MAP.signs[key]){runScript(()=>say(MAP.signs[key]));return;}
   if(ch==='P'){runScript(pcMenu);return;}
   if(ch==='V'){runScript(tvTalk);return;}
-  if(ch==='k'){runScript(()=>say('It\'s packed with books about Wyldkin and ByteBound technology manuals.'));return;}
+  if(ch==='k'){const bw=bunnyWho();if((MAPID==='house1'&&bw==='you')||(MAPID==='wrenhouse'&&bw==='pal')||(MAPID==='house2'&&bw==='riv')){runScript(bunnyDiary);return;}runScript(()=>say('It\'s packed with books about Wyldkin and ByteBound technology manuals.'));return;}
   if(ch==='~'&&!MAP.indoor){runScript(fishAt);return;}
 }
 async function talkTo(n){
@@ -3020,7 +3067,9 @@ const TV_LINES=['A nature show is on. Flocks of Chirpip are migrating over the v
  'A stream from The Network is on. The host is a floating TV with a flickering hologram body. He\'s playing a game and answering viewers in on-screen text.',
  'An ad: "ByteBound Capture Orbs! Technology that brings people and Wyldkin closer."',
  'A quiz show is on. "Which type is immune to Ground moves?" ...Flying, obviously!'];
-async function tvTalk(){const L=TV_LINES.slice();if(staticEgg()){glitchNow(30);L.length=0;L.push('The TV switches on by itself. Static fills the screen, then a line of text: "HEY. NICE NAME." ERROR E06. The screen goes dark.','A floating TV with a flickering hologram body is streaming on The Network. He glances at the camera for a second. "...Huh. Somebody out there has my name. Bold." E06.','The screen shows nothing but static. For a moment it almost looks like a grin. ERROR E06.','Scrolling text: "I CAN ONLY TALK THROUGH THESE. SORRY ABOUT THE GLITCHES. -S" Then: E06.');}if(G.flags.s3==='lost')L.push('A ByteBound ad: "Tether: a stronger network for a stronger Aldera!" The screen glitches. E06... E06...');if(G.flags.s3==='won')L.push('News: "ByteBound denies any incident at its Ferrowick Relay Station. A spokesperson called it routine maintenance."');if(G.flags.s1==='lost')L.push('A Brookvale local news segment: "ByteBound sponsors the Rest Center! Healing is now a premium service."');await say(L[Math.floor(Math.random()*L.length)]);}
+async function tvTalk(){const L=TV_LINES.slice();const bw=bunnyWho(),bn=bunnyName();if(staticEgg()){glitchNow(30);L.length=0;L.push('The TV switches on by itself. Static fills the screen, then a line of text: "HEY. NICE NAME." ERROR E06. The screen goes dark.','A floating TV with a flickering hologram body is streaming on The Network. He glances at the camera for a second. "...Huh. Somebody out there has my name. Bold." E06.','The screen shows nothing but static. For a moment it almost looks like a grin. ERROR E06.','Scrolling text: "I CAN ONLY TALK THROUGH THESE. SORRY ABOUT THE GLITCHES. -S" Then: E06.');if(bw)L.push('For a split second the static turns pink. A tiny heart blinks in the corner of the screen. E06.',`Scrolling text: "TELL ${bn.toUpperCase()} THE SOUP SMELLED GOOD. -S" ...How would he even know?`);}
+  if(bw==='you'&&!staticEgg()){L.length=0;L.push(`${bn} presses a hand to the screen. "...Static? Are you in there? I made too much soup again. You could come over sometime." The TV just hums.`,`${bn} watches the static for a long time, hugging a pillow. "One day I'll meet you. I just know it."`,'A hospital drama is on. You change the channel immediately. Nope. Absolutely not.',...TV_LINES.slice(0,3));}
+  else if(bw&&!staticEgg())L.push(`You remember ${bn} once said a boy named Static talks through TV static. She blushed for an hour after.`);if(G.flags.s3==='lost')L.push('A ByteBound ad: "Tether: a stronger network for a stronger Aldera!" The screen glitches. E06... E06...');if(G.flags.s3==='won')L.push('News: "ByteBound denies any incident at its Ferrowick Relay Station. A spokesperson called it routine maintenance."');if(G.flags.s1==='lost')L.push('A Brookvale local news segment: "ByteBound sponsors the Rest Center! Healing is now a premium service."');await say(L[Math.floor(Math.random()*L.length)]);}
 
 // ===================== WORLD RENDER =====================
 function camera(){
@@ -3043,7 +3092,7 @@ function drawWorld(c){
     if(n.legend){const b=Math.sin(frame/12)*2;c.globalAlpha=.25;c.fillStyle='#000';c.beginPath();c.ellipse(nx-cx+8,ny-cy+14,10,3,0,0,7);c.fill();c.globalAlpha=1;c.drawImage(spriteOf(n.legend.sid).front,0,0,64,64,nx-cx-8,ny-cy-18+b,32,32);return;}
     const spr=charSprite(n.look)[n.dir];const f=n.moving?(n.prog<8?1:2)*((n.x+n.y)%2?1:1):0;c.drawImage(spr[n.moving?(n.prog<8?1:2):0],nx-cx,ny-cy-6);
     if(n.excl>0){n.excl--;box(c,nx-cx+3,ny-cy-20,11,12,'std');text(c,'!',nx-cx+7,ny-cy-18,'#e04040',9,false);}}});});
-  if(folVisible()){const t=player.moving?player.prog/16:1;const fx=(fol.px+(fol.x-fol.px)*t)*16,fy=(fol.py+(fol.y-fol.py)*t)*16;const im=folImg(folLead().sid);
+  if(folVisible()){const t=player.moving?player.prog/16:1;const fx=(fol.px+(fol.x-fol.px)*t)*16,fy=(fol.py+(fol.y-fol.py)*t)*16;const im=folImg(folLead());
     ents.push({y:fy-0.5,draw:()=>{const hop=player.moving?-Math.abs(Math.sin(t*Math.PI))*2:(im.float?Math.sin(frame/14)*1.5:0);
       c.globalAlpha=.25;c.fillStyle='#000';c.beginPath();c.ellipse(fx-cx+8,fy-cy+14,7,2.5,0,0,7);c.fill();c.globalAlpha=1;
       c.drawImage(im[fol.dir],Math.round(fx-cx-6),Math.round(fy-cy-13+hop+(im.float?-3:0)));}});}
@@ -3134,7 +3183,7 @@ function teamScreen(mode,opts={}){
       },
       draw(c){c.fillStyle='#4878a8';c.fillRect(0,0,W,H);c.fillStyle='#5888b8';for(let i=0;i<W;i+=16)c.fillRect(i,0,8,H);
         list.forEach((m,i)=>{const y=3+i*21,on=i===this.sel;box(c,4,y,232,20,on?'dark':'std');const tc=on?'#ffffff':'#404040';
-          drawMonIcon(c,m.sid,7,y-2,22);text(c,monName(m),32,y+3,tc,9);text(c,`Lv${m.lvl}`,98,y+4,tc,8);
+          c.drawImage(monSpr(m).front,0,0,64,64,7,y-2,22,22);text(c,monName(m),32,y+3,tc,9);text(c,`Lv${m.lvl}`,98,y+4,tc,8);
           hpBar(c,124,y+8,64,m.hp,m.stats[0]);text(c,`${m.hp}/${m.stats[0]}`,230,y+5,tc,7,true,'right');
           if(m.hp<=0){c.fillStyle='#c84040';c.fillRect(124,y+2,24,7);text(c,'FNT',136,y+2,'#fff',6,false,'center');}
           else if(m.status){c.fillStyle=STATUS_COL[m.status];c.fillRect(124,y+2,24,7);text(c,STATUS_TAG[m.status],136,y+2,'#fff',6,false,'center');}
@@ -3158,7 +3207,7 @@ function summaryScreen(start){
   return new Promise(res=>{const el={full:1,bgc:'#e8e0c8',i:start,update(p){if(p.has('b')||p.has('a')){popUI(this);res();}if(dirP(p,'up'))this.i=(this.i+G.party.length-1)%G.party.length;if(dirP(p,'down'))this.i=(this.i+1)%G.party.length;},
     draw(c){const m=G.party[this.i],sp=SPECIES[m.sid];c.fillStyle='#e8e0c8';c.fillRect(0,0,W,H);c.fillStyle='#c84848';c.fillRect(0,0,W,16);
       text(c,'WYLDKIN INFO',8,3,'#fff',9);text(c,'▲▼ switch  B: back',232,4,'#fff',7,true,'right');
-      box(c,4,20,84,84,'info');c.drawImage(spriteOf(m.sid).front,14,28);
+      box(c,4,20,84,84,'info');c.drawImage(monSpr(m).front,14,28);
       text(c,`No.${String(sp.num).padStart(3,'0')}`,8,108,'#404040',8);text(c,monName(m),8,118,'#404040',10);text(c,`Lv ${m.lvl}`,8,131,'#404040',9);
       sp.types.forEach((t,k)=>typeTag(c,t,8+k*33,144));
       const lab=['HP','ATTACK','DEFENSE','SP.ATK','SP.DEF','SPEED'];box(c,92,20,144,62,'info');
@@ -3314,6 +3363,7 @@ async function newGameFlow(){
   const fr=await domPanel('friends');G.friends=fr;applyFriendLooks();
   await say(`Right! ${fr.riv.name}, my grandchild, and ${fr.pal.name}, from the blue-roofed house down the lane. The three of you have been inseparable forever.`);
   if(staticEgg())await staticBoot(isStatic(name)?'you':'friend');
+  if(bunnyWho())await bunnyBoot();
   introSpr=charSprite(LOOK.player).down[0];
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
   await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
@@ -3364,6 +3414,8 @@ function burst(b,type){B.fx.parts=B.fx.parts||[];const cx=b.side==='f'?178:62,cy
 
 async function startBattle(opts){
   const tr=opts.trainer?Object.assign({},opts.trainer,{mons:opts.trainer.party.map(([n,l])=>makeMon(SP_BY[n].id,l))}):null;
+  if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
+  if(opts.assist&&((opts.assist.name==='Rowan'&&isBunny(FR().riv.name))||(opts.assist.name==='Wren'&&isBunny(FR().pal.name))))opts.assist.mon._pink=1;
   const pi=G.party.findIndex(m=>m.hp>0);
   B={assist:opts.assist?Object.assign(mkBattler(opts.assist.mon,'a'),{owner:opts.assist.name}):null,story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
@@ -3636,7 +3688,7 @@ function drawBattle(c){
   c.restore();
 }
 function drawMon(c,b,side,sl){
-  if(!b||b.hidden||b.blink)return;const spr=spriteOf(b.mon.sid);const img=side==='f'?spr.front:spr.back;
+  if(!b||b.hidden||b.blink)return;const spr=monSpr(b.mon);const img=side==='f'?spr.front:spr.back;
   const big=side==='p'?1.2:1;const cx=side==='f'?178-sl:62+sl,by=side==='f'?66:113;const w=64*b.scale*big,h=64*b.scale*big;
   let x=cx-w/2+b.dx,y=by-h+(spr.float?-8+Math.sin(frame/16)*2:0);
   c.save();c.beginPath();c.rect(0,0,W,by+(spr.float?-6:1));c.clip();c.drawImage(img,x,y+b.drop,w,h);
