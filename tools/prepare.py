@@ -24,7 +24,7 @@ head = ('<meta name="apple-mobile-web-app-status-bar-style" content="black-trans
         '<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png">'
         '<link rel="icon" href="icon-192.png">')
 reg = ('<script>if("serviceWorker" in navigator&&/^https?:/.test(location.protocol)){'
-       'navigator.serviceWorker.register("sw.js").catch(()=>{});'
+       'navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(()=>{});'
        'if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}</script>')
 web = html.replace('<title>', head + '<title>', 1)
 web = web.replace('</body>', reg + '</body>', 1) if '</body>' in web else web + reg
@@ -45,7 +45,11 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const url=new URL(e.request.url);if(url.origin!==location.origin)return;
-  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||(e.request.mode==='navigate'?caches.match('index.html'):null)).then(r=>r||fetch(e.request)));
+  // The game page: get the newest version when online (3 second limit), otherwise use the saved copy.
+  if(e.request.mode==='navigate'||url.pathname.endsWith('/')||url.pathname.endsWith('index.html')){
+    e.respondWith(Promise.race([fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok){const c=r.clone();caches.open(VERSION).then(k=>k.put('index.html',c));}return r;}),
+      new Promise((_,rej)=>setTimeout(rej,3000))]).catch(()=>caches.match('index.html')));return;}
+  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)));
 });
 """ % ver)
 open('web/.nojekyll', 'w').write('')
