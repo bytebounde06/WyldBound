@@ -1244,7 +1244,7 @@ function tileCanvas(fn){const c=mkCanvas(TS,TS),x=c.getContext('2d');fn(x);retur
 const RP=h=>makeRamp(hex2rgb(h));
 const PAL={snow:RP('#e8f0f8'),sand:RP('#ecd8a0'),cave:RP('#9a8470'),cwall:RP('#6a5848'),pine:RP('#2f7a5a'),palm:RP('#4aa848'),gold:RP('#e0b040'),grass:RP('#80c860'),path:RP('#e0c690'),tree:RP('#3c9a44'),trunk:RP('#8a5a34'),water:RP('#4c94e4'),rock:RP('#9a94a4'),wood:RP('#c08a58'),wall:RP('#efe0c0'),
   floor:RP('#d6a46a'),gym:RP('#c4bcae'),metal:RP('#8a9ab0'),steel:RP('#5a6c88'),glass:RP('#80c0f0'),reed:RP('#a8c860'),mud:RP('#7ab49c')};
-const ROOFC={N:'#f08cc8',G:'#d8a838',R:'#d05040',B:'#4878d0',Q:'#8890a8',L:'#3ca08c',M:'#e09030',Z:'#405878'};
+const ROOFC={U:'#8890a8',u:'#4a3c38',y:'#8a7058',N:'#f08cc8',G:'#d8a838',R:'#d05040',B:'#4878d0',Q:'#8890a8',L:'#3ca08c',M:'#e09030',Z:'#405878'};
 function hsh(x,y,s){let h=(x*374761393+y*668265263+s*1442695041)|0;h=(h^(h>>>13))*1274126177;return((h^(h>>>16))>>>0)/4294967296;}
 function grassBase(x,seed=0){const g=PAL.grass;px(x,g[2],0,0,16,16);
   for(let i=0;i<22;i++){const X=Math.floor(hsh(i,1,seed)*16),Y=Math.floor(hsh(i,2,seed)*16);px(x,hsh(i,3,seed)<.5?g[3]:g[1],X,Y);}
@@ -1347,12 +1347,26 @@ function getTile(ch,nb,X,Y,frame,indoor){
     case 'Y':return variant('Y',x=>{gymBase(x);const r=PAL.rock;px(x,r[0],3,11,10,4);px(x,r[2],4,11,8,3);px(x,r[1],5,2,6,10);px(x,r[3],5,2,3,10);px(x,r[4],6,1,4,4);px(x,'#f0d050',7,3,2,2);});
     case 'C':return variant('C'+f,x=>{metalBase(x);const m=PAL.steel;px(x,m[0],1,1,14,13);px(x,m[2],2,2,12,6);px(x,'#10283a',3,3,10,4);for(let i=0;i<4;i++)px(x,i%2===f?'#40e0d0':'#1a6a78',4+i*2,4,1,2);px(x,'#58f0a0',11,4,1,1);px(x,m[1],2,9,12,4);for(let i=0;i<5;i++)px(x,['#e05050','#f0c040','#50c060','#4090f0','#e05050'][i],3+i*2,10,1,1);});
     case 'K':return variant('K'+f,x=>{metalBase(x);const m=PAL.steel;px(x,m[0],3,1,10,15);px(x,m[2],4,2,8,13);for(let i=0;i<5;i++){px(x,(i+f)%2?'#40f0e0':'#2088a0',4,3+i*2,8,1);}px(x,'#ffffff',7,2,2,12);px(x,f?'#a0fff8':'#60e8e0',6,2,1,12);});
+    // --- abandoned buildings: broken lab (U roof, O wall, I broken window, F tank), burned house (u roof, x wall), shed (y roof, z wall), ash ground (l) ---
+    case 'U':case 'u':case 'y':{const up=nb(0,-1)===ch,dn=nb(0,1)===ch,l=nb(-1,0)===ch,r=nb(1,0)===ch;return variant(ch+(+up)+(+dn)+(+l)+(+r)+(X%3),x=>{drawRoof(x,ch,up,dn,l,r);
+      if(ch==='y'){const R=RP(ROOFC.y);for(let i=1;i<16;i+=3){px(x,R[1],i,0,1,dn?16:12);px(x,R[3],i+1,0,1,dn?16:12);}px(x,'#a85a30',(X*5)%11+2,4,3,2);px(x,'#7a3e22',(X*7)%9+4,8,2,2);}
+      if(ch==='U'){px(x,'#1c1c24',3+(X%3)*3,5,4,3);px(x,'#2c2c36',4+(X%3)*3,8,2,1);px(x,'#6a7088',2+(X%2)*7,2,5,1);}
+      if(ch==='u'){px(x,'#140c0a',2+(X%3)*4,3,5,5);px(x,'#ff7a2a',4+(X%3)*4,6,1,1);px(x,'#2a1a14',0,10,16,2);for(let i=0;i<16;i+=5)px(x,'#0c0606',i+(X%3),0,2,dn?16:12);}});}
+    case 'O':case 'x':case 'z':case 'I':{const set='OxzI';const l=set.includes(nb(-1,0)||'-'),r=set.includes(nb(1,0)||'-');return variant(ch+(+l)+(+r)+(X%2),x=>{wallBase(x,l,r,ch==='O'||ch==='I');
+      if(ch==='O'||ch==='I'){px(x,'#2a3038',4+(X%2)*5,2,1,6);px(x,'#2a3038',5+(X%2)*5,7,1,5);px(x,'#2a3038',6+(X%2)*5,11,2,1);}
+      if(ch==='I'){px(x,'#4a5060',3,3,10,9);px(x,'#141820',4,4,8,7);px(x,'#9ab8d0',4,4,3,2);px(x,'#9ab8d0',9,8,3,3);px(x,'#c8e0f0',5,4,1,1);}
+      if(ch==='x'){px(x,'rgba(20,10,8,.75)',0,0,16,16);px(x,'#0c0606',2+(X%2)*6,0,3,9);px(x,'#ff6a20',3+(X%2)*6,10,1,1);px(x,'#3a2018',0,13,16,3);}
+      if(ch==='z'){const w=PAL.wood;px(x,w[2],0,0,16,16);for(let i=0;i<16;i+=4){px(x,w[0],i,0,1,16);px(x,w[3],i+1,0,1,16);}px(x,w[1],0,6+(X%2)*3,16,1);px(x,'#5a4a3a',(X*3)%12+2,9,2,2);px(x,'#2a2018',0,14,16,2);}});}
+    case 'F':return variant('F'+(X%2),x=>{floorBase(x,0,0);px(x,'#5a6070',3,1,10,15);px(x,'#1c2430',4,2,8,12);px(x,'#9ab8d0',4,2,2,5);px(x,'#f4a8d8',4,11,8,3);px(x,'#c8e0f0',8,3,1,1);px(x,'#e8f4ff',10,6,2,1);px(x,'#e8f4ff',9,8,1,2);px(x,'#7a8090',3,14,10,2);});
+    case 'l':{const v=(X*7+Y*3)%4;return variant('l'+v+(indoor?'i':''),x=>{if(indoor)floorBase(x,X,Y);else grassBase(x,v);
+      for(let yy=0;yy<16;yy++)for(let xx=0;xx<16;xx++){const d=Math.hypot(xx-7.5,yy-7.5)+hsh(xx,yy,v)*2.2;if(d<5.5)px(x,d<3.2?'#2e2826':'#4e443e',xx,yy,1,1);else if(d<7&&hsh(yy,xx,v)>.6)px(x,'#6a6058',xx,yy,1,1);}
+      px(x,'#ff7a2a',4+v*2,6+(v%2)*3,1,1);px(x,'#ffc060',9-v,9,1,1);});}
     case 'J':return variant('J'+GROUND+f,x=>{groundBase(x,1);const m=PAL.steel;px(x,'rgba(0,0,0,.25)',3,13,11,3);px(x,m[0],5,2,6,13);px(x,m[2],6,3,4,11);px(x,m[3],6,3,1,11);px(x,m[0],3,12,10,3);px(x,m[2],4,12,8,2);px(x,f?'#ff5050':'#801818',7,1,2,2);px(x,'#40e0d0',7,6,2,1);px(x,'#40e0d0',7,9,2,1);});
     case '%':return variant('%',x=>px(x,'#181818',0,0,16,16));
   }
   return variant('%',x=>px(x,'#181818',0,0,16,16));
 }
-const SOLID=new Set(['P','p','W','G','V','T','~','f','S','o','R','B','N','Q','L','M','Z','#','w','[',']','X','k','t','b','c','P','H','Y','C','K','J','%']);
+const SOLID=new Set(['U','u','y','O','x','z','I','F','P','p','W','G','V','T','~','f','S','o','R','B','N','Q','L','M','Z','#','w','[',']','X','k','t','b','c','P','H','Y','C','K','J','%']);
 const TILES={'"':[variant('"0',x=>drawTall(x,0))],'r':[null]};
 function buildTiles(){TILES.r=[getTile('r',()=>'r',0,0,0,false)];}
 
@@ -1489,56 +1503,72 @@ function T(name,cls,party,reward,intro,lose,after,look){return{name,cls,party,re
 
 // ---------- Hearthollow ----------
 MAPS.hearthollow={name:'Hearthollow',bg:'grass',rows:[
-'TTTTTTTTT,,TTTTTTTTT',
-'TTTTTTTTT,,TTTTTTTTT',
-'TT.......,,.......TT',
-'TT.RRRR..,,..RRRR.TT',
-'TT.RRRR..,,..RRRR.TT',
-'TT.#w#D..,,..#D#w.TT',
-'TT...,,,,,,,,,,,..TT',
-'TT...,.*..,,..*...TT',
-'TT.S.,....,,......TT',
-'TT...,..LLLLLLL...TT',
-'TT...,..LLLLLLL...TT',
-'TT...,..#ww#Dw#...TT',
-'TT*..,,,,,,,,,,...TT',
-'TT.BBBB.,.........TT',
-'TT.BBBB.,.........TT',
-'TT.#Dw#.,.........TT',
-'TT..,,,,,.........TT',
-'TT***...~~~~...***TT',
-'TT*.....~~~~......TT',
-'TTTTTTTTTTTTTTTTTTTT'],
- conn:{n:{to:'route1',off:-3}},
+'TTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTT',
+'TTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTT',
+'TTTTTTTTTTTT.......,,.......TTTTTTTTTTTT',
+'TTTTTTTTTTTT.RRRR..,,..RRRR.TTTTTTTTTTTT',
+'TT........TT.RRRR..,,..RRRR.TTTTTTTTTTTT',
+'TT........TT.#w#D..,,..#D#w.TTTTTTTTTTTT',
+'TT..yyyy..TT...,,,,,,,,,,,..TTTTTTTTTTTT',
+'TT..yyyy..TT...,.*..,,..*...TT........TT',
+'TT..zzDz..TT.S.,....,,......TT.l......TT',
+'TT....,,,,,,,,,,..LLLLLLL...TT..uuuul.TT',
+'TT.S......TT...,..LLLLLLL...TT..uuuul.TT',
+'TT.*......TT...,..#ww#Dw#...TTl.xIDx.lTT',
+'TT........TT*..,,,,,,,,,,,,,,,,,l,,l..TT',
+'TT........TT.BBBB.,.........TT.l...Sl.TT',
+'TTTTTTTTTTTT.BBBB.,.........TT...l....TT',
+'TTTTTTTTTTTT.#Dw#.,.........TT........TT',
+'TTTTTTTTTTTT..,,,,,.........TTTTTTTTTTTT',
+'TTTTTTTTTTTT***..,~~~~...***TTTTTTTTTTTT',
+'TTTTTTTTTTTT*....,~~~~......TTTTTTTTTTTT',
+'TTTTTTTTTTTTTTTTT,TTTTTTTTTTTTTTTTTTTTTT',
+'TTTTTTTTTTT......,.UUUUUU......TTTTTTTTT',
+'TTTTTTTTTTT.*....,.UUUUUU.*....TTTTTTTTT',
+'TTTTTTTTTTT......,.OIODIO......TTTTTTTTT',
+'TTTTTTTTTTT......,,,,,,........TTTTTTTTT',
+'TTTTTTTTTTT..............S..*..TTTTTTTTT',
+'TTTTTTTTTTT..*.................TTTTTTTTT',
+'TTTTTTTTTTT....................TTTTTTTTT',
+'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT'],
+ conn:{n:{to:'route1',off:-13}},
  mods:()=>bunnyRoofs(),
- warps:[{x:6,y:5,to:'house1',tx:3,ty:5,dir:'up'},{x:14,y:5,to:'house2',tx:3,ty:5,dir:'up'},{x:12,y:11,to:'lab',tx:5,ty:8,dir:'up'},{x:4,y:15,to:'wrenhouse',tx:3,ty:5,dir:'up'}],
- signs:{'3,8':'HEARTHOLLOW\nWhere every journey begins.'},
- triggers:[{x:9,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:10,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
- npcs:[{id:'hh_girl',x:14,y:8,dir:'down',look:LOOK.girl,wander:1,text:'Wyldkin live in the tall grass. Stay on the path if you don\'t have one with you!'},
-       {id:'hh_old',x:3,y:12,dir:'right',look:LOOK.oldman,text:'People say Wyldkin from faraway lands sometimes wander in. Once I saw a seabird up on Route 1!'}]};
+ warps:[{x:16,y:5,to:'house1',tx:3,ty:5,dir:'up'},{x:24,y:5,to:'house2',tx:3,ty:5,dir:'up'},{x:22,y:11,to:'lab',tx:5,ty:8,dir:'up'},{x:14,y:15,to:'wrenhouse',tx:3,ty:5,dir:'up'},
+   {x:6,y:8,to:'statshed',tx:3,ty:5,dir:'up'},{x:34,y:11,to:'smashruin',tx:3,ty:5,dir:'up'},{x:22,y:22,to:'bunnylab',tx:5,ty:7,dir:'up'}],
+ signs:{'13,8':'HEARTHOLLOW\nWhere every journey begins.','3,10':()=>eggHouse('static','sign'),'35,13':()=>eggHouse('smashed','sign'),'25,24':()=>eggHouse('bunny','sign')},
+ triggers:[{x:19,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:20,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
+ npcs:[{id:'hh_girl',x:24,y:8,dir:'down',look:LOOK.girl,wander:1,text:'Wyldkin live in the tall grass. Stay on the path if you don\'t have one with you!'},
+       {id:'hh_old',x:13,y:12,dir:'right',look:LOOK.oldman,text:'People say Wyldkin from faraway lands sometimes wander in. Once I saw a seabird up on Route 1!'},
+       {id:'hh_gossip',x:27,y:13,dir:'left',look:LOOK.lass,text:'Three kids used to live out past the edges of town. One in the old shed, one in the burned house, one in that creepy broken lab. Wonder where they ended up?'}]};
+// ---------- the three edge-of-town houses ----------
+MAPS.statshed={name:'Old Shed',indoor:1,bg:'indoor',rows:['XXXXXXXX','X_CK___X','X______X','X______X','X______X','X______X','XXXmXXXX'],
+ warps:[{x:3,y:6,to:'hearthollow',tx:6,ty:9,dir:'down'}],signs:{'2,1':()=>eggHouse('static','pc'),'3,1':()=>eggHouse('static','rack')},npcs:[]};
+MAPS.smashruin={name:'Burned House',indoor:1,bg:'indoor',rows:['xxxxxxxx','xlltl_lx','xl____lx','x_ll__lx','xl__l__x','xll___lx','xxxmxxxx'],
+ warps:[{x:3,y:6,to:'hearthollow',tx:34,ty:12,dir:'down'}],signs:{'3,1':()=>eggHouse('smashed','photo'),'4,4':()=>eggHouse('smashed','ember')},npcs:[]};
+MAPS.bunnylab={name:'Broken Lab',indoor:1,bg:'indoor',rows:['OOOOOOOOOOO','OFFn_C_nFFO','On_______nO','O_t_n_n_t_O','On_______nO','OF__n_n__FO','O___b_____O','On_______nO','OOOOOmOOOOO'],
+ warps:[{x:5,y:8,to:'hearthollow',tx:22,ty:23,dir:'down'}],signs:{'5,1':()=>eggHouse('bunny','clip'),'1,1':()=>eggHouse('bunny','tank'),'2,1':()=>eggHouse('bunny','tank'),'8,1':()=>eggHouse('bunny','tank'),'9,1':()=>eggHouse('bunny','tank'),'1,5':()=>eggHouse('bunny','tank'),'9,5':()=>eggHouse('bunny','tank'),'4,6':()=>eggHouse('bunny','bed')},npcs:[]};
 async function blockNorth(){
   await say('???: Hold on!');
   await say('Prof. Hazel\'s aide: The tall grass is dangerous without a Wyldkin of your own. The Professor\'s lab is just south of here!');
   await playerStep('down');
 }
 function houseRows(){return['XXXXXXXX','XkkV_bbX','X______X','X__tt__X','X__tt__X','X______X','XXXmXXXX'];}
-MAPS.house1={name:'Your House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:6,ty:6,dir:'down'}],
+MAPS.house1={name:'Your House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:16,ty:6,dir:'down'}],
  npcs:[{id:'mom',x:5,y:4,dir:'left',look:LOOK.mom,run:async()=>{
    if(!G.flags.starter){await say(`Mom: Good morning, ${G.name}! Professor Hazel came by. She wants to see you at her lab, just south of here.`);return;}
    await say(`Mom: ${G.name}! You look tired. Take a rest.`);await healAll();G.lastHeal={map:'house1',x:4,y:5};await say('Your Wyldkin are fully healed. Take care out there!');}}]};
-MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:6,dir:'down'}],
+MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:24,ty:6,dir:'down'}],
  npcs:[{id:'nb1',x:2,y:3,dir:'right',look:LOOK.youngster,text:'Tip: Hold B while walking to run! Press START to open your menu.'},
        {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that {RHE}\'ll beat you. Typical.'}]};
-MAPS.wrenhouse={name:'Wren\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:4,ty:16,dir:'down'}],
+MAPS.wrenhouse={name:'Wren\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:16,dir:'down'}],
  npcs:[{id:'wrenmom',x:5,y:3,dir:'left',look:{hair:'#2c2438',shirt:'#c86090',pants:'#584868',dress:1},run:async()=>{
-   if(isBunny(FR().pal.name)){await say(['Wren\'s Mom: We took Wren in years ago. She showed up on our porch one rainy night, shivering, with little bat wings. She never talks about where she came from.','Wren\'s Mom: That girl mothers everyone. She tucked the mail carrier in for a nap last week.','Wren\'s Mom: Wren leaves the TV on all night. Says she\'s waiting for someone named Static to say hi. Teenagers!','Wren\'s Mom: Whatever you do, don\'t say the word "doctor" around Wren. She\'ll hide under the bed for a day.'][Math.floor(Math.random()*4)]);if(G.flags.starter&&!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say(`${G.name} received 3 Tonics!`);}return;}
    if(!G.flags.starter){await say('Wren\'s Mom: Oh, hello dear! Wren ran off to the lab at sunrise. {PHE} couldn\'t sleep a wink last night!');return;}
    if(!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say('Wren\'s Mom: You three are finally trainers! Here, take these Tonics. Keep an eye on Wren for me, okay?');await say(`${G.name} received 3 Tonics!`);return;}
    await say(['Wren\'s Mom: Wren writes me every time {PHE} catches something new. The CODEX this, the CODEX that!','Wren\'s Mom: Remember when you three built that fort out of couch cushions and called it a Wyldkin gym?','Wren\'s Mom: Rowan stopped by looking for Wren. Those two still bicker like when they were five.'][Math.floor(Math.random()*3)]);}},
   {id:'wrenpc',x:2,y:2,dir:'down',look:{hair:'#8a6a4a',shirt:'#507090',pants:'#384050'},text:'Wren\'s Dad: Wren has wanted to fill a CODEX since {PHE} could walk. Thanks for always looking out for {PHIM}.'}]};
 MAPS.lab={name:'Hazel\'s Lab',indoor:1,bg:'indoor',rows:[
 'XXXXXXXXXXX','XkkkkX_kkkX','X_________X','X___ttt___X','X_________X','Xk_______kX','X_________X','X__P___t__X','X_________X','XXXXXmXXXXX'],
- warps:[{x:5,y:9,to:'hearthollow',tx:12,ty:12,dir:'down'}],
+ warps:[{x:5,y:9,to:'hearthollow',tx:22,ty:12,dir:'down'}],
  npcs:[{id:'prof',x:5,y:2,dir:'down',look:LOOK.prof,run:profTalk},
    {id:'rival_lab',x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags.rivalLeft,text:'Rowan: Gramps-- er, the Professor said the three of us could each pick one. You were late to everything when we were kids too, slowpoke!'},
    {id:'wren_lab',x:7,y:4,dir:'up',look:LOOK.wren,cond:()=>!G.flags.rivalLeft,text:'Wren: Can you believe it? The three of us, getting partners on the same day! Just like we always planned when we were little. You pick first. Rowan will grab whatever beats yours anyway, so I\'ll take the one that\'s left!'},
@@ -1549,7 +1579,8 @@ async function profTalk(){
   await say(`Prof. Hazel: Ah, ${G.name}! You came. I study Wyldkin from three regions: Aldera, Coralmere and Frostfell.`);
   await say('These three are the partner Wyldkin of Aldera. Coralmere and Frostfell have partners of their own. Choose the one you like best!');
   let sid=-1;
-  sid=await chooseStarter(0);
+  if(isStatic(G.name)){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Hm. What\'s my lab PC doing?');await staticGetsPartner('you');sid=staticPartnerId();}
+  else sid=await chooseStarter(0);
   const sp=SPECIES[sid];
   const mon=makeMon(sid,5);G.party.push(mon);addSeen(sid);addCaught(sid);
   await say(`${G.name} received ${sp.name}!`);
@@ -1568,7 +1599,7 @@ MAPS.route1={name:'Route 1',bg:'grass',rows:[
 'TTTTTT,,TTTTTT','TTTTTT,,TTTTTT','TT"""",,....TT','TT"""",,.S..TT','TT....,,....TT','TT..TT,,""""TT','TT..TT,,""""TT','TT....,,""""TT',
 'TT.*..,,....TT','TTT...,,..TTTT','TT""""",,,..TT','TT""""",,,..TT','TT""".,,....TT','TT....,,""".TT','TT.o..,,""".TT','TT....,,""".TT',
 'TTTT..,,....TT','TT""..,,..TTTT','TT""..,,....TT','TT""..,,..""TT','TT....,,..""TT','TT.*..,,....TT','TT....,,....TT','TTTTTT,,TTTTTT'],
- conn:{n:{to:'brookvale',off:5},s:{to:'hearthollow',off:3}},
+ conn:{n:{to:'brookvale',off:5},s:{to:'hearthollow',off:13}},
  signs:{'9,3':'ROUTE 1\nNorth: Brookvale   South: Hearthollow'},
  enc:{grass:[['Fuzzbit',2,4,28],['Chirpip',2,4,25],['Gnawl',2,4,18],['Peckett',3,4,10],['Cottonpuff',3,4,8],['Wigglet',3,3,6],['Duneshrew',3,4,5]]},
  npcs:[{id:'r1_tim',x:9,y:8,dir:'left',los:3,look:LOOK.youngster,trainer:T('Tim','YOUNGSTER',[['Fuzzbit',4],['Chirpip',4]],16,'Hey! You look new. Let\'s battle!','I lost? No way!','Shorts are comfy and easy to wear.')},
@@ -1700,7 +1731,7 @@ async function sideHelperReturns(){const sd=G._side;G._side=null;if(!sd)return;
 // Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
-  const isBB=/BB|MERC|BYTEBOUND|SALTJACK|DIRECTOR|CHIEF|SERGEANT|ENFORCER/i.test(tr.cls||'');if(!isBB)return null;
+  if((tr.cls||'')==='RIVAL')return null;
   G.assistN=(G.assistN||0)+1;const f=FR();
   // All three easter eggs in play (Static, Bunny and Smashed): both friends help in every ByteBound fight.
   // Otherwise Smashed always shows up on his own, and regular friends take turns every other fight.
@@ -1708,9 +1739,9 @@ async function friendAssist(tr){
   // Smashed and Bunny always show up. If both are your friends (without Static in play), you pick who helps
   // and the other one runs off to "help" with a battle of their own.
   const always=n=>isSmashed(n)||isBunny(n);
-  let who=[];G._side=null;
+  let who=[];G._side=null;const hates=n=>{const kd=eggKind(n);return!!kd&&eggHates(kd);};
   if(allThree)who=['Rowan','Wren'];
-  else if(always(f.riv.name)&&always(f.pal.name)){
+  else if(always(f.riv.name)&&always(f.pal.name)&&!hates(f.riv.name)&&!hates(f.pal.name)){
     await say(`${f.riv.name} and ${f.pal.name} both step forward. "We've got this, ${G.name}!"`);
     const c=await choose([f.riv.name,f.pal.name],{x:150,y:H-92,w:88,prompt:'Who should help you?'});const pick=c===1?'Wren':'Rowan',other=pick==='Rowan'?'Wren':'Rowan';
     const on=other==='Rowan'?f.riv.name:f.pal.name;
@@ -1721,6 +1752,9 @@ async function friendAssist(tr){
   else if(G.assistN%2===1)who=[(G.assistN>>1)%2===0?'Wren':'Rowan'];
   if(!who.length)return null;
   const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
+  // A friend who hates the player's name (doctor / badge / sysadmin) still shows up, but won't help.
+  for(const w of ['Rowan','Wren']){const n=w==='Rowan'?f.riv.name:f.pal.name;const kd=eggKind(n);if(kd&&eggHates(kd)){await say(hateArrive(kd,w));who=who.filter(x=>x!==w);}}
+  if(!who.length)return null;
   for(const w of who){const n=w==='Rowan'?f.riv.name:f.pal.name;
     if(isSmashed(n))await say(`${w}: Ugh. ByteBound again? You look like you\'re about to get flattened. Move over, I\'m helping. Don\'t make it a thing.`);
     else if(isBunny(n))await say(`${w}: Sweetie, are those ByteBound creeps bothering you? Nobody hurts my friends. Mama Bunny is here!`);
@@ -1731,7 +1765,7 @@ async function friendAssist(tr){
     for(const w of who){const n=w==='Rowan'?f.riv.name:f.pal.name;await say(isSmashed(n)?`${w}: Your funeral. ...I\'m standing right here if it goes bad, though.`:isBunny(n)?`${w}: Okay, sweetie. But Mama\'s right behind you!`:isStatic(n)?`${w}: Suit yourself. I\'ll be watching. I\'m always watching. ...That came out creepier than I meant.`:`${w}: Okay! I'll be right here cheering.`);}
     return null;}
   return who.map(w=>{const n=w==='Rowan'?f.riv.name:f.pal.name;const sid=w==='Wren'?fr.wren:fr.rowan;
-    return{name:w,mon:makeMon(isSmashed(n)?evolvedAt(SP_BY.Cinderpup.id,lvl):evolvedAt(sid,lvl),lvl)};});
+    return{name:w,kind:eggKind(n),mon:makeMon(isSmashed(n)?evolvedAt(SP_BY.Cinderpup.id,lvl):evolvedAt(sid,lvl),lvl)};});
 }
 function giveKey(k){G.keys=G.keys||[];if(!G.keys.includes(k))G.keys.push(k);}
 async function s1Event(){
@@ -2037,7 +2071,7 @@ const LV_CURVE=[[[0,3],[.1,8],[.3,20],[.5,30],[.7,39],[.9,46],[1,52]],[[0,4],[.1
 function lvAt(r,p){const c=LV_CURVE[r];for(let i=1;i<c.length;i++){if(p<=c[i][0]){const t=(p-c[i-1][0])/(c[i][0]-c[i-1][0]);return Math.round(c[i-1][1]+(c[i][1]-c[i-1][1])*t);}}return c[c.length-1][1];}
 function validAt(s,l){if(s.rar==='L'||s.rar==='M'||s.rar==='s')return false;if(s.prevo!=null&&SPECIES[s.prevo].evo&&SPECIES[s.prevo].evo.lvl>l)return false;if(s.evo&&s.evo.lvl<=l-3)return false;if(s.stages===1&&s.bst>440&&l<22)return false;return true;}
 function pickTeam(types,lvl,n,seed,opt={}){
-  const R=mulberry32(hashStr(seed));let pool=SPECIES.filter(s=>validAt(s,lvl)&&(!types||s.types.some(t=>types.includes(t)))&&(opt.rare||s.rar!=='r'));
+  const R=mulberry32(hashStr(seed));let pool=SPECIES.filter(s=>validAt(s,lvl)&&(!types||s.types.some(t=>types.includes(t)))&&(opt.rare||s.rar!=='r')&&(!opt.filter||opt.filter(s)));
   if(pool.length<n)pool=SPECIES.filter(s=>validAt(s,lvl)&&s.rar!=='r');
   const team=[];const used=new Set();
   for(let i=0;i<n;i++){let s=null;for(let t=0;t<30;t++){const c=pool[Math.floor(R()*pool.length)];if(!used.has(c.fam)||t>20){s=c;break;}}used.add(s.fam);
@@ -2263,8 +2297,10 @@ function ownedLine(sid){let s=SPECIES[sid];const fam=s.fam;return G.caught.some(
 async function regionStarter(r){
   await say(`Professor ${PROF[r]}: You must be ${G.name}! Professor Hazel told me all about you. The border lock trapped your team, didn\'t it?`);
   await say(`Your friends Rowan and Wren got here an hour ago. Same story, their teams are locked too. So all three of you need new partners.`);
-  await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
-  const sid=await chooseStarter(r);
+  let sid;
+  if(isStatic(G.name)){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await staticGetsPartner('you');sid=staticPartnerId();}
+  else{await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
+  sid=await chooseStarter(r);}
   const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
   await say(`${G.name} received ${SPECIES[sid].name}! A fresh start in ${REGIONS[r]}.`);
   await rivalPicks(r,sid);
@@ -2274,14 +2310,21 @@ async function regionStarter(r){
 // ---------- rivals: Rowan takes the partner strong against yours, Wren takes the one that's left ----------
 function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].evo;if(e&&e.lvl&&e.lvl<=lvl)s=e.to;else break;}return s;}
 async function rivalPicks(r,sid){
-  const k=STARTERS.indexOf(sid)-r*3;let rsid=STARTERS[r*3+(k+1)%3],wsid=STARTERS[r*3+(k+2)%3];
-  const sm=smashedFriend();if(sm){const fire=fireStarter(r),other=STARTERS.slice(r*3,r*3+3).find(s=>s!==sid&&s!==fire);if(sm==='riv'){rsid=fire;wsid=other;}else{wsid=fire;rsid=other;}}
+  const ids=STARTERS.slice(r*3,r*3+3),f0=FR();let pool=ids.filter(s=>s!==sid),rsid=null,wsid=null;
+  const take=s=>{pool=pool.filter(x=>x!==s);return s;};
+  if(isStatic(f0.riv.name))rsid=staticPartnerId();if(isStatic(f0.pal.name))wsid=staticPartnerId();
+  const sm=smashedFriend(),fire=fireStarter(r);
+  if(sm==='riv'&&rsid==null&&pool.includes(fire))rsid=take(fire);if(sm==='pal'&&wsid==null&&pool.includes(fire))wsid=take(fire);
+  if(rsid==null){const k=ids.indexOf(sid);const counter=k>=0?ids[(k+1)%3]:null;rsid=take(pool.includes(counter)?counter:pool[0]);}
+  if(wsid==null)wsid=take(pool[0]);
   G.rivals=G.rivals||{};G.rivals[r]={rowan:rsid,wren:wsid};if(r===0)G.rivalStarter=rsid;
   const prof=r===0?'Prof. Hazel':`Professor ${PROF[r]}`;
+  for(const [w,n] of [['Rowan',f0.riv.name],['Wren',f0.pal.name]])if(isStatic(n))await staticGetsPartner(w);
+  for(const [w,n] of [['Rowan',f0.riv.name],['Wren',f0.pal.name]]){const kd=eggKind(n);if(kd&&eggHates(kd))await say(hateLine(kd,w));}
   if(sm==='riv'){await say(`Rowan: ${SPECIES[rsid].name}'s with me. Obviously. Look at it. It's on fire.`);await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
   else if(sm==='pal'){await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);await say(`Wren: ${SPECIES[wsid].name} and I already understand each other. Fire's honest. Unlike Rowan's battle plans.`);}
-  else{await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
-  await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
+  else{if(!isStatic(f0.riv.name))await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
+  if(!isStatic(f0.pal.name))await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
   await say(`Wren: Okay, here's the deal. Winner stays on, just like when we were kids!`);
   await say(`Rowan: ${r===0?'':'Champion or not, '}I'm first! Come on, ${G.name}!`);
   const rowanBattle=()=>startBattle({trainer:{name:'Rowan',cls:'RIVAL',party:[[SPECIES[rsid].name,5]],reward:12,lose:'What?! I picked the wrong one!',look:LOOK.rival},noWhiteout:1});
@@ -2599,6 +2642,118 @@ function creditsScene(){return new Promise(res=>{const lines=['W Y L D B O U N D
   let y=170;const el={full:1,bgc:'#000',update(p){y-=.35;if((p.has('a')||p.has('start'))&&y<-lines.length*14+60){popUI(this);res();}if(y<-lines.length*14-20){popUI(this);res();}},
   draw(c){c.fillStyle='#000';c.fillRect(0,0,W,160);lines.forEach((l,i)=>text(c,l,120,y+i*14,i===0?'#f8d048':'#e8e8f8',i===0?12:8,false,'center'));}};pushUI(el);});}
 
+// =====================================================================
+//  Easter-egg characters: Static, Bunny (BunnyRX) and Smashed (SmashedAtom)
+//  - Their homes sit at the edges of Hearthollow whether or not the names are used.
+//  - If nobody takes their name, they're out on their own adventures: find them in other towns.
+//  - Each has an enemy type: Bunny hates doctors, Smashed distrusts police/military, Static distrusts IT/admins/researchers.
+// =====================================================================
+const DOC_RX=[/doctor|medic|surgeon|physician|nurse|dentist|clinic/i,/(^|[\s._-])(md|dr|doc)($|[\s._-])/i,/^(Dr|Doc|DR|DOC|MD)[A-Z0-9._ -]/,/[a-z0-9](MD|DR)$/,/^(dr|doc|md)$/i];
+const COP_RX=[/police|cop($|[^p])|officer|sheriff|deputy|trooper|sarge|sergeant|soldier|army|marine|military|captain|colonel|general|lieutenant|guard|security|agent|swat|commander|cadet|corporal|admiral|navy|warden|marshal|detective|constable|mercenar|merc$|ranger|militia|^fbi$|^cia$/i,/(^|[\s._-])(sgt|lt|cpl|pvt|cmdr|capt|col)($|[\s._-])/i];
+const IT_RX=[/admin|sysop|sudo|engineer|research|scientist|programmer|coder|developer|hacker|helpdesk|analyst|devops|techie|netops|^tech|^root$|^dev$/i,/(^|[^A-Za-z])IT([^A-Za-z]|$)|^IT[A-Z]|[a-z]IT$/];
+const rxAny=(arr,n)=>typeof n==='string'&&arr.some(r=>r.test(n.trim()));
+// Does this egg character hate the player because of the player's name?
+function eggHates(kind){const n=G&&G.name;return kind==='bunny'?rxAny(DOC_RX,n):kind==='smashed'?rxAny(COP_RX,n):kind==='static'?rxAny(IT_RX,n):false;}
+function eggKind(n){return isStatic(n)?'static':isBunny(n)?'bunny':isSmashed(n)?'smashed':null;}
+// Who has this egg name? 'you', 'riv', 'pal' or null (nobody: the character is out in the world)
+function eggHolder(kind){if(!G)return null;const f=FR();if(eggKind(G.name)===kind)return'you';if(eggKind(f.riv.name)===kind)return'riv';if(eggKind(f.pal.name)===kind)return'pal';return null;}
+function allThreeEggs(){return['static','bunny','smashed'].every(k=>eggHolder(k));}
+const EGG_NAME={static:'Static',bunny:'Bunny',smashed:'Smashed'};
+function eggDisplay(kind){const h=eggHolder(kind),f=FR();return h==='you'?G.name:h==='riv'?f.riv.name:h==='pal'?f.pal.name:EGG_NAME[kind];}
+// Enemy classes each one does extra damage against (as a helper)
+function eggVsBonus(kind,tr){const t=((tr&&tr.cls)||'')+' '+((tr&&tr.name)||'');
+  if(kind==='bunny')return /SCIENTIST|DOCTOR|DR\.|MEDIC/i.test(t);
+  if(kind==='smashed')return /SECURITY|SERGEANT|MERC|COMMANDER|CAPTAIN|ENFORCER|CHIEF|LT\./i.test(t);
+  if(kind==='static')return /SCIENTIST|RESEARCH|DIRECTOR|ADMIN|TECH|ENGINEER/i.test(t);return false;}
+function hateLine(kind,name){return kind==='bunny'?`${name} recoils like you're holding a needle. "A doctor. Of course. Stay. Away. From. Me."`:
+  kind==='smashed'?`${name}'s ears flatten. "Badge-types. Figures. I don't trust people like you, and I'm not gonna pretend I do."`:
+  `${name}'s screen fills with red text. "SYSADMIN DETECTED. ...You people kept me in a box. I remember."`;}
+function hateArrive(kind,name){return kind==='bunny'?`${name} shows up at the edge of the fight, arms crossed, glaring at you. She won't lift a finger for a doctor.`:
+  kind==='smashed'?`${name} leans against the wall, watching. "I'm here because ByteBound's worse than you. Barely. Don't expect help."`:
+  `${name} flickers into view nearby, screen dark except for a single E06. He's watching. He's not helping.`;}
+// ---------- Bunny's taste: cute or creepy ----------
+const CUTE_RX=/bun|pup|kit|cub|let$|puff|fluff|fuzz|bit$|pip|tot|bean|mochi|paw|purr|nib|sprout|bud|fawn|chick|mew|ling$|pom|tuft|nibble|cotton|plush|nuzz|squee|wiggle/i;
+const CREEPY_RX=/shade|skull|bone|grim|gloom|hex|wraith|creep|haunt|crypt|rot|spook|fang|hollow|doll|puppet|eye|maw|mire|tomb|leech|spider|widow|grave|ghoul|phantom|specter|spectre|night|dread/i;
+function cuteOrCreepy(s){return CUTE_RX.test(s.name)||CREEPY_RX.test(s.name)||s.types.some(t=>['Ghost','Dark','Poison','Fairy'].includes(t));}
+function bunnyParty(party){if(party.length<2)return party;const out=party.map(p=>p.slice());
+  out.forEach((p,i)=>{if(i===out.length-1)return;const sp=SPECIES[SP_BY[p[0]].id];if(cuteOrCreepy(sp))return;const t=pickTeam(null,p[1],1,'bunny'+i+p[0],{filter:cuteOrCreepy});out[i]=[t[0][0],p[1]];});return out;}
+// ---------- Static's partner comes out of a computer ----------
+function staticPartnerId(){return SP_BY.Pixelon.id;}
+async function staticGetsPartner(who){glitchNow(30);await say('The lab PC sparks. ERROR E06. Something made of pixels climbs out of the screen!',{style:'dark'});
+  await say(`${who==='you'?G.name:who}: ...Hey there. You came out of the computer for me, huh? Pixelon it is.`);}
+// ---------- edge-of-town houses ----------
+function lineOf(a){return a[Math.floor(Math.random()*a.length)];}
+async function eggHouse(kind,spot){const h=eggHolder(kind),name=eggDisplay(kind),all=allThreeEggs();
+  if(kind==='static'){
+    if(spot==='sign')return say(h==='you'?'Your shed. Your rules. Your server.':'A hand-painted sign: "DO NOT ENTER. SERIOUSLY. -S"');
+    if(spot==='rack')return say('The server rack hums. Its lights blink in a slow pattern, almost like breathing.');
+    if(h==='you'){await say('Your computer. The only one in Aldera that ByteBound\'s servers can\'t see. Your old stream overlay is still open, and E06 flickers in the corner like a heartbeat.');
+      if(all)await say(`A chat window pings. "${eggDisplay('bunny')}: did u eat today?? <3" ... "${eggDisplay('smashed')}: stop glitching the TV in my room."`);return;}
+    if(h){await say(`A sticky note on the monitor: "Gone adventuring with ${G.name}. Don't touch the rack. -${name}"`);}
+    await say(lineOf(['Code seems to be writing itself.','Weird, looks like someone is watching a stream. The chat just says E06 over and over.','A terminal types on its own: "> hello? ...is anyone out there?" Then it clears itself.','The screen shows a hologram of a floating TV, waving. Then: ERROR E06.']));
+    if(!h)await say(lineOf(['A map of Aldera is open. A cursor blinks over Ferrowick.','This computer isn\'t connected to ByteBound\'s servers at all. So how is it online?']));
+    if(all&&h!=='you')await say('A photo is taped to the side of the monitor: Static, Bunny and Smashed, crammed into one blurry selfie.');return;}
+  if(kind==='smashed'){
+    if(spot==='sign')return say('The old Emberwood house. It burned down years ago. Folks say something with wings of fire carried a little boy out of the flames.');
+    if(spot==='ember')return say(h==='you'?'A single ember still glows in the ashes, years later, with nothing to burn. You know exactly what left it here.':'A single ember glows in the ashes. It\'s been burning for years with nothing to burn. Something legendary was here.');
+    if(h==='you'){await say('Your family photo. The edges are scorched. You don\'t remember much from that night. Heat. Smoke. And burning wings pulling you out.');
+      if(all)await say(`Tucked behind it: a doodle of a TV with a grin and a pink bunny, signed "${eggDisplay('static')} + ${eggDisplay('bunny')}". You keep it there on purpose.`);return;}
+    await say('A scorched family photo. A little fox-kin boy with bright red hair grins at the camera.');
+    if(h)await say(`${name} never talks about that night. Not even to you.`);else await say('A note is tucked behind it: "Gone to Emberfall. Somebody has to find the thing that saved me. -A"');
+    return;}
+  if(kind==='bunny'){
+    if(spot==='sign')return say('WARNING: RESTRICTED AREA. Someone has covered the whole sign in pink heart stickers.');
+    if(spot==='tank')return say('A shattered specimen tank. The label reads "SUBJECT RX." Pink heart stickers cover the cracks, like someone tried to make it less scary.');
+    if(spot==='clip')return say('A water-damaged clipboard: "...Subject RX escaped through the vents. Sea bunny/bat splice. Do NOT approach with needles." The logo isn\'t ByteBound\'s. Some other lab, long gone.');
+    if(spot==='bed'){if(h)return bunnyDiary();await say('A little nest of blankets and plushies, right in the middle of the scariest room in town.');
+      return say('A note on the pillow: "Gone to the beach in Sunbask! Don\'t worry about me <3 -B"');}}
+}
+// ---------- the beach: swimsuits show the scars ----------
+async function beachScene(){if(G.flags.beachScene)return;const b=eggHolder('bunny'),s=eggHolder('smashed'),st=eggHolder('static');if(!b&&!s&&!st)return;G.flags.beachScene=1;
+  await say('The sun is out and the water is warm. Everyone changes into swimwear.');
+  if(b==='you')await say('You pull on your black swimsuit and stop at the mirror. Scars everywhere, on your arms, your legs, your back. The one across your stomach looks like a closed mouth. You take a breath, grab a towel, and go anyway. Just... not near the water. Never the water.');
+  else if(b)await say(`${eggDisplay('bunny')} steps out in a black swimsuit and plants herself under an umbrella, as far from the waves as she can get. She hates the water. You can't help noticing the scars: dozens of them, on her arms, legs and back. The one across her stomach looks almost like a closed mouth. She smiles softly. "Old lab stuff. They don't hurt anymore... mostly."`);
+  const trunks=Math.random()<.5?'black':'red and black';
+  if(s==='you')await say(`You pull on your ${trunks} swim trunks and peel off your coat. The burn scar runs the whole length of your body and stops just short of your neck. You don't hide it. Not today. Then you sprint straight into the waves.`);
+  else if(s)await say(`${eggDisplay('smashed')} pulls off his coat, already in ${trunks} swim trunks. A massive burn scar runs the whole length of his body, stopping just short of his neck. He catches you looking. "Fire. I was a kid. Something with wings of flame pulled me out. ...Don't make it weird." Then he cannonballs into the water.`);
+  if(st==='you')await say('You change into blue swim trunks. Water, sand, whatever. You\'re honestly fine either way. You find a shady spot and watch the waves glitch past your screen.');
+  else if(st)await say(`${eggDisplay('static')} shows up in blue swim trunks, totally unbothered. "Water? Sure. Sand? Also sure." He sits down in the shade, screen flickering lazily.`);
+  if(b&&s)await say(`${eggDisplay('bunny')} wraps ${eggDisplay('smashed')} in a towel the second he climbs out. "Sunscreen. Now. And dry your ears!" He grumbles, but he lets her.`);
+  if(b&&st)await say(`${eggDisplay('bunny')} scoots her umbrella a little closer to ${eggDisplay('static')}'s shady spot. Then a little closer. Her face is pinker than her hair.`);}
+// ---------- out in the world: the characters nobody named ----------
+const EGG_SPOTS={static:'ferrowick',smashed:'emberfall',bunny:'sunbask'};
+function eggTeam(kind,L,seed){
+  if(kind==='static')return[...pickTeam(['Electric','Steel'],L-1,2,seed),[SPECIES[evolvedAt(SP_BY.Pixelon.id,L+1)].name,L+1]];
+  if(kind==='smashed')return[...pickTeam(null,L-1,2,seed),[SPECIES[evolvedAt(SP_BY.Cinderpup.id,L)].name,L],['Pyrevix',L+1]];
+  return pickTeam(null,L,4,seed,{filter:cuteOrCreepy});}
+const EGG_LOOK={static:()=>STATIC_LOOK,smashed:()=>SMASHED_LOOK,bunny:()=>BUNNY_LOOK};
+const EGG_TALK={
+  static:{hi:'Static: Oh. Hey. You can see me? Most people just see static. ...I live in the old shed in Hearthollow. Well, lived. Ferrowick has better Wi-Fi.',
+    ask:'Static: Want to see what a "glitch" can do in a battle?',after:['Static: ByteBound calls me "it." I picked "he." Remember that, okay?','Static: The Network is how I reach out. Watch the TVs. That\'s me saying hi.','Static: If a TV ever shows E06, I\'m probably nearby.'],lose:'...Okay, you\'re good. Signal received.'},
+  smashed:{hi:'Smashed: What? Never seen a fox-kin before? ...I grew up in Hearthollow. The burned house. Yeah, that one.',
+    ask:'Smashed: You look like you can actually battle. Prove it.',after:['Smashed: Something with wings of fire pulled me out of that house. I came to Emberfall to find it. Say thanks. Whatever.','Smashed: Your team\'s okay. Your second slot is weak, though. Just being honest.','Smashed: Dog-type Wyldkin are the best Wyldkin. That\'s not an opinion.'],lose:'Tch. Fine. You won. Fix your weak spots anyway.'},
+  bunny:{hi:'Bunny: Hi, sweetie! Oh, you\'re from Hearthollow too? I used to live in that broken lab past the pond. Don\'t worry, I made it cozy.',
+    ask:'Bunny: I hate the water, but the sun is nice. Want to meet my babies? They\'re SO cute. And a little bit creepy. Mostly cute!',after:['Bunny: There\'s a boy who talks through the TV static. Static. I\'d really like to meet him someday... <3','Bunny: Promise me you\'ll rest when you\'re hurt. Just not in a hospital. Never a hospital.','Bunny: My wings ache when it rains. Old lab stuff. I\'m okay!'],lose:'Aww, you did so well! Come here, let me fix your hair.'}};
+async function eggNpcTalk(kind){const name=EGG_NAME[kind],T=EGG_TALK[kind],hate=eggHates(kind);const fk='egg_'+kind;
+  if(kind==='bunny'&&!G.flags.egg_bunny_seen){G.flags.egg_bunny_seen=1;await say('A pink-haired girl in a black swimsuit is curled up under an umbrella at the far end of the beach, as far from the water as she can get. Scars cover her arms, legs and back. The one across her stomach looks almost like a closed mouth. She notices you looking and just smiles.');}
+  if(G.flags[fk]){await say(hate?hateLine(kind,name):lineOf(T.after));if(kind==='bunny'&&!hate)await healAll(),await say('Bunny fussed over your team until everyone was fully healed.');return;}
+  if(hate)await say(hateLine(kind,name));else{await say(T.hi);await say(T.ask);}
+  if(!hate&&!await yesno(`Battle ${name}?`)){await say(`${name}: Okay! Come back anytime.`);return;}
+  const L=lvAt(MAP.region,MAP.prog||0)+2+(hate?5:0);
+  const res=await startBattle({trainer:{name,cls:'TRAINER',party:eggTeam(kind,L,'eggnpc'+kind),reward:40,lose:hate?'...This isn\'t over.':T.lose,look:EGG_LOOK[kind]()}});
+  if(res==='win'){G.flags[fk]=1;if(!hate)await say(lineOf(T.after));}}
+STORY_AFTER_BUILD.push(()=>{
+  for(const kind of ['static','smashed','bunny']){const id=EGG_SPOTS[kind];const m=MAPS[id];if(!m)continue;
+    const npc={id:'egg_'+kind,x:0,y:0,dir:'down',look:EGG_LOOK[kind](),cond:()=>!eggHolder(kind),run:()=>eggNpcTalk(kind)};
+    const R=m.rows,taken=new Set((m.npcs||[]).map(n=>n.x+','+n.y));const hs=m.restDoor?{x:m.restDoor[0],y:m.restDoor[1]}:{x:Math.floor(R[0].length/2),y:Math.floor(R.length/2)};
+    const nearPath=(x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>(R[y+dy]||'')[x+dx]===',');
+    let best=null,bd=1e9;for(let y=3;y<R.length-3;y++)for(let x=3;x<R[0].length-3;x++){const c=R[y][x];if(c!=='.'&&c!==';'&&c!==':')continue;if(taken.has(x+','+y)||!nearPath(x,y))continue;
+      if((m.warps||[]).some(w=>Math.abs(w.x-x)+Math.abs(w.y-y)<2))continue;const d=Math.abs(x-hs.x)+Math.abs(y-hs.y);if(d>3&&d<bd){bd=d;best=[x,y];}}
+    if(best){npc.x=best[0];npc.y=best[1];m.npcs=m.npcs||[];m.npcs.push(npc);}}
+  // beach scene on first visit to Sunbask
+  const sb=MAPS.sunbask;if(sb)sb.onEnter=[].concat(sb.onEnter||[],{cond:()=>!G.flags.beachScene&&!!(eggHolder('bunny')||eggHolder('smashed')||eggHolder('static')),run:beachScene});
+});
+
 'use strict';
 // ===================== ASSEMBLE WORLD =====================
 const BIOME_W={meadow:{Normal:3,Grass:2,Bug:2,Flying:2,Electric:1,Poison:1,Fighting:1,Ground:1},forest:{Bug:3,Grass:3,Poison:2,Ghost:1,Normal:1,Psychic:1,Dark:1},
@@ -2617,7 +2772,7 @@ function assembleWorld(){
   fw.signs['22,14']='FERROWICK CITY\nCity of bridges and ironworks.\nHome of the ByteBound Relay Station.\nRoute 3 lies east.';
   [['hearthollow',0],['route1',.05],['brookvale',.1],['route2',.15],['woods',.2],['ferrowick',.24]].forEach(([id,p])=>{MAPS[id].region=0;MAPS[id].prog=p;MAPS[id].town=['hearthollow','brookvale','ferrowick'].includes(id);});
   Object.keys(MAPS).forEach(id=>{if(MAPS[id].region==null)MAPS[id].region=0;});
-  MAPS.brookvale.restDoor=[10,12];MAPS.ferrowick.restDoor=[17,12];MAPS.hearthollow.restDoor=[6,6];
+  MAPS.brookvale.restDoor=[10,12];MAPS.ferrowick.restDoor=[17,12];MAPS.hearthollow.restDoor=[16,6];
   BUILT=buildNodes();
   // gyms
   GYM_DEF.forEach(([map,r,type,name,badge,lvl,n,look])=>{L(map,r,type,name,badge,lvl,n,look);});
@@ -2917,8 +3072,7 @@ function isBunny(n){return typeof n==='string'&&/^bunny(rx)?$/i.test(n.trim());}
 function bunnyWho(){if(!G)return null;if(isBunny(G.name))return'you';const f=FR();if(isBunny(f.riv.name))return'riv';if(isBunny(f.pal.name))return'pal';return null;}
 function bunnyName(){const w=bunnyWho();return w==='you'?G.name:w==='riv'?FR().riv.name:w==='pal'?FR().pal.name:'Bunny';}
 function monIsPink(m){if(!m)return false;if(m._pink)return true;return!!G&&isBunny(G.name)&&(G.party.includes(m)||G.box.includes(m)||(G.locked||[]).includes(m));}
-function bunnyRoofs(){const out=[];const w=[];if(G&&isBunny(G.name))w.push([3,3]);const f=FR();if(isBunny(f.riv.name))w.push([13,3]);if(isBunny(f.pal.name))w.push([3,13]);
-  w.forEach(([x0,y0])=>{for(let y=y0;y<y0+2;y++)for(let x=x0;x<x0+4;x++)out.push([x,y,'N']);});return out;}
+function bunnyRoofs(){const out=[];if(bunnyWho())for(let y=20;y<22;y++)for(let x=19;x<25;x++)out.push([x,y,'N']);return out;}
 function staticEgg(){return!!G&&(isStatic(G.name)||(G.friends&&(isStatic(G.friends.riv.name)||isStatic(G.friends.pal.name))));}
 const GL={t:0,len:0,cd:900,err:0};
 function glitchNow(len){GL.t=GL.len=len||18;if(AC&&G&&G.opts.sound){for(let i=0;i<4;i++)setTimeout(()=>beep(80+Math.random()*1800,.03,'sawtooth',.03),i*40);}}
@@ -3101,10 +3255,10 @@ function interact(){
   if(n){runScript(()=>talkTo(n));return;}
   if(folVisible()&&tx===fol.x&&ty===fol.y){runScript(followerTalk);return;}
   const key=`${player.x+dx},${player.y+dy}`;const ch=tileAt(player.x+dx,player.y+dy);
-  if(MAP.signs&&MAP.signs[key]){runScript(()=>say(MAP.signs[key]));return;}
+  if(MAP.signs&&MAP.signs[key]){const sg=MAP.signs[key];runScript(typeof sg==='function'?sg:()=>say(sg));return;}
   if(ch==='P'){runScript(pcMenu);return;}
   if(ch==='V'){runScript(tvTalk);return;}
-  if(ch==='k'){const bw=bunnyWho();if((MAPID==='house1'&&bw==='you')||(MAPID==='wrenhouse'&&bw==='pal')||(MAPID==='house2'&&bw==='riv')){runScript(bunnyDiary);return;}runScript(()=>say('It\'s packed with books about Wyldkin and ByteBound technology manuals.'));return;}
+  if(ch==='k'){runScript(()=>say('It\'s packed with books about Wyldkin and ByteBound technology manuals.'));return;}
   if(ch==='~'&&!MAP.indoor){runScript(fishAt);return;}
 }
 async function talkTo(n){
@@ -3477,14 +3631,18 @@ function burst(b,type){B.fx.parts=B.fx.parts||[];const cx=b.side==='f'?178:62,cy
 
 async function startBattle(opts){
   const tr=opts.trainer?Object.assign({},opts.trainer,{mons:opts.trainer.party.map(([n,l])=>makeMon(SP_BY[n].id,l))}):null;
+  if(tr&&(tr.name==='Rowan'||tr.name==='Wren')){const fn=tr.name==='Rowan'?FR().riv.name:FR().pal.name,kd=eggKind(fn);
+    if(kd==='bunny'&&tr.party.length>1){tr.party=bunnyParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}
+    if(kd&&eggHates(kd))tr.grudge=1;}
   if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}tr.lose='Tch. Fine. You won. Your team\'s still sloppy though. Fix your weak spots before ByteBound finds them.';}
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
+  if(tr&&tr.grudge)tr.mons.forEach(m=>{const pk=m._pink;Object.assign(m,makeMon(m.sid,Math.min(100,m.lvl+(tr.party.length>1?5:2))));if(pk)m._pink=1;});
   const assists=opts.assist?[].concat(opts.assist):[];
   assists.forEach(a=>{if((a.name==='Rowan'&&isBunny(FR().riv.name))||(a.name==='Wren'&&isBunny(FR().pal.name)))a.mon._pink=1;});
   // Two friends helping (all three easter eggs): ByteBound's Wyldkin come in 5 levels stronger to keep it a fight.
   if(tr&&assists.length>1){tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,Math.min(100,l+5)));tr.boosted=1;}
   const pi=G.party.findIndex(m=>m.hp>0);
-  B={assists:assists.map(a=>Object.assign(mkBattler(a.mon,'a'),{owner:a.name})),story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
+  B={assists:assists.map(a=>Object.assign(mkBattler(a.mon,'a'),{owner:a.name,kind:a.kind})),story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
   await fadeTo(1,12);scene='battle';
   B.f=mkBattler(B.foes[0],'f');B.p=mkBattler(G.party[pi],'p');B.p.hidden=true;if(tr)B.f.hidden=true;
@@ -3495,6 +3653,7 @@ async function startBattle(opts){
     addSeen(B.f.mon.sid);await bsay(`${tr.cls} ${tr.name} sent out ${monName(B.f.mon)}!`);await appearAnim(B.f);}
   for(let t=0;t<14;t++){B.fx.tp.x=-t*6;await wait(1);}B.fx.tp=null;
   await bsay(`Go! ${monName(B.p.mon)}!`);await appearAnim(B.p);
+  if(tr&&tr.grudge)await bsay(`${tr.name} isn't holding back. This is personal!`);
   if(tr&&tr.boosted)await bsay(`${tr.name} sees the odds and powers up! Their Wyldkin are stronger than usual!`);
   for(const a of B.assists)await bsay(`${a.owner} jumps in to help! ${a.owner}'s ${monName(a.mon)} is backing you up!`);
   let result;
@@ -3621,7 +3780,8 @@ async function assistMove(a){
   if(!best||bv<=0)return null;
   await bsay(`${a.owner}'s ${monName(a.mon)} used ${best.name}!`);
   const e=effMulti(best.type,dT);const r=calcDamage(a,B.f,best,e);SFX.hit();burst(B.f,best.type);await blink(B.f);
-  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6)));await tweenHP(B.f);
+  const bonus=a.kind&&eggVsBonus(a.kind,B.trainer);if(bonus&&!a.told){a.told=1;await bsay(a.kind==='bunny'?`${a.owner} sees the lab coat and goes pale... then furious!`:a.kind==='smashed'?`${a.owner}'s fur bristles at the uniform!`:`${a.owner}'s screen flashes red: ADMIN DETECTED.`);}
+  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6*(bonus?1.5:1))));await tweenHP(B.f);
   if(e>1)await bsay('It\'s super effective!');else if(e<1)await bsay('It\'s not very effective...');
   return await checkFaints();
 }
