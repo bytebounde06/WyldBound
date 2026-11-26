@@ -1439,6 +1439,7 @@ const LOOK={
   rook:{hair:'#d0d0d0',shirt:'#4a3428',pants:'#2a2420',bandana:'#202020',hairStyle:1,shoes:'#181010'},
   pipgirl:{hair:'#e0a040',shirt:'#80c0e0',pants:'#80c0e0',dress:1},
   rival:{hair:'#c87830',shirt:'#3868c8',pants:'#303030'},
+  wren:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',hairStyle:2},
   prof:{hair:'#a0a0a8',shirt:'#f0f0f0',pants:'#685040'},
   mom:{hair:'#a05830',shirt:'#e890a8',pants:'#e890a8',dress:1},
   nurse:{hair:'#f090a8',shirt:'#ffffff',pants:'#ffffff',dress:1},
@@ -1494,31 +1495,26 @@ MAPS.house1={name:'Your House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3
    await say(`Mom: ${G.name}! You look tired. Take a rest.`);await healAll();G.lastHeal={map:'house1',x:4,y:5};await say('Your Wyldkin are fully healed. Take care out there!');}}]};
 MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:6,dir:'down'}],
  npcs:[{id:'nb1',x:2,y:3,dir:'right',look:LOOK.youngster,text:'Tip: Hold B while walking to run! Press START to open your menu.'},
-       {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'Rowan has been bragging all morning that he\'ll beat you. Typical.'}]};
+       {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that he\'ll beat you. Typical.'}]};
 MAPS.lab={name:'Hazel\'s Lab',indoor:1,bg:'indoor',rows:[
 'XXXXXXXXXXX','XkkkkX_kkkX','X_________X','X___ttt___X','X_________X','Xk_______kX','X_________X','X__P___t__X','X_________X','XXXXXmXXXXX'],
  warps:[{x:5,y:9,to:'hearthollow',tx:12,ty:12,dir:'down'}],
  npcs:[{id:'prof',x:5,y:2,dir:'down',look:LOOK.prof,run:profTalk},
-   {id:'rival_lab',x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags.rivalLeft,text:'Rowan: Gramps-- er, the Professor said we could each pick one. I\'m waiting on you, slowpoke!'},
+   {id:'rival_lab',x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags.rivalLeft,text:'Rowan: Gramps-- er, the Professor said the three of us could each pick one. You were late to everything when we were kids too, slowpoke!'},
+   {id:'wren_lab',x:7,y:4,dir:'up',look:LOOK.wren,cond:()=>!G.flags.rivalLeft,text:'Wren: Can you believe it? The three of us, getting partners on the same day! Just like we always planned when we were little. You pick first. Rowan will grab whatever beats yours anyway, so I\'ll take the one that\'s left!'},
    {id:'aide',x:8,y:6,dir:'left',look:LOOK.aide,text:'The CODEX was built by ByteBound, the tech company. It syncs to their network, ByteNet, and records every Wyldkin you see or catch. Over a hundred so far!'}]};
 async function profTalk(){
   if(G.flags.starter&&await postChampGift(0))return;
   if(G.flags.starter){const s=G.seen.length,c=G.caught.length;await say(`Prof. Hazel: Your CODEX shows ${s} seen and ${c} caught out of ${SPECIES.length}. Keep going!`);return;}
   await say(`Prof. Hazel: Ah, ${G.name}! You came. I study Wyldkin from three regions: Aldera, Coralmere and Frostfell.`);
-  await say('I\'ve gathered one partner of each kind from all three regions. Nine in all. Choose the one you like best!');
+  await say('These three are the partner Wyldkin of Aldera. Coralmere and Frostfell have partners of their own. Choose the one you like best!');
   let sid=-1;
-  while(sid<0){sid=await starterPicker();}
+  while(sid<0){sid=await starterPicker(0);}
   const sp=SPECIES[sid];
   const mon=makeMon(sid,5);G.party.push(mon);addSeen(sid);addCaught(sid);
   await say(`${G.name} received ${sp.name}!`);
-  const idx=STARTERS.indexOf(sid),reg=Math.floor(idx/3),k=idx%3;
-  const rsid=STARTERS[reg*3+(k+1)%3];G.rivalStarter=rsid;
-  await say(`Rowan: Then I'll take ${SPECIES[rsid].name}! Hey ${G.name}, let's see what they can do!`);
   G.flags.starter=1;
-  const r=await startBattle({trainer:{name:'Rowan',cls:'RIVAL',party:[[SPECIES[rsid].name,5]],reward:12,lose:'What?! I picked the wrong one!',look:LOOK.rival},noWhiteout:1});
-  await healAll();
-  if(r==='win')await say('Rowan: Hmph. Beginner\'s luck. I\'ll train harder!');else await say('Rowan: Ha! Told you I\'d win!');
-  await say('Rowan: Smell ya-- I mean, see you around!');
+  await rivalPicks(0,sid);
   G.flags.rivalLeft=1;
   await say('Prof. Hazel: Wonderful battle! Take these. With Capture Orbs you can catch wild Wyldkin.');
   addItem('orb',5);await say(`${G.name} received 5 Capture Orbs and the CODEX!`);
@@ -1655,7 +1651,18 @@ MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
    {id:'rl_note',x:9,y:8,dir:'down',look:LOOK.bb_sci,cond:()=>!!G.flags.s3,run:async()=>{await say(G.flags.s3==='won'?'Technician: The Tether core is cold. Dr. Vasquez cleared out her office and left for Coralmere. I\'m... updating my résumé.':'Technician: Tether is online and the network\'s stable. Commander Hale says your Wyldkin is "in good hands." I wouldn\'t count on it.');}}]};
 
 // ===================== STORY =====================
-async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});return await startBattle({trainer:tr,story:1});}
+async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
+// Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
+async function friendAssist(tr){
+  const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
+  const isBB=/BB|MERC|BYTEBOUND|SALTJACK|DIRECTOR|CHIEF|SERGEANT|ENFORCER/i.test(tr.cls||'');if(!isBB)return null;
+  G.assistN=(G.assistN||0)+1;if(G.assistN%2===0)return null; // every other ByteBound fight
+  const who=(G.assistN>>1)%2===0?'Wren':'Rowan';const sid=who==='Wren'?fr.wren:fr.rowan;
+  const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
+  await say(who==='Wren'?`Wren: ${G.name}! I saw ByteBound come this way. Want me to back you up, like old times?`:`Rowan: Tch, ByteBound again? Fine. Want a hand, ${G.name}? Don't make it weird.`);
+  if(!await yesno(`Battle with ${who}'s help?`)){await say(`${who}: Okay! I'll be right here cheering.`);return null;}
+  return{name:who,mon:makeMon(evolvedAt(sid,lvl),lvl)};
+}
 function giveKey(k){G.keys=G.keys||[];if(!G.keys.includes(k))G.keys.push(k);}
 async function s1Event(){
   if(G.flags.s1||!G.flags.starter)return;
@@ -1748,6 +1755,7 @@ function rollEncounter(table){const DRIFTERS=driftPool(MAP.region||0);
   const tot=table.reduce((a,e)=>a+e[3],0);let r=Math.random()*tot,pick=table[0];
   for(const e of table){r-=e[3];if(r<=0){pick=e;break;}}
   const lvl=pick[1]+Math.floor(Math.random()*(pick[2]-pick[1]+1));
+  const rg=MAP.region||0;if((G.champs||[]).includes(rg)&&!MAP.town&&Math.random()<.03)return makeMon(STARTERS[rg*3+Math.floor(Math.random()*3)],lvl);
   if(Math.random()<DRIFTER_RATE){const sid=DRIFTERS[Math.floor(Math.random()*DRIFTERS.length)];return makeMon(sid,lvl);}
   return makeMon(SP_BY[pick[0]].id,lvl);
 }
@@ -2184,27 +2192,66 @@ function hallOfFame(r){return new Promise(res=>{let t=0;const el={full:1,bgc:'#2
 function ownedLine(sid){let s=SPECIES[sid];const fam=s.fam;return G.caught.some(c=>SPECIES[c].fam===fam);}
 async function regionStarter(r){
   await say(`Professor ${PROF[r]}: You must be ${G.name}! Professor Hazel told me all about you. The border lock trapped your team, didn\'t it?`);
-  await say('Then you\'ll need a new partner. Pick any you like. I keep one of each kind from every region.');
-  let sid=-1;while(sid<0)sid=await starterPicker(true);
-  const m=makeMon(sid,5);G.party.push(m);addCaught(sid);G.flags['starter'+r]=1;
+  await say(`Your friends Rowan and Wren got here an hour ago. Same story, their teams are locked too. So all three of you need new partners.`);
+  await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
+  let sid=-1;while(sid<0)sid=await starterPicker(r);
+  const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
   await say(`${G.name} received ${SPECIES[sid].name}! A fresh start in ${REGIONS[r]}.`);
+  await rivalPicks(r,sid);
   addItem('orb',5);await say(`Professor ${PROF[r]}: Take these Capture Orbs too. ${r===1?'Watch out for the Saltjack crew. They work for ByteBound now.':'Be careful. ByteBound\'s security is everywhere in Frostfell.'}`);
   const pm=MAPS[PORTS[r]];if(pm&&pm.healSpot)G.lastHeal=pm.healSpot;autosave();
 }
+// ---------- rivals: Rowan takes the partner strong against yours, Wren takes the one that's left ----------
+function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].evo;if(e&&e.lvl&&e.lvl<=lvl)s=e.to;else break;}return s;}
+async function rivalPicks(r,sid){
+  const k=STARTERS.indexOf(sid)-r*3;const rsid=STARTERS[r*3+(k+1)%3],wsid=STARTERS[r*3+(k+2)%3];
+  G.rivals=G.rivals||{};G.rivals[r]={rowan:rsid,wren:wsid};if(r===0)G.rivalStarter=rsid;
+  await say(`Rowan: Then I'll take ${SPECIES[rsid].name}! ${r===0?'':'Champion or not, '}Hey ${G.name}, let's see what they can do!`);
+  const res=await startBattle({trainer:{name:'Rowan',cls:'RIVAL',party:[[SPECIES[rsid].name,5]],reward:12,lose:'What?! I picked the wrong one!',look:LOOK.rival},noWhiteout:1});
+  await healAll();
+  if(res==='win')await say('Rowan: Hmph. Beginner\'s luck. I\'ll train harder!');else await say('Rowan: Ha! Told you I\'d win!');
+  await say(`Wren: My turn! That leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);
+  await say(r===0?`Wren: Remember when we used to pretend sticks were Wyldkin? Now they're real! I'll be training up ahead, ${G.name}. Next time, you battle me!`:`Wren: New region, same three of us. I'll be training up ahead, ${G.name}. Next time, you battle me!`);
+  await say('Rowan: Smell ya-- I mean, see you around!');
+}
+const WREN_SPOTS=[['route1','route3','route6'],['route22','route25','route27'],['route31','route34','route37']];
+const WREN_LINES=[
+ ['I caught my first wild Wyldkin! Want to see how strong my team is?','Wow, you\'re good! I\'ll keep training.','Yay! My first trainer win!'],
+ ['I\'ve been studying type matchups. Let\'s test my notes!','My notes said I\'d win... I need better notes!','Ha! The notes were right!'],
+ ['I\'ve seen so many Wyldkin out here. My team is ready for anything!','You really are something. Good luck with the League!','I won! I can\'t believe it!']];
+async function wrenBattle(r,i){
+  G.flags[`wren${r}_${i}`]=1;const wsid=G.rivals[r].wren;
+  const enc=(MAPS[WREN_SPOTS[r][i]].enc||{}).grass||[];const top=enc.reduce((a,e)=>Math.max(a,e[2]||0),0);
+  const L=i===0?6:Math.max(8,top+2);
+  const party=i===0?[...pickTeam(null,4,1,'wren'+r),[SPECIES[wsid].name,6]]:[...pickTeam(null,L-1,i+1,'wren'+r+i),[SPECIES[evolvedAt(wsid,L+1)].name,L+1]];
+  const [intro,lose,win]=WREN_LINES[i];
+  await say(`Wren: ${G.name}! ${intro}`);
+  const res=await startBattle({trainer:{name:'Wren',cls:'RIVAL',party,reward:i===0?10:16+i*6,lose,look:LOOK.wren},noWhiteout:i===0?1:0});
+  if(res!=='win'){await say(`Wren: ${win}`);if(i===0)await healAll();}
+  autosave();
+}
+STORY_AFTER_BUILD.push(()=>{
+  WREN_SPOTS.forEach((ids,r)=>ids.forEach((id,i)=>{const m=MAPS[id];if(!m)return;
+    const e={cond:()=>!!(G.rivals&&G.rivals[r])&&!G.flags[`wren${r}_${i}`]&&(i===0||G.flags[`wren${r}_${i-1}`]),run:()=>wrenBattle(r,i)};
+    m.onEnter=[].concat(m.onEnter||[],e);}));
+});
 async function postChampGift(r){
   const key='gift'+r;if(G.flags[key]||!(G.champs||[]).includes(r))return false;
   const trio=STARTERS.slice(r*3,r*3+3).filter(s=>!ownedLine(s));G.flags[key]=1;
-  if(!trio.length){await say(`Professor ${PROF[r]}: You already have every ${REGIONS[r]} partner! Remarkable.`);return true;}
+  if(!trio.length){await say(`Professor ${PROF[r]}: You already have every ${REGIONS[r]} partner! Remarkable. Wild ones have been spotted in the tall grass too, now that you\'re Champion.`);return true;}
   await say(`Professor ${PROF[r]}: Champion! You\'ve earned something special. The ${REGIONS[r]} partners you didn\'t choose have been waiting for a good trainer.`);
+  await say(`And here\'s some news: now that you\'re Champion, wild partner Wyldkin of ${REGIONS[r]} have been spotted in the tall grass. They\'re rare, so keep your eyes open!`);
   for(const s of trio){const m=makeMon(s,10);addCaught(s);if(G.party.length<6)G.party.push(m);else G.box.push(m);await say(`${G.name} received ${SPECIES[s].name}!`);}
   return true;
 }
+function labRivals(r){return[{id:'rowan_lab'+r,x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags['starter'+r],text:'Rowan: The border lock took my whole team. Even my Champion team! Go talk to the Professor so we can pick new partners.'},
+  {id:'wren_lab'+r,x:7,y:4,dir:'up',look:LOOK.wren,cond:()=>!G.flags['starter'+r],text:'Wren: Starting over in a new region? Honestly, I\'m kind of excited! New Wyldkin to meet!'}];}
 function profNpc(r,look){return{id:'prof'+r,x:5,y:2,dir:'down',look,run:async()=>{
   if(!G.flags['starter'+r]){await regionStarter(r);return;}
   if(await postChampGift(r))return;
   await say(`Professor ${PROF[r]}: Your CODEX shows ${G.seen.length} seen and ${G.caught.length} caught out of ${SPECIES.length}. ${G.caught.length>=SPECIES.length?'Complete! You\'ve done what no trainer has ever done!':'Keep exploring!'}`);}};}
-STORY_LAB.coralport=()=>[profNpc(1,LOOK.ondine),{id:'aide1',x:8,y:6,dir:'left',look:LOOK.aide,text:'Coralmere Wyldkin love the water. Try fishing off any dock or shore with a Fishing Rod!'}];
-STORY_LAB.frostharbor=()=>[profNpc(2,LOOK.linnea),{id:'aide2',x:8,y:6,dir:'left',look:LOOK.aide,text:'Frostfell\'s wild Wyldkin come from all three regions. It\'s the best place to fill your CODEX.'}];
+STORY_LAB.coralport=()=>[profNpc(1,LOOK.ondine),...labRivals(1),{id:'aide1',x:8,y:6,dir:'left',look:LOOK.aide,text:'Coralmere Wyldkin love the water. Try fishing off any dock or shore with a Fishing Rod!'}];
+STORY_LAB.frostharbor=()=>[profNpc(2,LOOK.linnea),...labRivals(2),{id:'aide2',x:8,y:6,dir:'left',look:LOOK.aide,text:'Frostfell\'s wild Wyldkin come from all three regions. It\'s the best place to fill your CODEX.'}];
 
 // ---------- misc talkers ----------
 async function museumTalk(){
@@ -2745,11 +2792,24 @@ let MAP=null,MAPID='',npcs=[],mapLabel=null,pendingEnter=false;
 const player={x:0,y:0,dir:'down',moving:false,prog:0,tx:0,ty:0,step:0,run:false,turnT:0,wasMoving:false,bump:0};
 function prepMap(id){const m=MAPS[id];if(!m._w){const w=Math.max(...m.rows.map(r=>r.length));m.rows=m.rows.map(r=>r.padEnd(w,m.indoor?'%':'T'));m._w=w;m._h=m.rows.length;}return m;}
 function tileAt(x,y){if(!MAP||x<0||y<0||x>=MAP._w||y>=MAP._h)return null;return MAP.cur?MAP.cur[y][x]:MAP.rows[y][x];}
+// ----- follower: the first healthy Wyldkin in the party walks behind the player -----
+const fol={x:0,y:0,px:0,py:0,dir:'down',hide:true};const FOLIMG={};
+function folOn(){return G&&G.opts&&G.opts.follow!==false&&!(MAP&&MAP.noFollow);}
+function folLead(){return G&&G.party.find(m=>m.hp>0);}
+function folStep(){if(fol.hide){fol.x=player.x;fol.y=player.y;fol.hide=false;}fol.px=fol.x;fol.py=fol.y;fol.x=player.x;fol.y=player.y;
+  const dx=fol.x-fol.px,dy=fol.y-fol.py;if(dx||dy)fol.dir=dx>0?'right':dx<0?'left':dy>0?'down':'up';}
+function folImg(sid){if(FOLIMG[sid])return FOLIMG[sid];const sp=spriteOf(sid),mk=(src,flip)=>{const k=document.createElement('canvas');k.width=k.height=28;const g=k.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';if(flip){g.translate(28,0);g.scale(-1,1);}g.drawImage(src,0,0,64,64,0,0,28,28);return k;};
+  return FOLIMG[sid]={down:mk(sp.front),left:mk(sp.front),right:mk(sp.front,1),up:mk(sp.back),float:sp.float};}
+function folVisible(){return folOn()&&folLead()&&!fol.hide&&!(fol.x===player.x&&fol.y===player.y&&!player.moving);}
+async function followerTalk(){const m=folLead();const n=monName(m);const r=m.hp/m.stats[0];
+  const L=r<.35?[`${n} looks tired. A rest would help.`,`${n} is hanging in there, but it's hurting.`]:m.status?[`${n} doesn't feel well...`]:[`${n} is happy to be walking with you!`,`${n} looks around excitedly.`,`${n} nuzzles your hand.`,`${n} is full of energy!`,`${n} sniffs the air curiously.`,`${n} stays close to your side.`];
+  if(G.party[0]!==m)L.push(`${n} is leading the team today.`);await say(L[Math.floor(Math.random()*L.length)]);}
 function loadMap(id,x,y,dir){
   const prev=MAPID;MAP=prepMap(id);MAPID=id;applyMods();GROUND=MAP.ground||(MAP.indoor?'_':'.');pendingEnter=prev!==id;
   if(MAP.town&&!MAP.indoor){G.visited=G.visited||[];if(!G.visited.includes(id))G.visited.push(id);}
   npcs=(MAP.npcs||[]).filter(n=>(!n.cond||n.cond())&&!(n.item&&G.flags['item_'+n.id])).map(n=>Object.assign({},n,{ox:n.x,oy:n.y,moving:false,prog:0,excl:0}));
   player.x=x;player.y=y;player.tx=x;player.ty=y;player.moving=false;player.prog=0;if(dir)player.dir=dir;
+  fol.x=fol.px=x;fol.y=fol.py=y;fol.hide=true;
   G.map=id;G.x=x;G.y=y;G.dir=player.dir;
   if(prev!==id&&(!MAP.indoor||!MAPS[prev]||!MAPS[prev].indoor))mapLabel={t:150,text:MAP.name};
 }
@@ -2757,7 +2817,7 @@ function refreshNPCs(){if(!MAP)return;npcs=npcs.filter(n=>(!n.cond||n.cond())&&!
 function npcAt(x,y){return npcs.find(n=>(n.x===x&&n.y===y)||(n.moving&&n.tx===x&&n.ty===y));}
 function solidAt(x,y){const c=tileAt(x,y);return c===null||SOLID.has(c);}
 function npcStep(n,d){return new Promise(r=>{const[dx,dy]=DIRS[d];n.dir=d;n.tx=n.x+dx;n.ty=n.y+dy;n.moving=true;n.prog=0;n.done=r;});}
-function playerStep(d){return new Promise(r=>{const[dx,dy]=DIRS[d];player.dir=d;const nx=player.x+dx,ny=player.y+dy;if(solidAt(nx,ny)){r();return;}player.tx=nx;player.ty=ny;player.moving=true;player.prog=0;player.step++;player.scripted=r;});}
+function playerStep(d){return new Promise(r=>{const[dx,dy]=DIRS[d];player.dir=d;const nx=player.x+dx,ny=player.y+dy;if(solidAt(nx,ny)){r();return;}folStep();player.tx=nx;player.ty=ny;player.moving=true;player.prog=0;player.step++;player.scripted=r;});}
 async function warpTo(id,x,y,dir){await fadeTo(1,10);loadMap(id,x,y,dir);await fadeTo(0,10);autosave();}
 
 function worldUpdate(p){
@@ -2773,7 +2833,7 @@ function worldUpdate(p){
     } else return;
   }
   if(lock||ui.length)return;
-  if(pendingEnter){pendingEnter=false;const oe=MAP.onEnter;if(oe&&(!oe.cond||oe.cond())){runScript(oe.run);return;}}
+  if(pendingEnter){pendingEnter=false;const oe=[].concat(MAP.onEnter||[]).find(o=>!o.cond||o.cond());if(oe){runScript(oe.run);return;}}
   if(p.has('start')){runScript(startMenu);return;}
   if(p.has('select')&&G.party.length){runScript(async()=>{writeSave('manual');SFX.ok();await say(`Quick saved to FILE ${SLOT}.`);});return;}
   if(p.has('a')){interact();return;}
@@ -2791,7 +2851,7 @@ function tryMove(d){
       loadMap(c.to,X,Y,d);player.wasMoving=true;autosave();}
     return;}
   if(solidAt(nx,ny)||npcAt(nx,ny)){if(player.bump<=0){SFX.bump();player.bump=16;}player.wasMoving=false;return;}
-  player.tx=nx;player.ty=ny;player.moving=true;player.prog=0;player.step++;player.run=!!held.b;player.wasMoving=true;
+  folStep();player.tx=nx;player.ty=ny;player.moving=true;player.prog=0;player.step++;player.run=!!held.b;player.wasMoving=true;
 }
 function onStep(){
   const ch=tileAt(player.x,player.y);
@@ -2833,6 +2893,7 @@ function interact(){
   const[dx,dy]=DIRS[player.dir];let tx=player.x+dx,ty=player.y+dy;
   let n=npcAt(tx,ty);if(!n&&'ct'.includes(tileAt(tx,ty)||'-'))n=npcAt(tx+dx,ty+dy);
   if(n){runScript(()=>talkTo(n));return;}
+  if(folVisible()&&tx===fol.x&&ty===fol.y){runScript(followerTalk);return;}
   const key=`${player.x+dx},${player.y+dy}`;const ch=tileAt(player.x+dx,player.y+dy);
   if(MAP.signs&&MAP.signs[key]){runScript(()=>say(MAP.signs[key]));return;}
   if(ch==='P'){runScript(pcMenu);return;}
@@ -2877,6 +2938,10 @@ function drawWorld(c){
     if(n.legend){const b=Math.sin(frame/12)*2;c.globalAlpha=.25;c.fillStyle='#000';c.beginPath();c.ellipse(nx-cx+8,ny-cy+14,10,3,0,0,7);c.fill();c.globalAlpha=1;c.drawImage(spriteOf(n.legend.sid).front,0,0,64,64,nx-cx-8,ny-cy-18+b,32,32);return;}
     const spr=charSprite(n.look)[n.dir];const f=n.moving?(n.prog<8?1:2)*((n.x+n.y)%2?1:1):0;c.drawImage(spr[n.moving?(n.prog<8?1:2):0],nx-cx,ny-cy-6);
     if(n.excl>0){n.excl--;box(c,nx-cx+3,ny-cy-20,11,12,'std');text(c,'!',nx-cx+7,ny-cy-18,'#e04040',9,false);}}});});
+  if(folVisible()){const t=player.moving?player.prog/16:1;const fx=(fol.px+(fol.x-fol.px)*t)*16,fy=(fol.py+(fol.y-fol.py)*t)*16;const im=folImg(folLead().sid);
+    ents.push({y:fy-0.5,draw:()=>{const hop=player.moving?-Math.abs(Math.sin(t*Math.PI))*2:(im.float?Math.sin(frame/14)*1.5:0);
+      c.globalAlpha=.25;c.fillStyle='#000';c.beginPath();c.ellipse(fx-cx+8,fy-cy+14,7,2.5,0,0,7);c.fill();c.globalAlpha=1;
+      c.drawImage(im[fol.dir],Math.round(fx-cx-6),Math.round(fy-cy-13+hop+(im.float?-3:0)));}});}
   ents.push({y:ppy,draw:()=>{const spr=charSprite(LOOK.player)[player.dir];let f=0;if(player.moving)f=player.prog>=4&&player.prog<12?(player.step%2?1:2):0;c.drawImage(spr[f],ppx-cx,ppy-cy-6);
     const under=tileAt(player.moving&&player.prog>8?player.tx:player.x,player.moving&&player.prog>8?player.ty:player.y);
     if(under==='"'||under==='r')c.drawImage(getTile(under,()=>under,0,0,0,false),0,10,16,6,ppx-cx,ppy-cy+10,16,6);}});
@@ -2912,8 +2977,9 @@ async function saveConfirm(){
 }
 async function optionsMenu(){
   let s=0;while(true){
-    const items=[`AUTOSAVE: ${G.opts.autosave?'ON':'OFF'}`,`TEXT: ${G.opts.textFast?'FAST':'NORMAL'}`,`SOUND: ${G.opts.sound?'ON':'OFF'}`,`MUSIC: ${G.opts.music!==false?'ON':'OFF'}`,'EXPORT SAVE CODE','BACK'];
-    const r=await choose(items,{x:60,y:20,w:150,start:s});if(r<0||r===5)return;s=r;
+    const items=[`AUTOSAVE: ${G.opts.autosave?'ON':'OFF'}`,`TEXT: ${G.opts.textFast?'FAST':'NORMAL'}`,`SOUND: ${G.opts.sound?'ON':'OFF'}`,`MUSIC: ${G.opts.music!==false?'ON':'OFF'}`,'EXPORT SAVE CODE',`FOLLOWER: ${G.opts.follow!==false?'ON':'OFF'}`,'BACK'];
+    const r=await choose(items,{x:60,y:14,w:150,start:s});if(r<0||r===6)return;s=r;
+    if(r===5){G.opts.follow=G.opts.follow===false;continue;}
     if(r===3){G.opts.music=G.opts.music===false;continue;}
     if(r===0)G.opts.autosave=!G.opts.autosave;if(r===1)G.opts.textFast=!G.opts.textFast;if(r===2){G.opts.sound=!G.opts.sound;unlockAudio();}
     if(r===4){writeSave('manual');await domPanel('export');}
@@ -3072,15 +3138,17 @@ function codexScreen(){
         box(c,138,120,98,36,'std');if(seen){text(c,sp.name,146,126,'#404040',9);sp.types.forEach((t,k)=>typeTag(c,t,146+k*33,140));}else text(c,'Not yet found',146,132,'#b0b0b0',8);
       }};pushUI(el);});
 }
-// ----- starter picker -----
-function starterPicker(excl){
-  return new Promise(res=>{const bad=i=>excl&&ownedLine(STARTERS[i]);const el={full:1,bgc:'#e8e0c8',sel:excl?Math.max(0,[0,1,2,3,4,5,6,7,8].findIndex(i=>!bad(i))):0,update(p){
-    if(dirP(p,'left')){this.sel=(this.sel+8)%9;SFX.sel();}if(dirP(p,'right')){this.sel=(this.sel+1)%9;SFX.sel();}
-    if(dirP(p,'up')){this.sel=(this.sel+6)%9;SFX.sel();}if(dirP(p,'down')){this.sel=(this.sel+3)%9;SFX.sel();}
-    if(p.has('a')){if(bad(this.sel)){SFX.bump();return;}SFX.ok();popUI(this);const sid=STARTERS[this.sel];yesno(`So, you want ${SPECIES[sid].name}, the ${SPECIES[sid].types[0]} type?`).then(ok=>res(ok?sid:-1));}},
-    draw(c){c.fillStyle='#e8e0c8';c.fillRect(0,0,W,H);for(let r=0;r<3;r++){text(c,REGIONS[r].toUpperCase(),6,14+r*42,'#806848',7);
-      for(let k=0;k<3;k++){const i=r*3+k,x=60+k*60,y=4+r*42,on=i===this.sel;box(c,x,y,46,40,on?'dark':'info');if(bad(i))c.globalAlpha=.25;c.drawImage(spriteOf(STARTERS[i]).front,0,0,64,64,x+5,y+2,36,36);c.globalAlpha=1;}}
-      const sp=SPECIES[STARTERS[this.sel]];box(c,2,128,236,30);text(c,sp.name,12,134,'#404040',10);typeTag(c,sp.types[0],100,135);text(c,`from ${REGIONS[sp.region]}`,230,135,'#806848',8,true,'right');text(c,'Pick your partner with A',12,147,'#908878',7);}};
+// ----- starter picker: the three partners native to region r -----
+function starterPicker(r){
+  r=r||0;const ids=STARTERS.slice(r*3,r*3+3);
+  return new Promise(res=>{const el={full:1,bgc:'#e8e0c8',sel:0,update(p){
+    if(dirP(p,'left')){this.sel=(this.sel+2)%3;SFX.sel();}if(dirP(p,'right')){this.sel=(this.sel+1)%3;SFX.sel();}
+    if(p.has('a')){SFX.ok();popUI(this);const sid=ids[this.sel];yesno(`So, you want ${SPECIES[sid].name}, the ${SPECIES[sid].types[0]} type?`).then(ok=>res(ok?sid:-1));}},
+    draw(c){c.fillStyle='#e8e0c8';c.fillRect(0,0,W,H);text(c,`PARTNERS OF ${REGIONS[r].toUpperCase()}`,120,8,'#806848',8,true,'center');
+      for(let k=0;k<3;k++){const x=8+k*78,y=22,on=k===this.sel;box(c,x,y,72,86,on?'dark':'info');const bob=on?Math.round(Math.sin(frame/8)*2):0;
+        c.drawImage(spriteOf(ids[k]).front,0,0,64,64,x+4,y+6+bob,64,64);typeTag(c,SPECIES[ids[k]].types[0],x+36-14,y+72);}
+      const sp=SPECIES[ids[this.sel]];box(c,2,116,236,42);text(c,sp.name,12,122,'#404040',10);typeTag(c,sp.types[0],120,123);
+      wrapText(c,(LORE[sp.name]||'').split('. ')[0]+'.',214,7).slice(0,2).forEach((l,i)=>text(c,l,12,136+i*9,'#605848',7));}};
     pushUI(el);});
 }
 
@@ -3179,7 +3247,7 @@ function burst(b,type){B.fx.parts=B.fx.parts||[];const cx=b.side==='f'?178:62,cy
 async function startBattle(opts){
   const tr=opts.trainer?Object.assign({},opts.trainer,{mons:opts.trainer.party.map(([n,l])=>makeMon(SP_BY[n].id,l))}):null;
   const pi=G.party.findIndex(m=>m.hp>0);
-  B={story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
+  B={assist:opts.assist?Object.assign(mkBattler(opts.assist.mon,'a'),{owner:opts.assist.name}):null,story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
   await fadeTo(1,12);scene='battle';
   B.f=mkBattler(B.foes[0],'f');B.p=mkBattler(G.party[pi],'p');B.p.hidden=true;if(tr)B.f.hidden=true;
@@ -3190,6 +3258,7 @@ async function startBattle(opts){
     addSeen(B.f.mon.sid);await bsay(`${tr.cls} ${tr.name} sent out ${monName(B.f.mon)}!`);await appearAnim(B.f);}
   for(let t=0;t<14;t++){B.fx.tp.x=-t*6;await wait(1);}B.fx.tp=null;
   await bsay(`Go! ${monName(B.p.mon)}!`);await appearAnim(B.p);
+  if(B.assist)await bsay(`${B.assist.owner} jumps in to help! ${B.assist.owner}'s ${monName(B.assist.mon)} is backing you up!`);
   let result;
   while(true){const act=await chooseAction();const r=await doTurn(act);if(r){result=r;break;}}
   if(result==='win'||result==='caught')jingle('victory');
@@ -3267,6 +3336,7 @@ async function doTurn(act){
   } else order.push({b:B.f,t:B.p,m:fAct});
   for(let i=0;i<order.length;i++){const o=order[i];if(o.b.mon.hp<=0||o.t.mon.hp<=0)continue;if(o.b!==B.p&&o.b!==B.f)continue;
     o.b.first=i===0;await doMove(o.b,o.t,o.m);const r=await checkFaints();if(r==='win'||r==='lose')return r;if(r==='faint')break;}
+  if(B.assist&&B.f.mon.hp>0&&B.p.mon.hp>0){const r=await assistMove();if(r==='win'||r==='lose')return r;}
   for(const b of [B.f,B.p]){const m=b.mon;if(m.hp<=0)continue;
     if(m.status==='brn'||m.status==='psn'){const d=Math.max(1,Math.floor(m.stats[0]/8));m.hp=Math.max(0,m.hp-d);await shake(b);await tweenHP(b);await bsay(`${bn(b)} is hurt by its ${m.status==='brn'?'burn':'poison'}!`);
       const r=await checkFaints();if(r==='win'||r==='lose')return r;}}
@@ -3305,6 +3375,17 @@ async function doMove(att,def,mi){
     if(mv.st){if(effMulti(mv.type,dT)===0&&mv.type==='Electric'){await bsay(`It doesn't affect ${bn(def)}...`);return;}if(!(await inflict(def,mv.st)))await bsay('But it failed!');return;}
     if(mv.stat)await stages(mv.stat.who==='self'?att:def,mv.stat.s);
   }
+}
+// A friend's Wyldkin backs you up: one supporting attack at the end of each turn (60% strength).
+async function assistMove(){
+  const a=B.assist,dT=SPECIES[B.f.mon.sid].types;let best=null,bv=-1;
+  for(const s of a.mon.moves){const m=MOVES[s.id];if(!m.pow)continue;const e=effMulti(m.type,dT);const v=m.pow*e*(SPECIES[a.mon.sid].types.includes(m.type)?1.5:1);if(v>bv){bv=v;best=m;}}
+  if(!best||bv<=0)return null;
+  await bsay(`${a.owner}'s ${monName(a.mon)} used ${best.name}!`);
+  const e=effMulti(best.type,dT);const r=calcDamage(a,B.f,best,e);SFX.hit();burst(B.f,best.type);await blink(B.f);
+  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6)));await tweenHP(B.f);
+  if(e>1)await bsay('It\'s super effective!');else if(e<1)await bsay('It\'s not very effective...');
+  return await checkFaints();
 }
 function calcDamage(att,def,mv,e){
   const phys=!SPECIAL.has(mv.type);const crit=Math.random()<(mv.crit?1/8:1/16);
