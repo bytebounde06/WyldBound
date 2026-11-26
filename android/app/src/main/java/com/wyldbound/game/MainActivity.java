@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class MainActivity extends Activity {
     private WebView web;
+    private PeerBridge peer;
     private PermissionRequest pendingPermission;
     private ValueCallback<Uri[]> fileCallback;
     private static final int REQ_CAMERA = 7, REQ_FILE = 8;
@@ -94,6 +95,8 @@ public class MainActivity extends Activity {
             }
         });
         web.addJavascriptInterface(new SaveBridge(), "AndroidBridge");
+        peer = new PeerBridge(this, web);
+        web.addJavascriptInterface(peer, "AndroidPeer");   // nearby trading on the same Wi-Fi
         web.loadUrl("https://appassets.androidplatform.net/assets/WyldBound.html");
     }
 
@@ -129,6 +132,12 @@ public class MainActivity extends Activity {
             fileCallback.onReceiveValue(u == null ? null : new Uri[]{u});
             fileCallback = null;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (peer != null) peer.stop();
+        super.onDestroy();
     }
 
     @Override

@@ -3067,13 +3067,14 @@ function tradeScene(out,inn,who){return new Promise(res=>{let t=0;SFX.ok();const
     if(t>90){text(c,`Sent ${monName(out)} to ${who}.`,120,116,'#c8d8f0',8,true,'center');text(c,`Received ${monName(inn)}!`,120,130,'#ffffff',9,true,'center');}}};pushUI(el);});}
 
 // =====================================================================
-//  NEARBY TRADE (same Wi-Fi): iPhone app only. The app finds other phones running WyldBound
-//  with Apple's Multipeer Connectivity (see PeerLink.swift). The web app can't reach other
-//  devices without a server, so it uses QR codes instead.
+//  NEARBY TRADE (same Wi-Fi): iPhone and Android apps, and they can trade with each other.
+//  Both apps use Bonjour/mDNS "_wyldtrade._tcp" + TCP (PeerLink.swift / PeerBridge.java).
+//  The web app can't reach other devices without a server, so it uses QR codes instead.
 // =====================================================================
 const PEER={inbox:[],waiters:[],peers:[],onPeers:null,onInvite:null,connected:null,
-  ok(){return!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbPeer);},
-  post(o){try{window.webkit.messageHandlers.wbPeer.postMessage(o);}catch(e){}},
+  ok(){return!!(window.AndroidPeer||(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbPeer));},
+  post(o){try{if(window.AndroidPeer){const A=window.AndroidPeer;if(o.op==='start')A.start(o.name);else if(o.op==='stop')A.stop();else if(o.op==='invite')A.invite(o.id);else if(o.op==='answer')A.answer(o.id,!!o.ok);else if(o.op==='send')A.send(o.data);return;}
+    window.webkit.messageHandlers.wbPeer.postMessage(o);}catch(e){}},
   push(ev){const w=this.waiters.shift();if(w)w(ev);else this.inbox.push(ev);},
   next(ms){return new Promise(res=>{if(this.inbox.length)return res(this.inbox.shift());let done=false;const w=ev=>{if(done)return;done=true;res(ev);};this.waiters.push(w);
     if(ms)setTimeout(()=>{if(done)return;done=true;this.waiters=this.waiters.filter(x=>x!==w);res({type:'timeout'});},ms);});}};
@@ -3088,7 +3089,7 @@ window.WBPeerEvent=ev=>{
 function nearbyConnect(){return new Promise(res=>{const ov=document.getElementById('overlay');ov.innerHTML='';ov.style.display='flex';
   const card=document.createElement('div');card.className='card';ov.appendChild(card);
   const close=v=>{PEER.onPeers=null;PEER.onInvite=null;ov.style.display='none';ov.innerHTML='';res(v);};
-  card.innerHTML='<h3>Nearby trade</h3><p style="font-size:13px;color:#605848;margin:4px 0 8px">Both phones: open TRADE → NEARBY TRADE on the same Wi-Fi. Tap your friend\'s name when it shows up.</p>';
+  card.innerHTML='<h3>Nearby trade</h3><p style="font-size:13px;color:#605848;margin:4px 0 8px">Both phones (iPhone or Android): connect to the same Wi-Fi and open TRADE → NEARBY TRADE. Tap your friend\'s name when it shows up.</p>';
   const list=document.createElement('div');card.appendChild(list);const msg=document.createElement('p');msg.style.cssText='font-size:13px;color:#806040;margin:6px 0';card.appendChild(msg);
   const row=document.createElement('div');row.className='row';card.appendChild(row);const cn=document.createElement('button');cn.textContent='Cancel';row.appendChild(cn);cn.onclick=()=>{PEER.post({op:'stop'});close(null);};
   const draw=()=>{list.innerHTML='';if(!PEER.peers.length){list.innerHTML='<p style="font-size:13px;color:#908070">Looking for nearby trainers...</p>';return;}
@@ -3121,7 +3122,7 @@ async function reconcile(h){const j=G.tradeJournal;if(!j||j.partner!==h.gid)retu
   else{clearTag(j.tid);tradeLogAdd(j.tid,j.partner,'aborted');G.tradeJournal=null;writeSave('manual');
     await say(`Your unfinished trade with ${j.partnerName} was cancelled. You kept ${monName(j.mine)}.`);}}
 async function nearbyTrade(){
-  if(!PEER.ok())return say(window.AndroidBridge?'Nearby trading over Wi-Fi is only in the iPhone app for now. On Android, trade with QR codes instead. They work between Android and iPhone too!':'Nearby trading over Wi-Fi works in the WyldBound iPhone app (the SideStore version). In the web app, trade with QR codes instead.');
+  if(!PEER.ok())return say('Nearby trading over Wi-Fi works in the WyldBound phone apps (iPhone and Android). In the web app, trade with QR codes instead.');
   if(!G.tradeJournal&&G.party.length<2)return say('You need at least two Wyldkin on your team to trade one away.');
   PEER.inbox=[];PEER.waiters=[];PEER.connected=null;gameId();PEER.post({op:'start',name:G.name});
   const who=await nearbyConnect();if(!who)return;

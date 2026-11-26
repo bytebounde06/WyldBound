@@ -1,132 +1,168 @@
 import Foundation
-import MultipeerConnectivity
+import Network
 import WebKit
 
-/// Nearby trading: finds other phones running WyldBound on the same Wi-Fi (or nearby over
-/// peer-to-peer Wi-Fi/Bluetooth) using Apple's Multipeer Connectivity, and passes small
-/// trade messages between the two games. No internet or server involved.
+/// Nearby trading on the same Wi-Fi, compatible with the Android app.
+/// Both apps announce a Bonjour service "_wyldtrade._tcp" and talk over a plain TCP
+/// connection using one JSON message per line:
+///   {"op":"invite","name":...}  {"op":"accept"}  {"op":"decline"}  {"op":"data","data":...}
+/// No internet or server involved.
 ///
 /// JavaScript → native:  window.webkit.messageHandlers.wbPeer.postMessage({op: ...})
 ///   start {name}, stop, invite {id}, answer {id, ok}, send {data}
 /// Native → JavaScript:  window.WBPeerEvent({type: ...})
-///   peers {list:[{id,name}]}, invite {id,name}, connected {name}, disconnected, data {data}, error {message}
-final class PeerLink: NSObject, WKScriptMessageHandler, MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
-    static let serviceType = "wyldtrade"
+///   peers {list:[{id,name}]}, invite {id,name}, connected {name}, disconnected {name}, data {data}, error {message}
+final class PeerLink: NSObject, WKScriptMessageHandler {
+    static let serviceType = "_wyldtrade._tcp"
     weak var webView: WKWebView?
 
-    private var myPeer: MCPeerID?
-    private var session: MCSession?
-    private var advertiser: MCNearbyServiceAdvertiser?
-    private var browser: MCNearbyServiceBrowser?
-    private var found: [String: MCPeerID] = [:]
-    private var pendingInvites: [String: (Bool, MCSession?) -> Void] = [:]
-    private var inviteFrom: [String: MCPeerID] = [:]
+    private let queue = DispatchQueue(label: "wyld.peer")
+    private var myName = ""
+    private var listener: NWListener?
+    private var browser: NWBrowser?
+    private var found: [String: NWEndpoint] = [:]
+    private var conn: NWConnection?            // the active trade connection
+    private var connName = ""
+    private var pending: [String: NWConnection] = [:]   // incoming invites waiting for an answer
+    private var buffers: [ObjectIdentifier: Data] = [:]
 
     // MARK: JavaScript messages
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let op = body["op"] as? String else { return }
-        DispatchQueue.main.async {
+        queue.async {
             switch op {
             case "start": self.start(name: (body["name"] as? String) ?? "Trainer")
             case "stop": self.stop()
             case "invite": if let id = body["id"] as? String { self.invite(id) }
             case "answer": if let id = body["id"] as? String { self.answer(id, ok: (body["ok"] as? Bool) ?? false) }
-            case "send": if let data = body["data"] as? String { self.send(data) }
+            case "send": if let d = body["data"] as? String { self.sendLine(["op": "data", "data": d], on: self.conn) }
             default: break
             }
         }
     }
 
+    // MARK: Start / stop
     private func start(name: String) {
         stop()
-        let clean = String(name.prefix(20)) + " #" + String(Int.random(in: 100...999))
-        let peer = MCPeerID(displayName: clean)
-        myPeer = peer
-        let s = MCSession(peer: peer, securityIdentity: nil, encryptionPreference: .required)
-        s.delegate = self
-        session = s
-        let adv = MCNearbyServiceAdvertiser(peer: peer, discoveryInfo: nil, serviceType: PeerLink.serviceType)
-        adv.delegate = self
-        adv.startAdvertisingPeer()
-        advertiser = adv
-        let br = MCNearbyServiceBrowser(peer: peer, serviceType: PeerLink.serviceType)
-        br.delegate = self
-        br.startBrowsingForPeers()
-        browser = br
+        myName = String(name.prefix(20)) + " #" + String(Int.random(in: 100...999))
+        do {
+            let l = try NWListener(using: .tcp)
+            l.service = NWListener.Service(name: myName, type: PeerLink.serviceType)
+            l.newConnectionHandler = { [weak self] c in self?.incoming(c) }
+            l.stateUpdateHandler = { [weak self] st in if case .failed(let e) = st { self?.emit(["type": "error", "message": "\(e)"]) } }
+            l.start(queue: queue)
+            listener = l
+        } catch { emit(["type": "error", "message": "\(error)"]) }
+        let b = NWBrowser(for: .bonjour(type: PeerLink.serviceType, domain: nil), using: .tcp)
+        b.browseResultsChangedHandler = { [weak self] results, _ in
+            guard let self = self else { return }
+            self.found.removeAll()
+            for r in results {
+                if case let .service(name, _, _, _) = r.endpoint, name != self.myName { self.found[name] = r.endpoint }
+            }
+            self.emitPeers()
+        }
+        b.start(queue: queue)
+        browser = b
         emitPeers()
     }
 
     private func stop() {
-        advertiser?.stopAdvertisingPeer()
-        browser?.stopBrowsingForPeers()
-        session?.disconnect()
-        advertiser = nil; browser = nil; session = nil; myPeer = nil
-        found.removeAll(); pendingInvites.removeAll(); inviteFrom.removeAll()
+        listener?.cancel(); listener = nil
+        browser?.cancel(); browser = nil
+        conn?.cancel(); conn = nil
+        pending.values.forEach { $0.cancel() }; pending.removeAll()
+        found.removeAll(); buffers.removeAll()
     }
 
+    // MARK: Connections
     private func invite(_ id: String) {
-        guard let peer = found[id], let s = session else { return }
-        browser?.invitePeer(peer, to: s, withContext: nil, timeout: 30)
+        guard let ep = found[id] else { return }
+        let c = NWConnection(to: ep, using: .tcp)
+        setup(c, outgoing: true, name: id)
+        c.start(queue: queue)
+    }
+
+    private func incoming(_ c: NWConnection) {
+        setup(c, outgoing: false, name: "")
+        c.start(queue: queue)
+    }
+
+    private func setup(_ c: NWConnection, outgoing: Bool, name: String) {
+        c.stateUpdateHandler = { [weak self, weak c] st in
+            guard let self = self, let c = c else { return }
+            switch st {
+            case .ready:
+                self.receive(on: c)
+                if outgoing { self.conn = c; self.connName = name; self.sendLine(["op": "invite", "name": self.myName], on: c) }
+            case .failed, .cancelled:
+                if c === self.conn { self.conn = nil; self.emit(["type": "disconnected", "name": self.connName]) }
+            default: break
+            }
+        }
     }
 
     private func answer(_ id: String, ok: Bool) {
-        guard let handler = pendingInvites.removeValue(forKey: id) else { return }
-        handler(ok, ok ? session : nil)
-    }
-
-    private func send(_ text: String) {
-        guard let s = session, !s.connectedPeers.isEmpty, let d = text.data(using: .utf8) else { return }
-        do { try s.send(d, toPeers: s.connectedPeers, with: .reliable) }
-        catch { emit(["type": "error", "message": error.localizedDescription]) }
-    }
-
-    // MARK: Sending events to the game
-    private func emit(_ obj: [String: Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: obj),
-              let json = String(data: data, encoding: .utf8) else { return }
-        DispatchQueue.main.async {
-            self.webView?.evaluateJavaScript("window.WBPeerEvent && window.WBPeerEvent(\(json));", completionHandler: nil)
+        guard let c = pending.removeValue(forKey: id) else { return }
+        if ok {
+            conn = c; connName = id
+            sendLine(["op": "accept"], on: c)
+            emit(["type": "connected", "name": id])
+        } else {
+            sendLine(["op": "decline"], on: c)
+            queue.asyncAfter(deadline: .now() + 0.5) { c.cancel() }
         }
     }
-    private func emitPeers() {
-        let list = found.map { ["id": $0.key, "name": $0.value.displayName] }
-        emit(["type": "peers", "list": list])
-    }
 
-    // MARK: Browser
-    func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
-        DispatchQueue.main.async { self.found[peerID.displayName] = peerID; self.emitPeers() }
-    }
-    func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
-        DispatchQueue.main.async { self.found.removeValue(forKey: peerID.displayName); self.emitPeers() }
-    }
-    func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
-        emit(["type": "error", "message": error.localizedDescription])
-    }
-
-    // MARK: Advertiser
-    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        DispatchQueue.main.async {
-            self.pendingInvites[peerID.displayName] = invitationHandler
-            self.emit(["type": "invite", "id": peerID.displayName, "name": peerID.displayName])
+    private func receive(on c: NWConnection) {
+        c.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self, weak c] data, _, done, err in
+            guard let self = self, let c = c else { return }
+            if let data = data, !data.isEmpty {
+                let key = ObjectIdentifier(c)
+                var buf = (self.buffers[key] ?? Data()) + data
+                while let nl = buf.firstIndex(of: 10) {
+                    let line = buf.subdata(in: buf.startIndex..<nl)
+                    buf.removeSubrange(buf.startIndex...nl)
+                    self.handle(line, from: c)
+                }
+                self.buffers[key] = buf
+            }
+            if done || err != nil {
+                if c === self.conn { self.conn = nil; self.emit(["type": "disconnected", "name": self.connName]) }
+                c.cancel(); return
+            }
+            self.receive(on: c)
         }
     }
-    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
-        emit(["type": "error", "message": error.localizedDescription])
-    }
 
-    // MARK: Session
-    func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
-        switch state {
-        case .connected: emit(["type": "connected", "name": peerID.displayName])
-        case .notConnected: emit(["type": "disconnected", "name": peerID.displayName])
+    private func handle(_ line: Data, from c: NWConnection) {
+        guard let obj = try? JSONSerialization.jsonObject(with: line) as? [String: Any], let op = obj["op"] as? String else { return }
+        switch op {
+        case "invite":
+            let n = (obj["name"] as? String) ?? "Trainer"
+            pending[n] = c
+            emit(["type": "invite", "id": n, "name": n])
+        case "accept":
+            if c === conn { emit(["type": "connected", "name": connName]) }
+        case "decline":
+            if c === conn { conn = nil; emit(["type": "error", "message": "\(connName) declined."]) }
+            c.cancel()
+        case "data":
+            if c === conn, let d = obj["data"] as? String { emit(["type": "data", "data": d]) }
         default: break
         }
     }
-    func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        if let text = String(data: data, encoding: .utf8) { emit(["type": "data", "data": text]) }
+
+    private func sendLine(_ obj: [String: Any], on c: NWConnection?) {
+        guard let c = c, var d = try? JSONSerialization.data(withJSONObject: obj) else { return }
+        d.append(10)
+        c.send(content: d, completion: .contentProcessed { [weak self] e in if let e = e { self?.emit(["type": "error", "message": "\(e)"]) } })
     }
-    func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
-    func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
-    func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
+
+    // MARK: Events to the game
+    private func emit(_ obj: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj), let json = String(data: data, encoding: .utf8) else { return }
+        DispatchQueue.main.async { self.webView?.evaluateJavaScript("window.WBPeerEvent && window.WBPeerEvent(\(json));", completionHandler: nil) }
+    }
+    private func emitPeers() { emit(["type": "peers", "list": found.keys.sorted().map { ["id": $0, "name": $0] }]) }
 }
