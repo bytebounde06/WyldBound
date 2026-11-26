@@ -1360,7 +1360,7 @@ function buildTiles(){TILES.r=[getTile('r',()=>'r',0,0,0,false)];}
 const CHARS={};
 function charSprite(look){
   const key=JSON.stringify(look);if(CHARS[key])return CHARS[key];
-  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0,glow:null,trim:null,gloves:null,bow:null,ribs:null,shorts:null,eyec:null},look);
+  const L=Object.assign({hair:'#583828',skin:'#f8c8a0',shirt:'#d04040',pants:'#384878',shoes:'#383030',cap:null,dress:0,coat:null,visor:null,bandana:null,badge:0,bag:null,hairStyle:0,glow:null,trim:null,gloves:null,bow:null,ribs:null,shorts:null,eyec:null,ears:null,tail:null,tv:null},look);
   const res={};
   ['down','up','left'].forEach(dir=>{res[dir]=[0,1,2].map(frame=>{
     const g=[];for(let y=0;y<21;y++)g.push(new Array(16).fill(null));
@@ -1390,9 +1390,14 @@ function charSprite(look){
       if(L.hairStyle===1&&dir==='down'){P(3,3,'hair');P(12,3,'hair');P(4,1,'hair');P(7,1,'hair');P(10,1,'hair');}
       if(L.hairStyle===2){R(3,7,1,4,'hair');R(12,7,1,4,'hair');}
       if(L.cap){R(4,1,8,3,'cap');P(4,1,null);P(11,1,null);if(dir==='down'){R(3,4,10,1,'brim');}}
+      if(L.tv){for(let y=0;y<10;y++)for(let x=2;x<14;x++)g[y][x]=null;R(3,2,10,8,'tv');P(5,0,'tvant');P(6,1,'tvant');P(10,0,'tvant');P(9,1,'tvant');
+        if(dir==='down'){R(4,3,8,5,'screen');P(5,4,'eye');P(6,4,'eye');P(9,4,'eye');P(10,4,'eye');P(5,6,'eye');R(6,7,4,1,'eye');P(10,6,'eye');P(11,8,'tvled');}
+        R(6,9,4,1,'tv');}
       if(L.ribs&&dir==='down'){P(7,11,'ribs');P(8,11,'ribs');R(5,12,6,1,'ribs');P(7,12,'shirt');P(8,12,'ribs');R(5,14,6,1,'ribs');P(7,13,'ribs');P(8,13,'ribs');}
       if(L.shorts){R(5,15,6,1,'shorts');if(!L.dress){R(5,16,3,1,'shorts');R(8,16,3,1,'shorts');}}
-      if(L.bow){R(3,0,4,3,'bow');R(9,0,4,3,'bow');P(3,0,null);P(12,0,null);P(4,1,'bowin');P(11,1,'bowin');R(7,1,2,2,'bow');}
+      if(L.ears){P(3,0,'eartip');R(3,1,2,2,'ears');P(4,0,'ears');P(12,0,'eartip');R(11,1,2,2,'ears');P(11,0,'ears');}
+      if(L.tail){if(dir==='up'){R(10,13,3,3,'tail');R(11,16,3,2,'tail');P(13,18,'eartip');P(12,18,'eartip');}else{P(13,14,'tail');P(13,15,'tail');P(14,13,'eartip');}}
+      if(L.bow){R(4,0,2,3,'bow');R(10,0,2,3,'bow');P(5,0,'bowin');P(5,1,'bowin');P(10,0,'bowin');P(10,1,'bowin');P(3,1,'bow');P(12,1,'bow');}
     } else {
       const a=frame;
       if(L.dress){R(5,15,6,2,'shirt');}
@@ -1409,21 +1414,24 @@ function charSprite(look){
       if(L.bandana){R(4,8,5,2,'band');}
       if(L.cap){R(5,1,7,3,'cap');R(3,4,4,1,'brim');}
       if(L.ribs){R(6,12,4,1,'ribs');R(6,14,4,1,'ribs');}
+      if(L.tv){for(let y=0;y<10;y++)for(let x=2;x<14;x++)g[y][x]=null;R(4,2,8,8,'tv');P(7,0,'tvant');P(7,1,'tvant');R(4,3,2,5,'screen');P(4,4,'eye');P(4,6,'eye');R(7,9,3,1,'tv');}
       if(L.shorts){R(5,15,6,1,'shorts');}
-      if(L.bow){R(6,0,5,3,'bow');P(6,0,null);P(8,1,'bowin');}
+      if(L.bow){R(7,0,2,3,'bow');P(8,0,'bowin');P(8,1,'bowin');R(9,1,1,2,'bow');}
+      if(L.ears){R(8,0,2,3,'ears');P(8,0,'eartip');}
+      if(L.tail){R(11,13,3,3,'tail');R(12,16,3,2,'tail');P(14,17,'eartip');P(14,16,'eartip');}
     }
-    const base={bow:L.bow||'#f7a6d6',shorts:L.shorts||'#f4f0fa',hair:L.hair,skin:L.skin,shirt:L.shirt,pants:L.pants,shoes:L.shoes,cap:L.cap||'#ffffff',brim:L.cap||'#ffffff',coat:L.coat||'#f4f4f4',visor:L.visor||'#40e0d0',band:L.bandana||'#c03030',bag:L.bag||'#c08040',belt:'#4a3a30',arm:L.coat||L.shirt,badge:'#f8d048'};
+    const base={tv:L.tv||'#3a3d46',ears:L.ears||'#d8401c',tail:L.tail||'#e2521e',bow:L.bow||'#f7a6d6',shorts:L.shorts||'#f4f0fa',hair:L.hair,skin:L.skin,shirt:L.shirt,pants:L.pants,shoes:L.shoes,cap:L.cap||'#ffffff',brim:L.cap||'#ffffff',coat:L.coat||'#f4f4f4',visor:L.visor||'#40e0d0',band:L.bandana||'#c03030',bag:L.bag||'#c08040',belt:'#4a3a30',arm:L.coat||L.shirt,badge:'#f8d048'};
     const ramp={};const rp=k=>ramp[k]||(ramp[k]=makeRamp(hex2rgb(base[k]||'#888888')));
     const c=mkCanvas(16,21),x=c.getContext('2d');
     const at=(X,Y)=>(Y>=0&&Y<21&&X>=0&&X<16)?g[Y][X]:null;
     for(let Y=0;Y<21;Y++)for(let X=0;X<16;X++){const k=g[Y][X];
       if(k){let col;
-        if(k==='eye')col=L.glow?hex2rgb(L.glow):L.eyec?hex2rgb(L.eyec):[36,28,40];else if(k==='eyeh')col=L.glow?[240,255,255]:[250,250,255];else if(k==='trim')col=hex2rgb(L.trim);else if(k==='teeth')col=[236,242,244];else if(k==='bowin')col=hex2rgb(L.bow&&L.bowIn||'#b48cf0');else if(k==='ribs')col=hex2rgb(L.ribs);else if(k==='glove')col=hex2rgb(L.gloves);else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
+        if(k==='eye')col=L.glow?hex2rgb(L.glow):L.eyec?hex2rgb(L.eyec):[36,28,40];else if(k==='eyeh')col=L.glow?[240,255,255]:[250,250,255];else if(k==='trim')col=hex2rgb(L.trim);else if(k==='teeth')col=[236,242,244];else if(k==='bowin')col=hex2rgb(L.bow&&L.bowIn||'#b48cf0');else if(k==='ribs')col=hex2rgb(L.ribs);else if(k==='eartip')col=[255,196,72];else if(k==='screen')col=[(X*7+Y*13)%3?16:30,(X*7+Y*13)%3?22:40,(X*7+Y*13)%3?28:48];else if(k==='tvant')col=[150,154,166];else if(k==='tvled')col=[255,70,90];else if(k==='glove')col=hex2rgb(L.gloves);else if(k==='blush')col=mix(hex2rgb(L.skin),[240,120,130],.35);else if(k==='mouth')col=adj(hex2rgb(L.skin),-.22);else if(k==='visorh')col=[220,255,255];else if(k==='badge')col=[248,208,72];
         else{const r=rp(k==='arm'?(L.coat?'coat':'shirt'):k);let t=2;const same=(dx,dy)=>{const n=at(X+dx,Y+dy);return n===k;};
           if(!same(-1,0)||!same(0,-1))t=3;if(!same(1,0)||!same(0,1))t=1;if(k==='hair'&&((X+Y)%3===0)&&t===2)t=3;if(k==='brim'||k==='belt')t=1;if(k==='arm')t=1;col=r[t];}
         px(x,col,X,Y);}
       else{let nc=null;for(const[dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){const n=at(X+dx,Y+dy);if(n){nc=n;break;}}
-        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'||nc==='trim'||nc==='glove'||nc==='teeth'||nc==='ribs'||nc==='bowin'?'skin':nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
+        if(nc){const b=nc==='eye'||nc==='eyeh'||nc==='blush'||nc==='mouth'||nc==='badge'||nc==='visorh'||nc==='trim'||nc==='glove'||nc==='teeth'||nc==='ribs'||nc==='bowin'||nc==='eartip'||nc==='screen'||nc==='tvant'||nc==='tvled'?(L.tv?'tv':'skin'):nc==='arm'?(L.coat?'coat':'shirt'):nc;px(x,adj(rp(b)[0],-.18),X,Y);}}
     }
     return c;});});
   res.right=res.left.map(cn=>{const m=mkCanvas(16,21),x=m.getContext('2d');x.translate(16,0);x.scale(-1,1);x.drawImage(cn,0,0);return m;});
@@ -1541,7 +1549,7 @@ async function profTalk(){
   await say(`Prof. Hazel: Ah, ${G.name}! You came. I study Wyldkin from three regions: Aldera, Coralmere and Frostfell.`);
   await say('These three are the partner Wyldkin of Aldera. Coralmere and Frostfell have partners of their own. Choose the one you like best!');
   let sid=-1;
-  while(sid<0){sid=await starterPicker(0);}
+  sid=await chooseStarter(0);
   const sp=SPECIES[sid];
   const mon=makeMon(sid,5);G.party.push(mon);addSeen(sid);addCaught(sid);
   await say(`${G.name} received ${sp.name}!`);
@@ -1689,13 +1697,16 @@ async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
   const isBB=/BB|MERC|BYTEBOUND|SALTJACK|DIRECTOR|CHIEF|SERGEANT|ENFORCER/i.test(tr.cls||'');if(!isBB)return null;
-  G.assistN=(G.assistN||0)+1;if(G.assistN%2===0)return null; // every other ByteBound fight
-  const who=(G.assistN>>1)%2===0?'Wren':'Rowan';const sid=who==='Wren'?fr.wren:fr.rowan;
+  G.assistN=(G.assistN||0)+1;const sm=smashedFriend();
+  if(!sm&&G.assistN%2===0)return null; // every other ByteBound fight (Smashed always shows up)
+  const who=sm?(sm==='riv'?'Rowan':'Wren'):(G.assistN>>1)%2===0?'Wren':'Rowan';const sid=who==='Wren'?fr.wren:fr.rowan;
   const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
   const bunnyFr=(who==='Wren'&&isBunny(FR().pal.name))||(who==='Rowan'&&isBunny(FR().riv.name));
+  if(smashedTrainer(who))await say(`${who}: Ugh. ByteBound again? You look like you\'re about to get flattened. Move over, I\'m helping. Don\'t make it a thing.`);else
   if(bunnyFr)await say(`${who}: Sweetie, are those ByteBound creeps bothering you? Nobody hurts my friends. Mama Bunny is here!`);else
   await say(who==='Wren'?`Wren: ${G.name}! I saw ByteBound come this way. Want me to back you up, like old times?`:`Rowan: Tch, ByteBound again? Fine. Want a hand, ${G.name}? Don't make it weird.`);
-  if(!await yesno(`Battle with ${who}'s help?`)){await say(`${who}: Okay! I'll be right here cheering.`);return null;}
+  if(!await yesno(`Battle with ${who}'s help?`)){await say(smashedTrainer(who)?`${who}: Your funeral. ...I\'m standing right here if it goes bad, though.`:`${who}: Okay! I'll be right here cheering.`);return null;}
+  if(smashedTrainer(who)){const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);return{name:who,mon:makeMon(evolvedAt(SP_BY.Cinderpup.id,lvl),lvl)};}
   return{name:who,mon:makeMon(evolvedAt(sid,lvl),lvl)};
 }
 function giveKey(k){G.keys=G.keys||[];if(!G.keys.includes(k))G.keys.push(k);}
@@ -2229,7 +2240,7 @@ async function regionStarter(r){
   await say(`Professor ${PROF[r]}: You must be ${G.name}! Professor Hazel told me all about you. The border lock trapped your team, didn\'t it?`);
   await say(`Your friends Rowan and Wren got here an hour ago. Same story, their teams are locked too. So all three of you need new partners.`);
   await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
-  let sid=-1;while(sid<0)sid=await starterPicker(r);
+  const sid=await chooseStarter(r);
   const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
   await say(`${G.name} received ${SPECIES[sid].name}! A fresh start in ${REGIONS[r]}.`);
   await rivalPicks(r,sid);
@@ -2239,11 +2250,14 @@ async function regionStarter(r){
 // ---------- rivals: Rowan takes the partner strong against yours, Wren takes the one that's left ----------
 function evolvedAt(sid,lvl){let s=sid;for(let i=0;i<3;i++){const e=SPECIES[s].evo;if(e&&e.lvl&&e.lvl<=lvl)s=e.to;else break;}return s;}
 async function rivalPicks(r,sid){
-  const k=STARTERS.indexOf(sid)-r*3;const rsid=STARTERS[r*3+(k+1)%3],wsid=STARTERS[r*3+(k+2)%3];
+  const k=STARTERS.indexOf(sid)-r*3;let rsid=STARTERS[r*3+(k+1)%3],wsid=STARTERS[r*3+(k+2)%3];
+  const sm=smashedFriend();if(sm){const fire=fireStarter(r),other=STARTERS.slice(r*3,r*3+3).find(s=>s!==sid&&s!==fire);if(sm==='riv'){rsid=fire;wsid=other;}else{wsid=fire;rsid=other;}}
   G.rivals=G.rivals||{};G.rivals[r]={rowan:rsid,wren:wsid};if(r===0)G.rivalStarter=rsid;
   const prof=r===0?'Prof. Hazel':`Professor ${PROF[r]}`;
-  await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
-  await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);
+  if(sm==='riv'){await say(`Rowan: ${SPECIES[rsid].name}'s with me. Obviously. Look at it. It's on fire.`);await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
+  else if(sm==='pal'){await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);await say(`Wren: ${SPECIES[wsid].name} and I already understand each other. Fire's honest. Unlike Rowan's battle plans.`);}
+  else{await say(`Rowan: Then I'll take ${SPECIES[rsid].name}!`);
+  await say(`Wren: And that leaves ${SPECIES[wsid].name} for me. Hi there, little one!`);}
   await say(`Wren: Okay, here's the deal. Winner stays on, just like when we were kids!`);
   await say(`Rowan: ${r===0?'':'Champion or not, '}I'm first! Come on, ${G.name}!`);
   const rowanBattle=()=>startBattle({trainer:{name:'Rowan',cls:'RIVAL',party:[[SPECIES[rsid].name,5]],reward:12,lose:'What?! I picked the wrong one!',look:LOOK.rival},noWhiteout:1});
@@ -2257,6 +2271,7 @@ async function rivalPicks(r,sid){
     if(r2==='win')await say(`Wren: Two wins in a row! ${prof.split(' ').pop()}, did you see that?`);else await say('Wren: I did it! Sorry, not sorry!');
   } else {
     await say('Rowan: Ha! Told you I\'d win!');
+    if(sm==='riv')await say(`Rowan: ...Hey. You okay? Don\'t look like that. Losing\'s how you get stronger. Now get up.`);
     await say('Wren: Winner stays on! Rowan, you\'re mine!');
     const wWins=await labSpar(rsid,wsid);
     if(wWins)await say(`Wren's ${SPECIES[wsid].name} wins! Wren is the true winner!`);else await say(`Rowan's ${SPECIES[rsid].name} wins! Rowan is the true winner!`);
@@ -2301,8 +2316,9 @@ async function wrenBattle(r,i){
   G.flags[`wren${r}_${i}`]=1;const wsid=G.rivals[r].wren;
   const enc=(MAPS[WREN_SPOTS[r][i]].enc||{}).grass||[];const top=enc.reduce((a,e)=>Math.max(a,e[2]||0),0);
   const L=i===0?6:Math.max(8,top+2);
-  const party=i===0?[...pickTeam(null,4,1,'wren'+r),[SPECIES[wsid].name,6]]:[...pickTeam(null,L-1,i+1,'wren'+r+i),[SPECIES[evolvedAt(wsid,L+1)].name,L+1]];
-  const [intro,lose,win]=WREN_LINES[i];
+  let party=i===0?[...pickTeam(null,4,1,'wren'+r),[SPECIES[wsid].name,6]]:[...pickTeam(null,L-1,i+1,'wren'+r+i),[SPECIES[evolvedAt(wsid,L+1)].name,L+1]];
+  let [intro,lose,win]=WREN_LINES[i];
+  if(smashedTrainer('Wren'))[intro,lose,win]=[['You again. Let\'s see if you actually trained or just wandered around picking flowers.','...Okay, that was good. Don\'t let it go to your head.','Told you. Your type matchups are a mess. Come find me when you fix them.'],['Heard ByteBound\'s been on your case. Good. Let\'s make sure you can handle it.','Fine. You\'re ready. Mostly. Go wreck them.','Not good enough yet. Heal up and try again. I\'m not going anywhere.'],['Last check before the League. I\'m not going easy, so don\'t ask.','You\'re strong. Annoyingly strong. ...I\'m proud of you, okay? Never repeating that.','You\'ll get there. Rest your team. I mean it.']][i];
   await say(`Wren: ${G.name}! ${intro}`);
   const res=await startBattle({trainer:{name:'Wren',cls:'RIVAL',party,reward:i===0?10:16+i*6,lose,look:LOOK.wren},noWhiteout:i===0?1:0});
   if(res!=='win'){await say(`Wren: ${win}`);if(i===0)await healAll();}
@@ -2818,7 +2834,7 @@ function choose(items,o={}){
     pushUI(el);
   });
 }
-async function yesno(prompt){const r=await choose(['YES','NO'],{x:192,y:H-92,w:46,prompt});return r===0;}
+async function yesno(prompt,labels){const r=await choose(labels||['YES','NO'],{x:192,y:H-92,w:46,prompt});return!labels&&r===0||(!!labels&&labels[r]==='YES');}
 function waitKey(){return new Promise(res=>pushUI({update(p){if(p.has('a')||p.has('b')||p.has('start')){popUI(this);res();}},draw(){}}));}
 
 // list menu with scrolling (bag, shop, pc, etc.)
@@ -2850,17 +2866,29 @@ function friendText(s){if(typeof s!=='string')return s;const f=FR();const pr=(g,
   return s.replace(/\{(R|P)(HE|HIS|HIM)\}/g,(m,w,k,o,all)=>{const v=pr(w==='R'?f.riv.g:f.pal.g,k.toLowerCase());return(o===0||/[.!?:]\s*$/.test(all.slice(Math.max(0,o-3),o)))?v[0].toUpperCase()+v.slice(1):v;}).replace(/\bRowan\b/g,'\u0001R').replace(/\bWren\b/g,'\u0001P').replace(/\u0001R/g,f.riv.name).replace(/\u0001P/g,f.pal.name);}
 const FRIEND_LOOKS={riv:{m:{hair:'#c87830',shirt:'#3868c8',pants:'#303030'},f:{hair:'#c87830',shirt:'#3868c8',pants:'#3868c8',dress:1,hairStyle:2}},
   pal:{f:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',hairStyle:2},m:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',cap:'#3aa070'}}};
-function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);if(isStatic(f[k].name))f[k].g='m';if(isBunny(f[k].name))f[k].g='f';Object.assign(o,isStatic(f[k].name)?STATIC_LOOK:isBunny(f[k].name)?BUNNY_LOOK:FRIEND_LOOKS[k][f[k].g]);}
-  const pl=LOOK.player;Object.keys(pl).forEach(x=>delete pl[x]);Object.assign(pl,G&&isStatic(G.name)?STATIC_LOOK:G&&isBunny(G.name)?BUNNY_LOOK:PLAYER_BASE);FOLIMG_CLEAR();}
+function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);if(isStatic(f[k].name)||isSmashed(f[k].name))f[k].g='m';if(isBunny(f[k].name))f[k].g='f';Object.assign(o,isStatic(f[k].name)?STATIC_LOOK:isBunny(f[k].name)?BUNNY_LOOK:isSmashed(f[k].name)?SMASHED_LOOK:FRIEND_LOOKS[k][f[k].g]);}
+  const pl=LOOK.player;Object.keys(pl).forEach(x=>delete pl[x]);Object.assign(pl,G&&isStatic(G.name)?STATIC_LOOK:G&&isBunny(G.name)?BUNNY_LOOK:G&&isSmashed(G.name)?SMASHED_LOOK:PLAYER_BASE);FOLIMG_CLEAR();}
 function FOLIMG_CLEAR(){for(const k in FOLIMG)delete FOLIMG[k];}
 // ===================== EASTER EGG: "Static" =====================
 // Naming yourself or a friend Static makes ByteNet notice. Cosmetic glitches only; saves and gameplay are never affected.
 const PLAYER_BASE=Object.assign({},LOOK.player);
-const STATIC_LOOK={hair:'#26262e',skin:'#7d909e',shirt:'#1a1a20',coat:'#33363f',pants:'#18181c',shoes:'#0e0e10',glow:'#8ff6ff',trim:'#2fd6f2',gloves:'#141418',hairStyle:1};
+const STATIC_LOOK={hair:'#26262e',skin:'#7d909e',shirt:'#1a1a20',coat:'#33363f',pants:'#18181c',shoes:'#0e0e10',glow:'#8ff6ff',trim:'#2fd6f2',gloves:'#141418',hairStyle:1,tv:'#3a3d46'};
 function isStatic(n){return typeof n==='string'&&n.trim().toLowerCase()==='static';}
 // ===================== EASTER EGG: "Bunny" / "BunnyRX" =====================
 // A sea bunny / bat hybrid who escaped a (non-ByteBound) lab. Kind, motherly, hates hospitals and doctors, and has a crush on Static.
 const BUNNY_LOOK={hair:'#f39ac8',skin:'#fbe2e8',shirt:'#f4a8d8',pants:'#f6bde0',shoes:'#f8d6ea',hairStyle:2,bow:'#f7a6d6',bowIn:'#b48cf0',ribs:'#fff6fb',shorts:'#f6f0fb',eyec:'#7a4ab8'};
+// ===================== EASTER EGG: "Smashed" / "SmashedAtom" =====================
+// Red fox-eared fire alchemist. Blunt and a bit rude, brutally honest, always shows up to help. Loves fire types and dog-like Wyldkin.
+const SMASHED_LOOK={hair:'#d8401c',skin:'#b97a52',shirt:'#8a1c1c',coat:'#1e1517',pants:'#8a1e22',shoes:'#1a1210',eyec:'#ffb020',ears:'#d8401c',tail:'#e2521e',trim:'#c89a3a',gloves:'#1a1414',hairStyle:1};
+const DOG_WYLD=['Puddlepup','Tidehound','Surgefang','Pyrevix','Cinderpup','Blazehound','Nightvixen','Florafox','Snarlpup','Shadowolf','Sparkpup','Stormhound','Pupfrost','Rimewolf'];
+function isDog(m){return!!m&&DOG_WYLD.includes(SPECIES[m.sid].name);}
+function isSmashed(n){return typeof n==='string'&&/^smashed(atom)?$/i.test(n.trim());}
+function smashedFriend(){if(!G)return null;const f=FR();return isSmashed(f.riv.name)?'riv':isSmashed(f.pal.name)?'pal':null;}
+function smashedTrainer(name){const f=FR();return(name==='Rowan'&&isSmashed(f.riv.name))||(name==='Wren'&&isSmashed(f.pal.name));}
+function fireStarter(r){return STARTERS.slice(r*3,r*3+3).find(s=>SPECIES[s].types.includes('Fire'));}
+// Smashed keeps a balanced team but always slips a fire dog in: swap his first non-fire, non-ace Wyldkin for Cinderpup's line at the same level.
+function smashedParty(party){if(party.length<2)return party;const out=party.map(p=>p.slice());const i=out.findIndex((p,k)=>k<out.length-1&&!SPECIES[SP_BY[p[0]].id].types.includes('Fire'));
+  if(i>=0){const l=out[i][1];out[i]=[SPECIES[evolvedAt(SP_BY.Cinderpup.id,l)].name,l];}return out;}
 function isBunny(n){return typeof n==='string'&&/^bunny(rx)?$/i.test(n.trim());}
 function bunnyWho(){if(!G)return null;if(isBunny(G.name))return'you';const f=FR();if(isBunny(f.riv.name))return'riv';if(isBunny(f.pal.name))return'pal';return null;}
 function bunnyName(){const w=bunnyWho();return w==='you'?G.name:w==='riv'?FR().riv.name:w==='pal'?FR().pal.name:'Bunny';}
@@ -2955,6 +2983,8 @@ function folVisible(){return folOn()&&folLead()&&!fol.hide&&!(fol.x===player.x&&
 async function followerTalk(){const m=folLead();const n=monName(m);const r=m.hp/m.stats[0];
   const L=r<.35?[`${n} looks tired. A rest would help.`,`${n} is hanging in there, but it's hurting.`]:m.status?[`${n} doesn't feel well...`]:[`${n} is happy to be walking with you!`,`${n} looks around excitedly.`,`${n} nuzzles your hand.`,`${n} is full of energy!`,`${n} sniffs the air curiously.`,`${n} stays close to your side.`];
   if(G.party[0]!==m)L.push(`${n} is leading the team today.`);
+  if(isSmashed(G.name)&&isDog(m)){L.length=0;L.push(`You scratch behind ${n}\'s ears. "Best. Dog. Ever. Don\'t tell the others."`,`${n} wags so hard it nearly falls over. You pretend you\'re not grinning.`,`You slip ${n} a snack when nobody\'s looking. Good dog.`);}
+  else if(isSmashed(G.name)&&SPECIES[m.sid].types.includes('Fire')){L.push(`${n}\'s flames flicker happily. You nod. "Yeah. Good fire."`);}
   if(isBunny(G.name)){L.length=0;L.push(r<.35?`You scoop ${n} into a gentle hug. "Shh, Mama's got you. No doctors. We'll rest at home."`:`${n} snuggles into your arms. "Who's my sweet baby? You are!"`,`You fix ${n}'s fur and give it a little kiss on the head.`,`${n} is glowing pink with happiness.`);}await say(L[Math.floor(Math.random()*L.length)]);}
 function loadMap(id,x,y,dir){
   const prev=MAPID;MAP=prepMap(id);MAPID=id;applyMods();GROUND=MAP.ground||(MAP.indoor?'_':'.');pendingEnter=prev!==id;
@@ -3300,15 +3330,22 @@ function codexScreen(){
         box(c,138,120,98,36,'std');if(seen){text(c,sp.name,146,126,'#404040',9);sp.types.forEach((t,k)=>typeTag(c,t,146+k*33,140));}else text(c,'Not yet found',146,132,'#b0b0b0',8);
       }};pushUI(el);});
 }
+// Starter choice. If Smashed is your friend, he snatches the fire type the moment you reach for it.
+async function chooseStarter(r){const sm=smashedFriend();const fire=fireStarter(r);const excl=[];
+  while(true){const sid=await starterPicker(r,excl);if(sid<0)continue;
+    if(sm&&sid===fire){const n=sm==='riv'?FR().riv.name:FR().pal.name;
+      await say(`${n}: Whoa. Nope. Hands off.`);await say(`${n} grabs ${SPECIES[fire].name} right out of the Professor\'s hands.`);
+      await say(`${n}: Fire types are mine. Always have been. Honestly? You\'d get it singed in a week. Pick something else.`);excl.push(fire);continue;}
+    return sid;}}
 // ----- starter picker: the three partners native to region r -----
-function starterPicker(r){
-  r=r||0;const ids=STARTERS.slice(r*3,r*3+3);
-  return new Promise(res=>{const el={full:1,bgc:'#e8e0c8',sel:0,update(p){
+function starterPicker(r,excl){
+  r=r||0;excl=excl||[];const ids=STARTERS.slice(r*3,r*3+3);const s0=Math.max(0,ids.findIndex(s=>!excl.includes(s)&&(!G||!isSmashed(G.name)||SPECIES[s].types.includes('Fire'))));
+  return new Promise(res=>{const el={full:1,bgc:'#e8e0c8',sel:s0,update(p){
     if(dirP(p,'left')){this.sel=(this.sel+2)%3;SFX.sel();}if(dirP(p,'right')){this.sel=(this.sel+1)%3;SFX.sel();}
-    if(p.has('a')){SFX.ok();popUI(this);const sid=ids[this.sel];yesno(`So, you want ${SPECIES[sid].name}, the ${SPECIES[sid].types[0]} type?`).then(ok=>res(ok?sid:-1));}},
+    if(p.has('a')){if(excl.includes(ids[this.sel])){SFX.bump();return;}SFX.ok();popUI(this);const sid=ids[this.sel];const onlyFire=G&&isSmashed(G.name)&&!SPECIES[sid].types.includes('Fire');yesno(`So, you want ${SPECIES[sid].name}, the ${SPECIES[sid].types[0]} type?`,onlyFire?['NO','NO']:null).then(ok=>res(ok?sid:-1));}},
     draw(c){c.fillStyle='#e8e0c8';c.fillRect(0,0,W,H);text(c,`PARTNERS OF ${REGIONS[r].toUpperCase()}`,120,8,'#806848',8,true,'center');
-      for(let k=0;k<3;k++){const x=8+k*78,y=22,on=k===this.sel;box(c,x,y,72,86,on?'dark':'info');const bob=on?Math.round(Math.sin(frame/8)*2):0;
-        c.drawImage(spriteOf(ids[k]).front,0,0,64,64,x+4,y+6+bob,64,64);typeTag(c,SPECIES[ids[k]].types[0],x+36-14,y+72);}
+      for(let k=0;k<3;k++){const x=8+k*78,y=22,on=k===this.sel;box(c,x,y,72,86,on?'dark':'info');const bob=on?Math.round(Math.sin(frame/8)*2):0;if(excl.includes(ids[k]))c.globalAlpha=.25;
+        c.drawImage(spriteOf(ids[k]).front,0,0,64,64,x+4,y+6+bob,64,64);c.globalAlpha=1;if(excl.includes(ids[k]))text(c,'TAKEN',x+36,y+40,'#e04040',9,true,'center');typeTag(c,SPECIES[ids[k]].types[0],x+36-14,y+72);}
       const sp=SPECIES[ids[this.sel]];box(c,2,116,236,42);text(c,sp.name,12,122,'#404040',10);typeTag(c,sp.types[0],120,123);
       wrapText(c,(LORE[sp.name]||'').split('. ')[0]+'.',214,7).slice(0,2).forEach((l,i)=>text(c,l,12,136+i*9,'#605848',7));}};
     pushUI(el);});
@@ -3364,6 +3401,8 @@ async function newGameFlow(){
   await say(`Right! ${fr.riv.name}, my grandchild, and ${fr.pal.name}, from the blue-roofed house down the lane. The three of you have been inseparable forever.`);
   if(staticEgg())await staticBoot(isStatic(name)?'you':'friend');
   if(bunnyWho())await bunnyBoot();
+  if(isSmashed(name))await say(`Hazel: ${name}. Still smell like smoke and potion fumes, I see. And you\'ve already told me my lab is "a mess." Thank you, dear.`);
+  else if(smashedFriend())await say(`Hazel: Ah, ${smashedFriend()==='riv'?fr.riv.name:fr.pal.name}. Blunt as a brick, loves anything with fire or fur. But when it counts, he\'s always the first one there.`);
   introSpr=charSprite(LOOK.player).down[0];
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
   await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
@@ -3414,6 +3453,7 @@ function burst(b,type){B.fx.parts=B.fx.parts||[];const cx=b.side==='f'?178:62,cy
 
 async function startBattle(opts){
   const tr=opts.trainer?Object.assign({},opts.trainer,{mons:opts.trainer.party.map(([n,l])=>makeMon(SP_BY[n].id,l))}):null;
+  if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}tr.lose='Tch. Fine. You won. Your team\'s still sloppy though. Fix your weak spots before ByteBound finds them.';}
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
   if(opts.assist&&((opts.assist.name==='Rowan'&&isBunny(FR().riv.name))||(opts.assist.name==='Wren'&&isBunny(FR().pal.name))))opts.assist.mon._pink=1;
   const pi=G.party.findIndex(m=>m.hp>0);
