@@ -1475,11 +1475,15 @@ MAPS.hearthollow={name:'Hearthollow',bg:'grass',rows:[
 'TT...,..LLLLLLL...TT',
 'TT...,..#ww#Dw#...TT',
 'TT*..,,,,,,,,,,...TT',
+'TT.BBBB.,.........TT',
+'TT.BBBB.,.........TT',
+'TT.#Dw#.,.........TT',
+'TT..,,,,,.........TT',
 'TT***...~~~~...***TT',
 'TT*.....~~~~......TT',
 'TTTTTTTTTTTTTTTTTTTT'],
  conn:{n:{to:'route1',off:-3}},
- warps:[{x:6,y:5,to:'house1',tx:3,ty:5,dir:'up'},{x:14,y:5,to:'house2',tx:3,ty:5,dir:'up'},{x:12,y:11,to:'lab',tx:5,ty:8,dir:'up'}],
+ warps:[{x:6,y:5,to:'house1',tx:3,ty:5,dir:'up'},{x:14,y:5,to:'house2',tx:3,ty:5,dir:'up'},{x:12,y:11,to:'lab',tx:5,ty:8,dir:'up'},{x:4,y:15,to:'wrenhouse',tx:3,ty:5,dir:'up'}],
  signs:{'3,8':'HEARTHOLLOW\nWhere every journey begins.'},
  triggers:[{x:9,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:10,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
  npcs:[{id:'hh_girl',x:14,y:8,dir:'down',look:LOOK.girl,wander:1,text:'Wyldkin live in the tall grass. Stay on the path if you don\'t have one with you!'},
@@ -1496,7 +1500,13 @@ MAPS.house1={name:'Your House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3
    await say(`Mom: ${G.name}! You look tired. Take a rest.`);await healAll();G.lastHeal={map:'house1',x:4,y:5};await say('Your Wyldkin are fully healed. Take care out there!');}}]};
 MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:6,dir:'down'}],
  npcs:[{id:'nb1',x:2,y:3,dir:'right',look:LOOK.youngster,text:'Tip: Hold B while walking to run! Press START to open your menu.'},
-       {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that he\'ll beat you. Typical.'}]};
+       {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that {RHE}\'ll beat you. Typical.'}]};
+MAPS.wrenhouse={name:'Wren\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:4,ty:16,dir:'down'}],
+ npcs:[{id:'wrenmom',x:5,y:3,dir:'left',look:{hair:'#2c2438',shirt:'#c86090',pants:'#584868',dress:1},run:async()=>{
+   if(!G.flags.starter){await say('Wren\'s Mom: Oh, hello dear! Wren ran off to the lab at sunrise. {PHE} couldn\'t sleep a wink last night!');return;}
+   if(!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say('Wren\'s Mom: You three are finally trainers! Here, take these Tonics. Keep an eye on Wren for me, okay?');await say(`${G.name} received 3 Tonics!`);return;}
+   await say(['Wren\'s Mom: Wren writes me every time {PHE} catches something new. The CODEX this, the CODEX that!','Wren\'s Mom: Remember when you three built that fort out of couch cushions and called it a Wyldkin gym?','Wren\'s Mom: Rowan stopped by looking for Wren. Those two still bicker like when they were five.'][Math.floor(Math.random()*3)]);}},
+  {id:'wrenpc',x:2,y:2,dir:'down',look:{hair:'#8a6a4a',shirt:'#507090',pants:'#384050'},text:'Wren\'s Dad: Wren has wanted to fill a CODEX since {PHE} could walk. Thanks for always looking out for {PHIM}.'}]};
 MAPS.lab={name:'Hazel\'s Lab',indoor:1,bg:'indoor',rows:[
 'XXXXXXXXXXX','XkkkkX_kkkX','X_________X','X___ttt___X','X_________X','Xk_______kX','X_________X','X__P___t__X','X_________X','XXXXXmXXXXX'],
  warps:[{x:5,y:9,to:'hearthollow',tx:12,ty:12,dir:'down'}],
@@ -2237,7 +2247,7 @@ async function rivalPicks(r,sid){
 }
 // Rowan and Wren's Wyldkin spar in the lab for a few seconds. Returns true if Wren wins.
 function labSpar(rsid,wsid){
-  // Wren's partner has the type edge over Rowan's, so she's favored, but anything can happen.
+  // Wren's partner has the type edge over Rowan's, so Wren is favored, but anything can happen.
   const wWins=Math.random()<.65;
   return new Promise(res=>{let t=0;const hpR={v:1},hpW={v:1};const hits=[];
     // script 6 exchanges; loser hits 0 at the end
@@ -2400,7 +2410,7 @@ async function c2Event(){
 }
 STORY_FAC.cablestation={w:15,h:12,core:1,gate:()=>regionBadges(1)>=4,gateText:'Saltjack Guard: The Cable Station is off limits. Come back when you\'ve got four Coralmere badges. Ha! As if.',
  npcs:[bbTrainer('cs_g1',2,8,'right',LOOK.saltjack,'Barnacle','SALTJACK',[['Spikurchin',30],['Snapjaw',30]],'Nobody gets near the cables!'),
-   bbTrainer('cs_g2',12,5,'left',LOOK.bb_sec,'Wren','BB SECURITY',[['Steelhawk',31],['Clawdron',31]],'Undertow is almost online. Turn back!'),
+   bbTrainer('cs_g2',12,5,'left',LOOK.bb_sec,'Vance','BB SECURITY',[['Steelhawk',31],['Clawdron',31]],'Undertow is almost online. Turn back!'),
    {id:'cs_boss',x:7,y:3,dir:'down',los:4,look:LOOK.vasquez,cond:()=>!G.flags.c3,storyRun:c3Event}]};
 STORY_AFTER_BUILD.push(()=>{if((MAPS.cablestation||{}).npcs){MAPS.cablestation.npcs.forEach(n=>{if(n.id.startsWith('cs_g'))n.cond=()=>!((G.keys||[]).includes('Tether Data'))&&!G.flags.c3;});}});
 async function c3Event(n){
@@ -2741,7 +2751,7 @@ function popUI(el){const i=ui.indexOf(el);if(i>=0)ui.splice(i,1);}
 function runScript(fn){lock=true;return Promise.resolve().then(fn).catch(e=>{console.error(e);}).finally(()=>{lock=false;refreshNPCs();});}
 
 // say(): GBA style 2-line text box
-function say(str,opts={}){window.LASTSAY=str;
+function say(str,opts={}){str=friendText(str);window.LASTSAY=str;
   return new Promise(res=>{
     const lines=wrapText(ctx,str,214,9);const pages=[];for(let i=0;i<lines.length;i+=2)pages.push(lines.slice(i,i+2));
     const el={pi:0,ch:0,t:0,update(p){const pg=pages[this.pi],full=pg.join('').length+pg.length;
@@ -2794,7 +2804,14 @@ function listMenu(o){
 }
 
 // ===================== GAME STATE =====================
-function newGame(name){return{keys:[],confiscated:[],champs:[],locked:[],hof:[],visited:[],repel:0,name,party:[],box:[],bag:{tonic:2},money:3000,badges:[],seen:[],caught:[],flags:{},defeated:{},map:'house1',x:5,y:2,dir:'up',lastHeal:{map:'house1',x:4,y:5},time:0,opts:{autosave:true,textFast:false,sound:true},rivalStarter:null};}
+// ----- friends: names and genders the player chose -----
+function FR(){return(G&&G.friends)||{riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};}
+function friendText(s){if(typeof s!=='string')return s;const f=FR();const pr=(g,k)=>({he:g==='f'?'she':'he',his:g==='f'?'her':'his',him:g==='f'?'her':'him'})[k];
+  return s.replace(/\{(R|P)(HE|HIS|HIM)\}/g,(m,w,k,o,all)=>{const v=pr(w==='R'?f.riv.g:f.pal.g,k.toLowerCase());return(o===0||/[.!?:]\s*$/.test(all.slice(Math.max(0,o-3),o)))?v[0].toUpperCase()+v.slice(1):v;}).replace(/\bRowan\b/g,'\u0001R').replace(/\bWren\b/g,'\u0001P').replace(/\u0001R/g,f.riv.name).replace(/\u0001P/g,f.pal.name);}
+const FRIEND_LOOKS={riv:{m:{hair:'#c87830',shirt:'#3868c8',pants:'#303030'},f:{hair:'#c87830',shirt:'#3868c8',pants:'#3868c8',dress:1,hairStyle:2}},
+  pal:{f:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',hairStyle:2},m:{hair:'#2c2438',shirt:'#3aa070',pants:'#e8dcb8',bag:'#c8a040',cap:'#3aa070'}}};
+function applyFriendLooks(){const f=FR();for(const[k,o] of [['riv',LOOK.rival],['pal',LOOK.wren]]){Object.keys(o).forEach(x=>delete o[x]);Object.assign(o,FRIEND_LOOKS[k][f[k].g]);}}
+function newGame(name){return{friends:{riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}},keys:[],confiscated:[],champs:[],locked:[],hof:[],visited:[],repel:0,name,party:[],box:[],bag:{tonic:2},money:3000,badges:[],seen:[],caught:[],flags:{},defeated:{},map:'house1',x:5,y:2,dir:'up',lastHeal:{map:'house1',x:4,y:5},time:0,opts:{autosave:true,textFast:false,sound:true},rivalStarter:null};}
 function addItem(k,n){G.bag[k]=(G.bag[k]||0)+n;}
 function addSeen(sid){if(!G.seen.includes(sid))G.seen.push(sid);}
 function addCaught(sid){addSeen(sid);if(!G.caught.includes(sid))G.caught.push(sid);}
@@ -2832,7 +2849,7 @@ async function readSlot(slot){
 async function readAllSlots(){const all=[];for(let i=1;i<=NSLOTS;i++)all.push(await readSlot(i));return all;}
 async function deleteSlot(slot){for(const kind of ['manual','auto']){try{localStorage.removeItem(SAVE_KEY+slot+'_'+kind);}catch(e){}NStore.del(SAVE_KEY+slot+'_'+kind);
   if(dbRef){try{await dbRef.db.doc(docPath(slot,kind)).delete();}catch(e){}}}}
-function loadState(data){G=data.G;['champs','locked','hof','visited','keys','confiscated'].forEach(k=>{if(!G[k])G[k]=[];});if(G.repel==null)G.repel=0;G.opts=Object.assign({autosave:true,textFast:false,sound:true},G.opts||{});G.party.forEach(calcStats);G.box.forEach(calcStats);}
+function loadState(data){G=data.G;if(!G.friends)G.friends={riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};applyFriendLooks();['champs','locked','hof','visited','keys','confiscated'].forEach(k=>{if(!G[k])G[k]=[];});if(G.repel==null)G.repel=0;G.opts=Object.assign({autosave:true,textFast:false,sound:true},G.opts||{});G.party.forEach(calcStats);G.box.forEach(calcStats);}
 function fmtTime(fr){const m=Math.floor(fr/3600);return`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`;}
 
 // ===================== WORLD =====================
@@ -2859,7 +2876,7 @@ function loadMap(id,x,y,dir){
   player.x=x;player.y=y;player.tx=x;player.ty=y;player.moving=false;player.prog=0;if(dir)player.dir=dir;
   fol.x=fol.px=x;fol.y=fol.py=y;fol.hide=true;
   G.map=id;G.x=x;G.y=y;G.dir=player.dir;
-  if(prev!==id&&(!MAP.indoor||!MAPS[prev]||!MAPS[prev].indoor))mapLabel={t:150,text:MAP.name};
+  if(prev!==id&&(!MAP.indoor||!MAPS[prev]||!MAPS[prev].indoor))mapLabel={t:150,text:friendText(MAP.name)};
 }
 function refreshNPCs(){if(!MAP)return;npcs=npcs.filter(n=>(!n.cond||n.cond())&&!(n.item&&G.flags['item_'+n.id]));}
 function npcAt(x,y){return npcs.find(n=>(n.x===x&&n.y===y)||(n.moving&&n.tx===x&&n.ty===y));}
@@ -3042,6 +3059,14 @@ function domPanel(kind){return new Promise(res=>{
   if(kind==='name'){h.textContent='What\'s your name?';const i=document.createElement('input');i.maxLength=10;i.value='Kit';i.autocomplete='off';card.appendChild(i);
     const b=document.createElement('button');b.textContent='OK';card.appendChild(b);b.onclick=()=>close((i.value.trim()||'Kit').slice(0,10));setTimeout(()=>{i.focus();i.select();},50);
     i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
+  else if(kind==='friends'){h.textContent='Your childhood friends';
+    const mk=(label,def,g)=>{const wrap=document.createElement('div');wrap.style.margin='8px 0';const l=document.createElement('div');l.textContent=label;l.style.cssText='font-size:13px;color:#605848;margin-bottom:4px';wrap.appendChild(l);
+      const i=document.createElement('input');i.maxLength=10;i.value=def;i.autocomplete='off';wrap.appendChild(i);
+      const row=document.createElement('div');row.className='row';row.style.marginTop='6px';let gv=g;const bs=[['m','Boy'],['f','Girl']].map(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.type='button';b.onclick=()=>{gv=v;paint();};row.appendChild(b);return[v,b];});
+      const paint=()=>bs.forEach(([v,b])=>{b.style.opacity=v===gv?'1':'.4';b.style.outline=v===gv?'2px solid #404858':'none';});paint();wrap.appendChild(row);card.appendChild(wrap);
+      return()=>({name:(i.value.trim()||def).slice(0,10),g:gv});};
+    const a=mk('Your rival (the Professor\'s grandchild)','Rowan','m'),p=mk('Your best friend','Wren','f');
+    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close({riv:a(),pal:p()});}
   else if(kind==='export'){h.textContent='Save code (back this up somewhere safe)';const t=document.createElement('textarea');t.readOnly=true;t.value=btoa(unescape(encodeURIComponent(JSON.stringify({v:1,t:Date.now(),G}))));card.appendChild(t);
     const row=document.createElement('div');row.className='row';card.appendChild(row);
     const cp=document.createElement('button');cp.textContent='Copy';row.appendChild(cp);cp.onclick=()=>{navigator.clipboard.writeText(t.value).then(()=>cp.textContent='Copied!',()=>{t.select();cp.textContent='Select + copy manually';});};
@@ -3245,6 +3270,9 @@ async function newGameFlow(){
   await say('And me? I study them. Now, tell me about yourself.');
   const name=await domPanel('name');
   G=newGame(name);
+  await say('And these two have been your best friends since you were little. What are their names?');
+  const fr=await domPanel('friends');G.friends=fr;applyFriendLooks();
+  await say(`Right! ${fr.riv.name}, my grandchild, and ${fr.pal.name}, from the blue-roofed house down the lane. The three of you have been inseparable forever.`);
   introSpr=charSprite(LOOK.player).down[0];
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
   await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
