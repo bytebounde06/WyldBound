@@ -397,7 +397,7 @@ function buildLearnset(sp){
   const pool=t=>t==='Normal'?['Quick Dash','Ram','Heavy Press','Rampage'].map(n=>MOVE_BY[n]):MOVES.filter(m=>m.type===t&&m.pow>0).sort((a,b)=>a.pow-b.pow);
   const stat=t=>MOVES.filter(m=>m.type===t&&m.pow===0);
   const [t1,t2]=sp.types;
-  const lv1=sp.early&&sp.stage<2?[1]:[5,11,19,30,41,52];
+  const lv1=sp.early&&sp.stage<2?[1]:sp.rar==='s'?[7,11,19,30,41,52]:[5,11,19,30,41,52]; // starters learn their first type move at Lv7 (fair first rival battle)
   pool(t1).forEach((m,i)=>{if(i<lv1.length)add(lv1[i],m.name);});
   if(t2){[8,16,26,37,48].forEach((lv,i)=>{const p=pool(t2);if(p[i])add(lv,p[i].name);});}
   const s1=stat(t1);if(s1.length)add(sp.early&&sp.stage===1?7:14,s1[Math.floor(r()*s1.length)].name);
