@@ -1692,7 +1692,11 @@ MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
    {id:'rl_note',x:9,y:8,dir:'down',look:LOOK.bb_sci,cond:()=>!!G.flags.s3,run:async()=>{await say(G.flags.s3==='won'?'Technician: The Tether core is cold. Dr. Vasquez cleared out her office and left for Coralmere. I\'m... updating my résumé.':'Technician: Tether is online and the network\'s stable. Commander Hale says your Wyldkin is "in good hands." I wouldn\'t count on it.');}}]};
 
 // ===================== STORY =====================
-async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(bunnyWho()==='you'&&/SCIENT|DR\.|DOCTOR/i.test((tr.cls||'')+' '+(tr.name||''))&&!G.flags.bunnyLab){G.flags.bunnyLab=1;await say(`${G.name}\'s little bat wings tremble under the pink hair. Lab coats. Clipboards. It wasn\'t ByteBound\'s lab she escaped from... but it looked just like this.`);await say(`${G.name}: Okay. Deep breath. Nobody\'s locking me in a tank ever again.`);}if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);return await startBattle({trainer:tr,story:1,assist});}
+async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(bunnyWho()==='you'&&/SCIENT|DR\.|DOCTOR/i.test((tr.cls||'')+' '+(tr.name||''))&&!G.flags.bunnyLab){G.flags.bunnyLab=1;await say(`${G.name}\'s little bat wings tremble under the pink hair. Lab coats. Clipboards. It wasn\'t ByteBound\'s lab she escaped from... but it looked just like this.`);await say(`${G.name}: Okay. Deep breath. Nobody\'s locking me in a tank ever again.`);}if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);const res=await startBattle({trainer:tr,story:1,assist});await sideHelperReturns();return res;}
+// The friend who went off on their own "battle" comes back.
+async function sideHelperReturns(){const sd=G._side;G._side=null;if(!sd)return;
+  if(isBunny(sd.name)){await say(`${sd.who} comes running back with a first-aid kit (definitely NOT from a hospital). "I chased off three of them with a broom! Now let Mama see your team."`);await healAll();await say(`${sd.who} patched up your whole team!`);}
+  else{await say(`${sd.who} strolls back, coat smoking a little. "Took out two scouts. They had this. Don't say I never give you anything."`);addItem('supertonic',1);SFX.lvl();await say(`${G.name} received a Super Tonic!`);}}
 // Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
@@ -1701,9 +1705,19 @@ async function friendAssist(tr){
   // All three easter eggs in play (Static, Bunny and Smashed): both friends help in every ByteBound fight.
   // Otherwise Smashed always shows up on his own, and regular friends take turns every other fight.
   const ns=[G.name,f.riv.name,f.pal.name];const allThree=ns.some(isStatic)&&ns.some(isBunny)&&ns.some(isSmashed);
-  let who=[];const sm=smashedFriend();
+  // Smashed and Bunny always show up. If both are your friends (without Static in play), you pick who helps
+  // and the other one runs off to "help" with a battle of their own.
+  const always=n=>isSmashed(n)||isBunny(n);
+  let who=[];G._side=null;
   if(allThree)who=['Rowan','Wren'];
-  else if(sm)who=[sm==='riv'?'Rowan':'Wren'];
+  else if(always(f.riv.name)&&always(f.pal.name)){
+    await say(`${f.riv.name} and ${f.pal.name} both step forward. "We've got this, ${G.name}!"`);
+    const c=await choose([f.riv.name,f.pal.name],{x:150,y:H-92,w:88,prompt:'Who should help you?'});const pick=c===1?'Wren':'Rowan',other=pick==='Rowan'?'Wren':'Rowan';
+    const on=other==='Rowan'?f.riv.name:f.pal.name;
+    await say(isSmashed(on)?`${other}: Fine. I'll go torch the guards in the next room. Somebody has to.`:`${other}: Okay, sweetie! I'll go keep the other ByteBound grunts busy. Be careful!`);
+    G._side={who:other,name:on};who=[pick];}
+  else if(always(f.riv.name))who=['Rowan'];
+  else if(always(f.pal.name))who=['Wren'];
   else if(G.assistN%2===1)who=[(G.assistN>>1)%2===0?'Wren':'Rowan'];
   if(!who.length)return null;
   const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
