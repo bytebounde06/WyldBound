@@ -3003,7 +3003,7 @@ async function tradeMenu(){
   while(true){const pend=G.tradePending,ans=G.tradeAnswer;const items=[];
     if(pend)items.push('FINISH MY OFFER','CANCEL MY OFFER');else items.push('OFFER A WYLDKIN');
     if(ans)items.push('COMPLETE MY ANSWER');else items.push('ANSWER A FRIEND\'S OFFER');
-    items.push('TRADE ON THIS PHONE','HOW IT WORKS','BACK');
+    items.push('NEARBY TRADE (WI-FI)','TRADE ON THIS PHONE','HOW IT WORKS','BACK');
     const r=await choose(items,{x:30,y:6,w:190});if(r<0)return;const it=items[r];
     if(it==='BACK')return;
     if(it==='HOW IT WORKS'){
@@ -3043,6 +3043,7 @@ async function tradeMenu(){
       else{receiveMon(ans.mine,G.name);writeSave('manual');await say(`${ans.from} cancelled the trade. ${monName(ans.mine)} came back to your team.`);}
       continue;}
     if(it==='TRADE ON THIS PHONE'){await localTrade();continue;}
+    if(it==='NEARBY TRADE (WI-FI)'){await nearbyTrade();continue;}
   }
 }
 async function localTrade(){
@@ -3063,6 +3064,69 @@ function tradeScene(out,inn,who){return new Promise(res=>{let t=0;SFX.ok();const
   draw(c){text(c,'TRADE',120,8,'#f8f0c0',12,true,'center');const u=Math.min(1,t/90);
     c.globalAlpha=1-u*.9;c.drawImage(spriteOf(out.sid).front,0,0,64,64,30+u*150,40-Math.sin(u*Math.PI)*24,64,64);c.globalAlpha=Math.min(1,u*1.3);c.drawImage(spriteOf(inn.sid).front,0,0,64,64,146-u*116,40+Math.sin(u*Math.PI)*24,64,64);c.globalAlpha=1;
     if(t>90){text(c,`Sent ${monName(out)} to ${who}.`,120,116,'#c8d8f0',8,true,'center');text(c,`Received ${monName(inn)}!`,120,130,'#ffffff',9,true,'center');}}};pushUI(el);});}
+
+// =====================================================================
+//  NEARBY TRADE (same Wi-Fi): iPhone app only. The app finds other phones running WyldBound
+//  with Apple's Multipeer Connectivity (see PeerLink.swift). The web app can't reach other
+//  devices without a server, so it uses QR codes instead.
+// =====================================================================
+const PEER={inbox:[],waiters:[],peers:[],onPeers:null,onInvite:null,connected:null,
+  ok(){return!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbPeer);},
+  post(o){try{window.webkit.messageHandlers.wbPeer.postMessage(o);}catch(e){}},
+  push(ev){const w=this.waiters.shift();if(w)w(ev);else this.inbox.push(ev);},
+  next(ms){return new Promise(res=>{if(this.inbox.length)return res(this.inbox.shift());let done=false;const w=ev=>{if(done)return;done=true;res(ev);};this.waiters.push(w);
+    if(ms)setTimeout(()=>{if(done)return;done=true;this.waiters=this.waiters.filter(x=>x!==w);res({type:'timeout'});},ms);});}};
+window.WBPeerEvent=ev=>{
+  if(ev.type==='peers'){PEER.peers=ev.list||[];PEER.onPeers&&PEER.onPeers();return;}
+  if(ev.type==='invite'){PEER.onInvite&&PEER.onInvite(ev);return;}
+  if(ev.type==='connected'){PEER.connected=ev.name;}
+  if(ev.type==='disconnected'&&PEER.connected!==ev.name)return;
+  if(ev.type==='data'){try{ev.msg=JSON.parse(ev.data);}catch(e){return;}}
+  PEER.push(ev);};
+// Find a nearby trainer and connect. Resolves to their name, or null.
+function nearbyConnect(){return new Promise(res=>{const ov=document.getElementById('overlay');ov.innerHTML='';ov.style.display='flex';
+  const card=document.createElement('div');card.className='card';ov.appendChild(card);
+  const close=v=>{PEER.onPeers=null;PEER.onInvite=null;ov.style.display='none';ov.innerHTML='';res(v);};
+  card.innerHTML='<h3>Nearby trade</h3><p style="font-size:13px;color:#605848;margin:4px 0 8px">Both phones: open TRADE → NEARBY TRADE on the same Wi-Fi. Tap your friend\'s name when it shows up.</p>';
+  const list=document.createElement('div');card.appendChild(list);const msg=document.createElement('p');msg.style.cssText='font-size:13px;color:#806040;margin:6px 0';card.appendChild(msg);
+  const row=document.createElement('div');row.className='row';card.appendChild(row);const cn=document.createElement('button');cn.textContent='Cancel';row.appendChild(cn);cn.onclick=()=>{PEER.post({op:'stop'});close(null);};
+  const draw=()=>{list.innerHTML='';if(!PEER.peers.length){list.innerHTML='<p style="font-size:13px;color:#908070">Looking for nearby trainers...</p>';return;}
+    PEER.peers.forEach(p=>{const b=document.createElement('button');b.textContent=p.name;b.style.cssText='display:block;width:100%;margin:4px 0';b.onclick=()=>{msg.textContent=`Asking ${p.name}...`;PEER.post({op:'invite',id:p.id});};list.appendChild(b);});};
+  PEER.onPeers=draw;draw();
+  PEER.onInvite=ev=>{list.innerHTML='';msg.textContent='';const q=document.createElement('p');q.textContent=`${ev.name} wants to trade with you.`;q.style.cssText='font-size:14px;margin:6px 0';list.appendChild(q);
+    const r2=document.createElement('div');r2.className='row';list.appendChild(r2);const y=document.createElement('button');y.textContent='Accept';const n=document.createElement('button');n.textContent='Decline';r2.appendChild(y);r2.appendChild(n);
+    y.onclick=()=>{PEER.post({op:'answer',id:ev.id,ok:true});msg.textContent='Connecting...';};n.onclick=()=>{PEER.post({op:'answer',id:ev.id,ok:false});draw();};};
+  (async()=>{while(true){const ev=await PEER.next();if(ov.style.display==='none')return;if(ev.type==='connected'){close(ev.name);return;}if(ev.type==='error')msg.textContent='Problem: '+ev.message;}})();
+});}
+async function nearbyTrade(){
+  if(!PEER.ok())return say('Nearby trading over Wi-Fi works in the WyldBound iPhone app (the SideStore version). In the web app, trade with QR codes instead.');
+  if(G.party.length<2)return say('You need at least two Wyldkin on your team to trade one away.');
+  PEER.inbox=[];PEER.waiters=[];PEER.connected=null;gameId();PEER.post({op:'start',name:G.name});
+  const who=await nearbyConnect();if(!who)return;
+  const end=async(m)=>{PEER.post({op:'stop'});PEER.connected=null;if(m)await say(m);};
+  await say(`Connected to ${who.replace(/ #\d+$/,'')}!`);
+  const i=await pickToTrade('Which Wyldkin will you offer?');
+  if(i==null){PEER.post({op:'send',data:JSON.stringify({t:'quit'})});return end('You left the trade.');}
+  const mine=G.party[i];PEER.post({op:'send',data:JSON.stringify({t:'offer',gid:G.gid,from:G.name,mon:mine})});
+  let theirOffer=null,theirReady=false,iAmReady=false;
+  const handle=ev=>{if(ev.type==='disconnected'||ev.type==='timeout')return'gone';if(ev.type!=='data')return null;const m=ev.msg;
+    if(m.t==='quit')return'quit';if(m.t==='offer'){theirOffer=m;}if(m.t==='ready'){theirReady=m.ok;if(!m.ok)return'declined';}return m.t;};
+  await say('Waiting for your friend to pick a Wyldkin...',{auto:1});
+  while(!theirOffer){const r=handle(await PEER.next(120000));if(r==='gone')return end('The connection was lost. Nothing was traded.');if(r==='quit')return end('Your friend left the trade. Nothing was traded.');}
+  const theirs=cleanMon(theirOffer.mon);if(!theirs){PEER.post({op:'send',data:JSON.stringify({t:'quit'})});return end('Something is wrong with that Wyldkin\'s data. Nothing was traded.');}
+  const ok=await yesno(`${theirOffer.from} offers ${monName(theirs)} (${SPECIES[theirs.sid].name} Lv${theirs.lvl}). Trade your ${monName(mine)} for it?`);
+  PEER.post({op:'send',data:JSON.stringify({t:'ready',ok})});if(!ok)return end('You declined. Nothing was traded.');iAmReady=true;
+  await say('Waiting for your friend to confirm...',{auto:1});
+  while(!theirReady){const r=handle(await PEER.next(120000));if(r==='gone')return end('The connection was lost. Nothing was traded.');if(r==='declined'||r==='quit')return end('Your friend declined. Nothing was traded.');}
+  // Both confirmed. The phone with the "smaller" game ID leads, so both sides swap in a fixed order.
+  const apply=async()=>{const idx=G.party.indexOf(mine);if(idx<0)return;G.party.splice(idx,1);receiveMon(theirs,theirOffer.from);writeSave('manual');await tradeScene(mine,theirs,theirOffer.from);};
+  if(G.gid<theirOffer.gid){PEER.post({op:'send',data:JSON.stringify({t:'commit'})});
+    while(true){const r=handle(await PEER.next(15000));if(r==='done')break;if(r==='gone')return end('The connection dropped before the trade finished. Nothing was traded on your side.');}
+    await apply();}
+  else{while(true){const r=handle(await PEER.next(30000));if(r==='commit')break;if(r==='gone')return end('The connection dropped before the trade finished. Nothing was traded.');}
+    PEER.post({op:'send',data:JSON.stringify({t:'done'})});await apply();}
+  await end();
+}
 
 'use strict';
 // ===================== ASSEMBLE WORLD =====================

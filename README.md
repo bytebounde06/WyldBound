@@ -94,7 +94,7 @@ You can unplug from the PC now. You won't need it again.
 
 ## Trading
 
-START → TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.
+START → TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. In the iPhone app (SideStore version), **NEARBY TRADE (WI-FI)** finds friends' phones on the same Wi-Fi automatically. No codes needed; allow Local Network access when asked. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.
 
 ## Troubleshooting
 

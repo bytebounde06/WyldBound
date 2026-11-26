@@ -10,6 +10,7 @@
 		8964E909897CA675879F4C01 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F8D42D69DEB1440553E7DA /* GameView.swift */; };
 		D7C7F29DB43DD1CCE6886E49 /* WyldBound.html in Resources */ = {isa = PBXBuildFile; fileRef = E783638680EE526B0F41C167 /* WyldBound.html */; };
 		121B2F4179DFD18DB91D6010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 42D35BC73752536E532BE199 /* Assets.xcassets */; };
+		B1C2D3E4F5061728394A5B6C /* PeerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* PeerLink.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		E783638680EE526B0F41C167 /* WyldBound.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "WyldBound.html"; sourceTree = "<group>"; };
 		42D35BC73752536E532BE199 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		99D288D75AE11A0DB2B6E1FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* PeerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PeerLink.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +36,7 @@
 		CA452AC6DB53E1C10D6D7F5F /* WyldBound */ = {isa = PBXGroup; children = (
 				379BCC0DC49C8942AA6A5FEB /* WyldBoundApp.swift */,
 				38F8D42D69DEB1440553E7DA /* GameView.swift */,
+				A1B2C3D4E5F60718293A4B5C /* PeerLink.swift */,
 				E783638680EE526B0F41C167 /* WyldBound.html */,
 				42D35BC73752536E532BE199 /* Assets.xcassets */,
 				99D288D75AE11A0DB2B6E1FB /* Info.plist */,
@@ -73,6 +76,7 @@
 		0F78FE532035D122ED352DBA /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
 				C7C6371CCDDD4A392A5724DE /* WyldBoundApp.swift in Sources */,
 				8964E909897CA675879F4C01 /* GameView.swift in Sources */,
+				B1C2D3E4F5061728394A5B6C /* PeerLink.swift in Sources */,
 			); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

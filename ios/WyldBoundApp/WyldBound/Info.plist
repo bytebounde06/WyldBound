@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>WyldBound looks for friends' phones nearby so you can trade Wyldkin.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_wyldtrade._tcp</string>
+		<string>_wyldtrade._udp</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>WyldBound uses the camera to scan your friend's trade QR code.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

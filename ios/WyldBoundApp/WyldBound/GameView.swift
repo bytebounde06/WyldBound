@@ -4,10 +4,15 @@ import WebKit
 /// Hosts the game (WyldBound.html, bundled inside the app) in a full-screen web view.
 /// Everything runs offline on the device.
 struct GameView: UIViewRepresentable {
-    func makeCoordinator() -> SaveStore { SaveStore() }
+    final class Coordinator {
+        let store = SaveStore()
+        let peer = PeerLink()
+    }
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> WKWebView {
-        let store = context.coordinator
+        let store = context.coordinator.store
+        let peer = context.coordinator.peer
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
@@ -17,6 +22,7 @@ struct GameView: UIViewRepresentable {
         // so they survive even if iOS clears web storage. They are injected at launch.
         let ucc = WKUserContentController()
         ucc.add(store, name: "wbStore")
+        ucc.add(peer, name: "wbPeer")   // nearby trading (Multipeer Connectivity)
         let boot = "window.WB_NATIVE_STORE = \(store.jsonString());"
         ucc.addUserScript(WKUserScript(source: boot, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController = ucc
@@ -28,6 +34,7 @@ struct GameView: UIViewRepresentable {
         web.scrollView.bounces = false
         web.scrollView.contentInsetAdjustmentBehavior = .never
         if #available(iOS 16.4, *) { web.isInspectable = true }
+        peer.webView = web
 
         if let url = Bundle.main.url(forResource: "WyldBound", withExtension: "html") {
             web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
