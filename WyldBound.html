@@ -1697,17 +1697,27 @@ async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
   const isBB=/BB|MERC|BYTEBOUND|SALTJACK|DIRECTOR|CHIEF|SERGEANT|ENFORCER/i.test(tr.cls||'');if(!isBB)return null;
-  G.assistN=(G.assistN||0)+1;const sm=smashedFriend();
-  if(!sm&&G.assistN%2===0)return null; // every other ByteBound fight (Smashed always shows up)
-  const who=sm?(sm==='riv'?'Rowan':'Wren'):(G.assistN>>1)%2===0?'Wren':'Rowan';const sid=who==='Wren'?fr.wren:fr.rowan;
+  G.assistN=(G.assistN||0)+1;const f=FR();
+  // All three easter eggs in play (Static, Bunny and Smashed): both friends help in every ByteBound fight.
+  // Otherwise Smashed always shows up on his own, and regular friends take turns every other fight.
+  const ns=[G.name,f.riv.name,f.pal.name];const allThree=ns.some(isStatic)&&ns.some(isBunny)&&ns.some(isSmashed);
+  let who=[];const sm=smashedFriend();
+  if(allThree)who=['Rowan','Wren'];
+  else if(sm)who=[sm==='riv'?'Rowan':'Wren'];
+  else if(G.assistN%2===1)who=[(G.assistN>>1)%2===0?'Wren':'Rowan'];
+  if(!who.length)return null;
   const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
-  const bunnyFr=(who==='Wren'&&isBunny(FR().pal.name))||(who==='Rowan'&&isBunny(FR().riv.name));
-  if(smashedTrainer(who))await say(`${who}: Ugh. ByteBound again? You look like you\'re about to get flattened. Move over, I\'m helping. Don\'t make it a thing.`);else
-  if(bunnyFr)await say(`${who}: Sweetie, are those ByteBound creeps bothering you? Nobody hurts my friends. Mama Bunny is here!`);else
-  await say(who==='Wren'?`Wren: ${G.name}! I saw ByteBound come this way. Want me to back you up, like old times?`:`Rowan: Tch, ByteBound again? Fine. Want a hand, ${G.name}? Don't make it weird.`);
-  if(!await yesno(`Battle with ${who}'s help?`)){await say(smashedTrainer(who)?`${who}: Your funeral. ...I\'m standing right here if it goes bad, though.`:`${who}: Okay! I'll be right here cheering.`);return null;}
-  if(smashedTrainer(who)){const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);return{name:who,mon:makeMon(evolvedAt(SP_BY.Cinderpup.id,lvl),lvl)};}
-  return{name:who,mon:makeMon(evolvedAt(sid,lvl),lvl)};
+  for(const w of who){const n=w==='Rowan'?f.riv.name:f.pal.name;
+    if(isSmashed(n))await say(`${w}: Ugh. ByteBound again? You look like you\'re about to get flattened. Move over, I\'m helping. Don\'t make it a thing.`);
+    else if(isBunny(n))await say(`${w}: Sweetie, are those ByteBound creeps bothering you? Nobody hurts my friends. Mama Bunny is here!`);
+    else if(isStatic(n)){glitchNow(16);await say(`${w}: ByteBound. Of course. They still think I\'m an "it." ...Let\'s show them what an "it" can do.`);}
+    else await say(w==='Wren'?`Wren: ${G.name}! I saw ByteBound come this way. Want me to back you up, like old times?`:`Rowan: Tch, ByteBound again? Fine. Want a hand, ${G.name}? Don't make it weird.`);}
+  const names=who.join(' and ');
+  if(!await yesno(`Battle with ${names}'s help?`)){
+    for(const w of who){const n=w==='Rowan'?f.riv.name:f.pal.name;await say(isSmashed(n)?`${w}: Your funeral. ...I\'m standing right here if it goes bad, though.`:isBunny(n)?`${w}: Okay, sweetie. But Mama\'s right behind you!`:isStatic(n)?`${w}: Suit yourself. I\'ll be watching. I\'m always watching. ...That came out creepier than I meant.`:`${w}: Okay! I'll be right here cheering.`);}
+    return null;}
+  return who.map(w=>{const n=w==='Rowan'?f.riv.name:f.pal.name;const sid=w==='Wren'?fr.wren:fr.rowan;
+    return{name:w,mon:makeMon(isSmashed(n)?evolvedAt(SP_BY.Cinderpup.id,lvl):evolvedAt(sid,lvl),lvl)};});
 }
 function giveKey(k){G.keys=G.keys||[];if(!G.keys.includes(k))G.keys.push(k);}
 async function s1Event(){
@@ -3455,9 +3465,10 @@ async function startBattle(opts){
   const tr=opts.trainer?Object.assign({},opts.trainer,{mons:opts.trainer.party.map(([n,l])=>makeMon(SP_BY[n].id,l))}):null;
   if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}tr.lose='Tch. Fine. You won. Your team\'s still sloppy though. Fix your weak spots before ByteBound finds them.';}
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
-  if(opts.assist&&((opts.assist.name==='Rowan'&&isBunny(FR().riv.name))||(opts.assist.name==='Wren'&&isBunny(FR().pal.name))))opts.assist.mon._pink=1;
+  const assists=opts.assist?[].concat(opts.assist):[];
+  assists.forEach(a=>{if((a.name==='Rowan'&&isBunny(FR().riv.name))||(a.name==='Wren'&&isBunny(FR().pal.name)))a.mon._pink=1;});
   const pi=G.party.findIndex(m=>m.hp>0);
-  B={assist:opts.assist?Object.assign(mkBattler(opts.assist.mon,'a'),{owner:opts.assist.name}):null,story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
+  B={assists:assists.map(a=>Object.assign(mkBattler(a.mon,'a'),{owner:a.name})),story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
   await fadeTo(1,12);scene='battle';
   B.f=mkBattler(B.foes[0],'f');B.p=mkBattler(G.party[pi],'p');B.p.hidden=true;if(tr)B.f.hidden=true;
@@ -3468,7 +3479,7 @@ async function startBattle(opts){
     addSeen(B.f.mon.sid);await bsay(`${tr.cls} ${tr.name} sent out ${monName(B.f.mon)}!`);await appearAnim(B.f);}
   for(let t=0;t<14;t++){B.fx.tp.x=-t*6;await wait(1);}B.fx.tp=null;
   await bsay(`Go! ${monName(B.p.mon)}!`);await appearAnim(B.p);
-  if(B.assist)await bsay(`${B.assist.owner} jumps in to help! ${B.assist.owner}'s ${monName(B.assist.mon)} is backing you up!`);
+  for(const a of B.assists)await bsay(`${a.owner} jumps in to help! ${a.owner}'s ${monName(a.mon)} is backing you up!`);
   let result;
   while(true){const act=await chooseAction();const r=await doTurn(act);if(r){result=r;break;}}
   if(result==='win'||result==='caught')jingle('victory');
@@ -3546,7 +3557,7 @@ async function doTurn(act){
   } else order.push({b:B.f,t:B.p,m:fAct});
   for(let i=0;i<order.length;i++){const o=order[i];if(o.b.mon.hp<=0||o.t.mon.hp<=0)continue;if(o.b!==B.p&&o.b!==B.f)continue;
     o.b.first=i===0;await doMove(o.b,o.t,o.m);const r=await checkFaints();if(r==='win'||r==='lose')return r;if(r==='faint')break;}
-  if(B.assist&&B.f.mon.hp>0&&B.p.mon.hp>0){const r=await assistMove();if(r==='win'||r==='lose')return r;}
+  for(const a of B.assists){if(B.f.mon.hp<=0||B.p.mon.hp<=0)break;const r=await assistMove(a);if(r==='win'||r==='lose')return r;}
   for(const b of [B.f,B.p]){const m=b.mon;if(m.hp<=0)continue;
     if(m.status==='brn'||m.status==='psn'){const d=Math.max(1,Math.floor(m.stats[0]/8));m.hp=Math.max(0,m.hp-d);await shake(b);await tweenHP(b);await bsay(`${bn(b)} is hurt by its ${m.status==='brn'?'burn':'poison'}!`);
       const r=await checkFaints();if(r==='win'||r==='lose')return r;}}
@@ -3587,13 +3598,13 @@ async function doMove(att,def,mi){
   }
 }
 // A friend's Wyldkin backs you up: one supporting attack at the end of each turn (60% strength).
-async function assistMove(){
-  const a=B.assist,dT=SPECIES[B.f.mon.sid].types;let best=null,bv=-1;
+async function assistMove(a){
+  const dT=SPECIES[B.f.mon.sid].types;let best=null,bv=-1;
   for(const s of a.mon.moves){const m=MOVES[s.id];if(!m.pow)continue;const e=effMulti(m.type,dT);const v=m.pow*e*(SPECIES[a.mon.sid].types.includes(m.type)?1.5:1);if(v>bv){bv=v;best=m;}}
   if(!best||bv<=0)return null;
   await bsay(`${a.owner}'s ${monName(a.mon)} used ${best.name}!`);
   const e=effMulti(best.type,dT);const r=calcDamage(a,B.f,best,e);SFX.hit();burst(B.f,best.type);await blink(B.f);
-  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6)));await tweenHP(B.f);
+  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*(B.assists.length>1?.45:.6))));await tweenHP(B.f);
   if(e>1)await bsay('It\'s super effective!');else if(e<1)await bsay('It\'s not very effective...');
   return await checkFaints();
 }
