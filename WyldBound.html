@@ -1696,7 +1696,7 @@ async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome
 // The friend who went off on their own "battle" comes back.
 async function sideHelperReturns(){const sd=G._side;G._side=null;if(!sd)return;
   if(isBunny(sd.name)){await say(`${sd.who} comes running back with a first-aid kit (definitely NOT from a hospital). "I chased off three of them with a broom! Now let Mama see your team."`);await healAll();await say(`${sd.who} patched up your whole team!`);}
-  else{await say(`${sd.who} strolls back, coat smoking a little. "Took out two scouts. They had this. Don't say I never give you anything."`);addItem('supertonic',1);SFX.lvl();await say(`${G.name} received a Super Tonic!`);}}
+  else{await say(`${sd.who} strolls back, coat smoking a little. "Took out two scouts. Now hold still." He pulls a glowing potion from his coat. "Alchemy. Not medicine. Don't argue."`);await healAll();await say(`${sd.who} patched up your whole team! "...You're welcome. Don't make it a thing."`);}}
 // Rowan or Wren may offer to back you up against ByteBound (they take turns offering).
 async function friendAssist(tr){
   const r=(MAP&&MAP.region)||0;const fr=G.rivals&&G.rivals[r];if(!fr)return null;
