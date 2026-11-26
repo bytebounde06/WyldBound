@@ -92,6 +92,14 @@ You can unplug from the PC now. You won't need it again.
 
 ---
 
+## Android
+
+1. On your Android phone, open `https://github.com/bytebounde06/WyldBound/releases/latest` and tap **WyldBound.apk** to download it.
+2. Open the downloaded file. If Android asks, allow your browser or Files app to **install unknown apps**, then tap **Install**.
+3. Open WyldBound. It runs fully offline. Updates install over the old version and keep your saves.
+
+On Android, trading works with QR codes, including with iPhone players. Nearby Wi-Fi trading is iPhone-only for now.
+
 ## Trading
 
 START → TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. In the iPhone app (SideStore version), **NEARBY TRADE (WI-FI)** finds friends' phones on the same Wi-Fi automatically. No codes needed; allow Local Network access when asked. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.

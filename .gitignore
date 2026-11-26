@@ -4,3 +4,9 @@ Payload/
 *.ipa
 ios/WyldBoundApp/WyldBound/WyldBound.html
 ios/WyldBoundApp/WyldBound/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+android/app/src/main/assets/WyldBound.html
+android/app/src/main/res/mipmap-*/
+android/.gradle/
+android/app/build/
+android/build/
+android/app/*.keystore

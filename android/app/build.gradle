@@ -1,0 +1,38 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.wyldbound.game'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.wyldbound.game'
+        minSdk 24
+        targetSdk 34
+        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+        versionName '1.0'
+    }
+    // Signs every build with the same key (from the repository secrets) so new versions
+    // install over old ones without losing saves. Nothing secret is stored in this file.
+    signingConfigs {
+        wyld {
+            storeFile file(System.getenv('WYLD_KS_FILE') ?: 'wyldbound.keystore')
+            storePassword System.getenv('WYLD_KS_PASS') ?: ''
+            keyAlias 'wyldbound'
+            keyPassword System.getenv('WYLD_KS_PASS') ?: ''
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.wyld
+        }
+        debug { signingConfig signingConfigs.wyld }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}

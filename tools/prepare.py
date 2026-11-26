@@ -16,6 +16,13 @@ icon = Image.open('icon/icon-1024.png').convert('RGB')
 shutil.copy(GAME, 'ios/WyldBoundApp/WyldBound/WyldBound.html')
 icon.save('ios/WyldBoundApp/WyldBound/Assets.xcassets/AppIcon.appiconset/icon-1024.png')
 
+# ---- Android app ----
+os.makedirs('android/app/src/main/assets',exist_ok=True)
+shutil.copy(GAME,'android/app/src/main/assets/WyldBound.html')
+for d,size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+    os.makedirs(f'android/app/src/main/res/mipmap-{d}',exist_ok=True)
+    icon.resize((size,size),Image.LANCZOS).save(f'android/app/src/main/res/mipmap-{d}/ic_launcher.png')
+
 # ---- Home Screen web app ----
 os.makedirs('web', exist_ok=True)
 ver = hashlib.sha1(html.encode()).hexdigest()[:10]

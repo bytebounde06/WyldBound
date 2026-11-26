@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WyldTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/wyld_bg</item>
+        <item name="android:statusBarColor">@color/wyld_bg</item>
+        <item name="android:navigationBarColor">@color/wyld_bg</item>
+    </style>
+    <color name="wyld_bg">#3A2E6E</color>
+</resources>

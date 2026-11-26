@@ -68,11 +68,64 @@ jobs:
         with:
           name: WyldBound-ipa
           path: WyldBound.ipa
-      - name: Publish to Releases (tag "latest")
+
+  # 3) Android app (.apk)
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow && python3 tools/prepare.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Signing key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > android/app/wyldbound.keystore
+            echo "WYLD_KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
+            echo "Using the saved signing key."
+          else
+            # No saved key yet: make a temporary one. (Updates built this way won't install over each other.)
+            P=$(openssl rand -hex 12)
+            keytool -genkeypair -keystore android/app/wyldbound.keystore -alias wyldbound -keyalg RSA -keysize 2048 -validity 10000 -storepass "$P" -keypass "$P" -dname "CN=WyldBound" >/dev/null 2>&1
+            echo "::add-mask::$P"
+            echo "WYLD_KS_PASS=$P" >> "$GITHUB_ENV"
+            echo "::warning::No ANDROID_KEYSTORE_B64 secret set; built with a temporary signing key."
+          fi
+      - name: Build APK
+        run: |
+          cd android
+          gradle assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../WyldBound.apk
+          ls -lh ../WyldBound.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WyldBound-apk
+          path: WyldBound.apk
+
+  # 4) Publish both apps on the Releases page (tag "latest")
+  release:
+    needs: [ipa, apk]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          ls -lh out
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest WyldBound.ipa \
+          gh release create latest out/WyldBound.ipa out/WyldBound.apk \
             --title "WyldBound (build ${{ github.run_number }})" \
-            --notes "On your iPhone: tap WyldBound.ipa to download it, then in SideStore go to My Apps and tap + to install it."
+            --notes "iPhone: download WyldBound.ipa and add it in SideStore (My Apps → +). Android: download WyldBound.apk on your phone and open it to install."

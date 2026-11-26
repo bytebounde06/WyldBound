@@ -3121,7 +3121,7 @@ async function reconcile(h){const j=G.tradeJournal;if(!j||j.partner!==h.gid)retu
   else{clearTag(j.tid);tradeLogAdd(j.tid,j.partner,'aborted');G.tradeJournal=null;writeSave('manual');
     await say(`Your unfinished trade with ${j.partnerName} was cancelled. You kept ${monName(j.mine)}.`);}}
 async function nearbyTrade(){
-  if(!PEER.ok())return say('Nearby trading over Wi-Fi works in the WyldBound iPhone app (the SideStore version). In the web app, trade with QR codes instead.');
+  if(!PEER.ok())return say(window.AndroidBridge?'Nearby trading over Wi-Fi is only in the iPhone app for now. On Android, trade with QR codes instead. They work between Android and iPhone too!':'Nearby trading over Wi-Fi works in the WyldBound iPhone app (the SideStore version). In the web app, trade with QR codes instead.');
   if(!G.tradeJournal&&G.party.length<2)return say('You need at least two Wyldkin on your team to trade one away.');
   PEER.inbox=[];PEER.waiters=[];PEER.connected=null;gameId();PEER.post({op:'start',name:G.name});
   const who=await nearbyConnect();if(!who)return;
@@ -3533,9 +3533,12 @@ function slotLabel(){return SLOT>NSLOTS?`NUZLOCKE FILE ${SLOT-NSLOTS}`:`FILE ${S
 try{['manual','auto'].forEach(k=>{const o=localStorage.getItem('wildbound_v1_'+k);if(o&&!localStorage.getItem(SAVE_KEY+'1_'+k))localStorage.setItem(SAVE_KEY+'1_'+k,o);localStorage.removeItem('wildbound_v1_'+k);});}catch(e){}
 const docPath=(slot,kind)=>`data/users/${dbRef.id}/save${slot}_${kind}`;
 // native iOS wrapper storage (survives even if web storage is cleared)
-const NStore={ok:()=>!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbStore),data:window.WB_NATIVE_STORE||{},
-  get(k){return this.data[k]||null;},set(k,v){this.data[k]=v;if(this.ok())try{window.webkit.messageHandlers.wbStore.postMessage({op:'set',k,v});}catch(e){}},
-  del(k){delete this.data[k];if(this.ok())try{window.webkit.messageHandlers.wbStore.postMessage({op:'del',k});}catch(e){}}};
+// native app storage: iPhone app (webkit message handler) or Android app (AndroidBridge)
+const NStore={ok:()=>!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbStore),
+  data:window.WB_NATIVE_STORE||(()=>{try{return window.AndroidBridge?JSON.parse(window.AndroidBridge.load()):{};}catch(e){return{};}})(),
+  get(k){return this.data[k]||null;},
+  set(k,v){this.data[k]=v;if(window.AndroidBridge)try{window.AndroidBridge.set(k,v);}catch(e){}if(this.ok())try{window.webkit.messageHandlers.wbStore.postMessage({op:'set',k,v});}catch(e){}},
+  del(k){delete this.data[k];if(window.AndroidBridge)try{window.AndroidBridge.del(k);}catch(e){}if(this.ok())try{window.webkit.messageHandlers.wbStore.postMessage({op:'del',k});}catch(e){}}};
 function writeSave(kind){
   G.savedAt=Date.now();const blob=JSON.stringify({v:2,t:G.savedAt,G});const k=SLOT+'_'+kind;
   try{localStorage.setItem(SAVE_KEY+k,blob);}catch(e){}
