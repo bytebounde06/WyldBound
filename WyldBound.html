@@ -1539,7 +1539,7 @@ MAPS.hearthollow={name:'Hearthollow',bg:'grass',rows:[
  triggers:[{x:19,y:1,cond:()=>!G.flags.starter,run:blockNorth},{x:20,y:1,cond:()=>!G.flags.starter,run:blockNorth}],
  npcs:[{id:'hh_girl',x:24,y:8,dir:'down',look:LOOK.girl,wander:1,text:'Wyldkin live in the tall grass. Stay on the path if you don\'t have one with you!'},
        {id:'hh_old',x:13,y:12,dir:'right',look:LOOK.oldman,text:'People say Wyldkin from faraway lands sometimes wander in. Once I saw a seabird up on Route 1!'},
-       {id:'hh_gossip',x:27,y:13,dir:'left',look:LOOK.lass,text:'Three kids used to live out past the edges of town. One in the old shed, one in the burned house, one in that creepy broken lab. Wonder where they ended up?'}]};
+       {id:'hh_gossip',x:27,y:13,dir:'left',look:LOOK.lass,run:async()=>say(eggHolder('static')||eggHolder('bunny')||eggHolder('smashed')?'Those kids from the edges of town... the shed, the burned house, that creepy broken lab. Strange bunch. But they look out for each other.':'Three kids used to live out past the edges of town. One in the old shed, one in the burned house, one in that creepy broken lab. Wonder where they ended up?')}]};
 // ---------- the three edge-of-town houses ----------
 MAPS.statshed={name:'Old Shed',indoor:1,bg:'indoor',rows:['XXXXXXXX','X_CK___X','X______X','X______X','X______X','X______X','XXXmXXXX'],
  warps:[{x:3,y:6,to:'hearthollow',tx:6,ty:9,dir:'down'}],signs:{'2,1':()=>eggHouse('static','pc'),'3,1':()=>eggHouse('static','rack')},npcs:[]};
@@ -1553,24 +1553,31 @@ async function blockNorth(){
   await playerStep('down');
 }
 function houseRows(){return['XXXXXXXX','XkkV_bbX','X______X','X__tt__X','X__tt__X','X______X','XXXmXXXX'];}
-MAPS.house1={name:'Your House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:16,ty:6,dir:'down'}],
+MAPS.house1={get name(){return eggKind(G&&G.name)?'Alder House':'Your House';},indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:16,ty:6,dir:'down'}],
  npcs:[{id:'mom',x:5,y:4,dir:'left',look:LOOK.mom,run:async()=>{
+   if(eggKind(G.name)){
+     if(!G.flags.starter){await say(`Mrs. Alder: Oh! ${G.name}, isn't it? From out past the edge of town? Professor Hazel was asking after you. Her lab is just south of here.`);return;}
+     await say('Mrs. Alder: You look worn out, dear. Sit down a minute, I just put the kettle on.');await healAll();await say('Your Wyldkin are fully healed. Mrs. Alder waves you off with a cookie.');return;}
    if(!G.flags.starter){await say(`Mom: Good morning, ${G.name}! Professor Hazel came by. She wants to see you at her lab, just south of here.`);return;}
    await say(`Mom: ${G.name}! You look tired. Take a rest.`);await healAll();G.lastHeal={map:'house1',x:4,y:5};await say('Your Wyldkin are fully healed. Take care out there!');}}]};
 MAPS.house2={name:'Neighbor\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:24,ty:6,dir:'down'}],
  npcs:[{id:'nb1',x:2,y:3,dir:'right',look:LOOK.youngster,text:'Tip: Hold B while walking to run! Press START to open your menu.'},
        {id:'nb2',x:5,y:2,dir:'down',look:LOOK.lass,text:'You, Rowan and Wren have been inseparable since you were in diapers. Rowan has been bragging all morning that {RHE}\'ll beat you. Typical.'}]};
-MAPS.wrenhouse={name:'Wren\'s House',indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:16,dir:'down'}],
+MAPS.wrenhouse={get name(){return eggKind(G&&FR().pal.name)?'Linden House':'Wren\'s House';},indoor:1,bg:'indoor',rows:houseRows(),warps:[{x:3,y:6,to:'hearthollow',tx:14,ty:16,dir:'down'}],
  npcs:[{id:'wrenmom',x:5,y:3,dir:'left',look:{hair:'#2c2438',shirt:'#c86090',pants:'#584868',dress:1},run:async()=>{
+   if(eggKind(FR().pal.name)){
+     if(!G.flags.starter){await say('Mrs. Linden: Oh, hello! You\'re heading to the Professor\'s lab today? Good luck, sweetheart!');return;}
+     if(!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say('Mrs. Linden: A new trainer! Here, take these Tonics. My kids would\'ve loved to go with you.');await say(`${G.name} received 3 Tonics!`);return;}
+     await say(lineOf(['Mrs. Linden: My oldest just started college in Coralmere. The house is so quiet now.','Mrs. Linden: Be careful out there. Those ByteBound trucks drive way too fast through town.','Mrs. Linden: You look hungry. Everyone always looks hungry to me.']));return;}
    if(!G.flags.starter){await say('Wren\'s Mom: Oh, hello dear! Wren ran off to the lab at sunrise. {PHE} couldn\'t sleep a wink last night!');return;}
    if(!G.flags.wrenMomGift){G.flags.wrenMomGift=1;addItem('tonic',3);SFX.lvl();await say('Wren\'s Mom: You three are finally trainers! Here, take these Tonics. Keep an eye on Wren for me, okay?');await say(`${G.name} received 3 Tonics!`);return;}
    await say(['Wren\'s Mom: Wren writes me every time {PHE} catches something new. The CODEX this, the CODEX that!','Wren\'s Mom: Remember when you three built that fort out of couch cushions and called it a Wyldkin gym?','Wren\'s Mom: Rowan stopped by looking for Wren. Those two still bicker like when they were five.'][Math.floor(Math.random()*3)]);}},
-  {id:'wrenpc',x:2,y:2,dir:'down',look:{hair:'#8a6a4a',shirt:'#507090',pants:'#384050'},text:'Wren\'s Dad: Wren has wanted to fill a CODEX since {PHE} could walk. Thanks for always looking out for {PHIM}.'}]};
+  {id:'wrenpc',x:2,y:2,dir:'down',look:{hair:'#8a6a4a',shirt:'#507090',pants:'#384050'},run:async()=>say(eggKind(FR().pal.name)?lineOf(['Mr. Linden: I keep trying to grow tomatoes. The Wyldkin keep eating them.','Mr. Linden: Back in my day we caught Wyldkin with a net and a prayer.']):'Wren\'s Dad: Wren has wanted to fill a CODEX since {PHE} could walk. Thanks for always looking out for {PHIM}.')}]};
 MAPS.lab={name:'Hazel\'s Lab',indoor:1,bg:'indoor',rows:[
 'XXXXXXXXXXX','XkkkkX_kkkX','X_________X','X___ttt___X','X_________X','Xk_______kX','X_________X','X__P___t__X','X_________X','XXXXXmXXXXX'],
  warps:[{x:5,y:9,to:'hearthollow',tx:22,ty:12,dir:'down'}],
  npcs:[{id:'prof',x:5,y:2,dir:'down',look:LOOK.prof,run:profTalk},
-   {id:'rival_lab',x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags.rivalLeft,text:'Rowan: Gramps-- er, the Professor said the three of us could each pick one. You were late to everything when we were kids too, slowpoke!'},
+   {id:'rival_lab',x:3,y:4,dir:'up',look:LOOK.rival,cond:()=>!G.flags.rivalLeft,run:async()=>say(eggKind(FR().riv.name)?'Rowan: The Professor said the three of us could each pick one. You were late to everything when we were kids too, slowpoke!':'Rowan: Gramps-- er, the Professor said the three of us could each pick one. You were late to everything when we were kids too, slowpoke!')},
    {id:'wren_lab',x:7,y:4,dir:'up',look:LOOK.wren,cond:()=>!G.flags.rivalLeft,text:'Wren: Can you believe it? The three of us, getting partners on the same day! Just like we always planned when we were little. You pick first. Rowan will grab whatever beats yours anyway, so I\'ll take the one that\'s left!'},
    {id:'aide',x:8,y:6,dir:'left',look:LOOK.aide,text:'The CODEX was built by ByteBound, the tech company. It syncs to their network, ByteNet, and records every Wyldkin you see or catch. Over a hundred so far!'}]};
 async function profTalk(){
@@ -1592,7 +1599,7 @@ async function profTalk(){
   await say('Prof. Hazel: Wonderful battle! Take these. With Capture Orbs you can catch wild Wyldkin.');
   addItem('orb',5);await say(`${G.name} received 5 Capture Orbs and the CODEX!`);
   await say('Head north through Route 1 to Brookvale. The town\'s gym leader, Brenna, is a good first challenge.');
-  G.lastHeal={map:'house1',x:4,y:5};
+  G.lastHeal=homeSpot();
   autosave();
 }
 
@@ -2283,7 +2290,7 @@ async function championWin(r){
   if(r<2)await say(`The ferries out of ${REGIONS[r]} are running again. The ferry at ${MAPS[PORTS[r]].name} can now take you to ${REGIONS[r+1]}, and anywhere you\'ve already been.`);
   await say(`Professor ${PROF[r]} wants to see you at the lab. Legends across ${REGIONS[r]} are stirring, too...`);
   const h=MAPS[PORTS[r]];const rest=h&&h.healSpot?h.healSpot:null;
-  await fadeTo(1,20);if(r===0){loadMap('house1',4,5,'down');}else{const lab=Object.keys(MAPS).find(k=>k.startsWith(PORTS[r]+'_lab'));const pm=MAPS[PORTS[r]];loadMap(PORTS[r],pm.ferryPos[0],pm.ferryPos[1],'down');}
+  await fadeTo(1,20);if(r===0){const hs=homeSpot();loadMap(hs.map,hs.x,hs.y,'down');}else{const lab=Object.keys(MAPS).find(k=>k.startsWith(PORTS[r]+'_lab'));const pm=MAPS[PORTS[r]];loadMap(PORTS[r],pm.ferryPos[0],pm.ferryPos[1],'down');}
   G.party.forEach(healMon);await fadeTo(0,20);
   if(r===2)await creditsScene();
   autosave();
@@ -2694,8 +2701,19 @@ async function eggGetsPartner(kind,r,who){const n=who==='you'?G.name:who,sp=EGG_
   await say(`${n}: ...Huh. You picked me? Fine. ${sp}. You're with me now. Don't make it weird.`);}
 async function staticGetsPartner(who,r){return eggGetsPartner('static',r,who);}
 // ---------- edge-of-town houses ----------
+const EGG_HOME={static:{map:'statshed',x:4,y:3},smashed:{map:'smashruin',x:3,y:2},bunny:{map:'bunnylab',x:6,y:6}};
+const EGG_HOME_DESC={static:'the old shed on the west side of town',smashed:'what\'s left of the burned house on the east side of town',bunny:'that broken old lab on the south side of town'};
+function homeSpot(){const k=G&&eggKind(G.name);return Object.assign({},k?EGG_HOME[k]:{map:'house1',x:4,y:5});}
+async function eggHomeRest(kind){G.lastHeal=homeSpot();await healAll();
+  await say({static:'You kick back in your chair while the rack hums. Your Wyldkin curl up by the warm vents.',smashed:'You sit by the ember for a while. Your Wyldkin settle in around its warmth.',bunny:'You pile into your blanket nest with your Wyldkin and rest for a bit.'}[kind]);
+  await say('Your Wyldkin are fully healed.');}
+async function eggWakeUp(){const k=eggKind(G.name);if(!k)return;
+  await say({static:'You wake up at your desk again. The monitor is still on. A new email from Professor Hazel: "Come to my lab today. Bring yourself, not your server."',
+    smashed:'You wake up in your corner of the burned house. Someone slid a note under the door: "Lab. Today. Please don\'t argue. -Hazel"',
+    bunny:'You wake up in your blanket nest. A note is tucked into one of your plushies: "Please come by my lab today, dear. No needles, I promise. -Hazel"'}[k]);}
 function lineOf(a){return a[Math.floor(Math.random()*a.length)];}
 async function eggHouse(kind,spot){const h=eggHolder(kind),name=eggDisplay(kind),all=allThreeEggs();
+  if(h==='you'&&G.flags.starter&&({static:'pc',smashed:'ember',bunny:'bed'})[kind]===spot){await eggHomeRest(kind);if(kind!=='bunny')return;}
   if(kind==='static'){
     if(spot==='sign')return say(h==='you'?'Your shed. Your rules. Your server.':'A hand-painted sign: "DO NOT ENTER. SERIOUSLY. -S"');
     if(spot==='rack')return say('The server rack hums. Its lights blink in a slow pattern, almost like breathing.');
@@ -4019,14 +4037,16 @@ async function newGameFlow(nuz){
   const name=await domPanel('name',{sugs:sug(['Kit','Ash','Remy','Nova','Sky','Jun','Rory','Sage'],eggOrder[0])});
   G=newGame(name);if(nuz)G.nuz={active:false,over:false,areas:{},grave:[]};G.friends={riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};applyFriendLooks();introSpr=LOOK.player;
   await say(`${name}, is it? Wonderful.`);introSpr=LOOK.prof;
-  await say('Now, you have two best friends you\'ve known since you were little. First, my grandchild. Your rival since the day you could walk. What\'s their name?');
+  await say('Now, you have two best friends you\'ve known since you were little. First, your rival. The two of you have been competing since the day you could walk. What\'s their name?');
   introSpr=LOOK.rival;
-  const riv=await domPanel('friend',{title:'Your rival (the Professor\'s grandchild)',def:'Rowan',g:'m',sugs:sug(['Rowan','Blake','Jace','Rex','Dante','Max'],eggOrder[1])});
-  G.friends.riv=riv;applyFriendLooks();await say(`${riv.name}! That's right. Always trying to one-up you.`);
-  introSpr=LOOK.prof;await say('And your other best friend, from the blue-roofed house down the lane. What\'s their name?');
+  const riv=await domPanel('friend',{title:'Your rival',def:'Rowan',g:'m',sugs:sug(['Rowan','Blake','Jace','Rex','Dante','Max'],eggOrder[1])});
+  G.friends.riv=riv;applyFriendLooks();await say(`${riv.name}! That's right. Always trying to one-up you.`);introSpr=LOOK.prof;
+  if(eggKind(riv.name))await say(`${riv.name} grew up in ${EGG_HOME_DESC[eggKind(riv.name)]}. I\'ve kept an eye on that one for years.`);else await say(`My grandchild, too. I may be a little biased.`);
+  introSpr=LOOK.prof;await say('And your other best friend. What\'s their name?');
   introSpr=LOOK.wren;
   const pal=await domPanel('friend',{title:'Your best friend',def:'Wren',g:'f',sugs:sug(['Wren','Mira','Ivy','Lark','Juniper','Cleo'],eggOrder[2])});
-  G.friends.pal=pal;applyFriendLooks();const fr=G.friends;await say(`${pal.name}! Of course. Kind, curious, and always right behind you.`);
+  G.friends.pal=pal;applyFriendLooks();const fr=G.friends;await say(`${pal.name}! Of course. Kind, curious, and always right behind you.`);introSpr=LOOK.prof;
+  if(eggKind(pal.name))await say(`${pal.name} lives in ${EGG_HOME_DESC[eggKind(pal.name)]}. Not the coziest place, but it\'s home.`);else await say('From the blue-roofed house down the lane, if I remember right.');
   introSpr=LOOK.prof;
   await say(`${fr.riv.name}, ${fr.pal.name} and ${name}. The three of you have been inseparable forever.`);
   if(staticEgg())await staticBoot(isStatic(name)?'you':'friend');
@@ -4035,7 +4055,8 @@ async function newGameFlow(nuz){
   else if(smashedFriend())await say(`Hazel: Ah, ${smashedFriend()==='riv'?fr.riv.name:fr.pal.name}. Blunt as a brick, loves anything with fire or fur. But when it counts, he\'s always the first one there.`);
   introSpr=LOOK.player;
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
-  await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
+  const hs=homeSpot();G.lastHeal=homeSpot();await fadeTo(1,20);scene='world';if(eggKind(name))loadMap(hs.map,hs.x,hs.y,'down');else loadMap('house1',5,2,'up');await fadeTo(0,20);
+  await eggWakeUp();
   await say('(Use the D-pad to move, A to talk or check things, B to run or cancel, and START for the menu.)');
 }
 
