@@ -19,9 +19,6 @@ jobs:
   # 1) Home Screen web app -> GitHub Pages
   web:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - run: pip install pillow && python3 tools/prepare.py
@@ -29,6 +26,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v4
         with:
           path: web
+
+  deploy-web:
+    needs: web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
 
