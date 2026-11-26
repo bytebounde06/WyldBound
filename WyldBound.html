@@ -2764,6 +2764,117 @@ STORY_AFTER_BUILD.push(()=>{
   const sb=MAPS.sunbask;if(sb)sb.onEnter=[].concat(sb.onEnter||[],{cond:()=>!G.flags.beachScene&&!!(eggHolder('bunny')||eggHolder('smashed')||eggHolder('static')),run:beachScene});
 });
 
+// =====================================================================
+//  Talking portraits: detailed 64x64 busts for story conversations and the intro.
+//  Built from the same LOOK data as the walking sprites, so every character
+//  (including custom friends and the easter-egg characters) gets one.
+// =====================================================================
+const PORT_CACHE={};
+function portraitOf(look){const key=JSON.stringify(look);if(PORT_CACHE[key])return PORT_CACHE[key];
+  return PORT_CACHE[key]={closed:drawPortrait(look,false),open:drawPortrait(look,true)};}
+function drawPortrait(L0,open){
+  const L=Object.assign({hair:'#403030',skin:'#f0c8a0',shirt:'#5070c0',pants:'#404050',hairStyle:0},L0);
+  const N=64,buf=new Array(N*N).fill(null);
+  const rgb=h=>typeof h==='string'?hex2rgb(h):h;
+  const put=(x,y,c)=>{x|=0;y|=0;if(x<0||y<0||x>=N||y>=N||!c)return;buf[y*N+x]=rgb(c);};
+  const get=(x,y)=>x<0||y<0||x>=N||y>=N?null:buf[y*N+x];
+  const ramp=h=>RP(typeof h==='string'?h:'#808080');
+  // shaded fills: light comes from the upper left
+  const tone=(R,nx,ny,bias=0)=>{const v=-nx*.55-ny*.6+bias;return v>.55?R[4]:v>.15?R[3]:v>-.35?R[2]:v>-.8?R[1]:R[0];};
+  const ell=(cx,cy,rx,ry,col,opt={})=>{const R=ramp(col);for(let y=Math.floor(cy-ry);y<=cy+ry;y++)for(let x=Math.floor(cx-rx);x<=cx+rx;x++){const nx=(x-cx)/rx,ny=(y-cy)/ry;if(nx*nx+ny*ny>1)continue;if(opt.clip&&!opt.clip(x,y))continue;put(x,y,opt.flat?R[2]:tone(R,nx,ny,opt.bias||0));}};
+  const rect=(x0,y0,w,h,col,opt={})=>{const R=ramp(col);for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){if(opt.clip&&!opt.clip(x,y))continue;const nx=(x-(x0+w/2))/(w/2),ny=(y-(y0+h/2))/(h/2);put(x,y,opt.flat?R[2]:tone(R,nx,ny*.4,opt.bias||0));}};
+  const px=(x,y,c)=>put(x,y,c);
+  const egg=L.tv?'static':L.bow?'bunny':L.ears?'smashed':null;
+  const female=!!(L.dress||L.hairStyle===2);
+  const skin=L.skin;const S=ramp(skin);const H=ramp(L.hair);
+  // ---- back hair (long styles) ----
+  if(!L.tv&&L.hairStyle===2){ell(32,30,17,20,L.hair,{bias:-.2});rect(15,30,34,22,L.hair,{bias:-.3,clip:(x,y)=>Math.abs(x-32)<17-(y-30)*.12});}
+  if(egg==='smashed'){for(let i=0;i<9;i++){ell(45+i*.5,38+i*2,2-i*.08,1.6,i%2?ramp(L.hair)[2]:ramp(L.hair)[1],{flat:1});}}
+  // ---- body ----
+  const bodyTop=47;
+  const torso=(x,y)=>{const dy=y-bodyTop;if(dy<0)return false;const half=13+Math.min(dy*1.6,11);return Math.abs(x-32)<=half;};
+  if(egg==='bunny'){ // off-shoulder top: bare shoulders, pink crop top with a white ribcage print
+    rect(8,bodyTop,48,17,skin,{clip:torso});rect(14,bodyTop+5,36,12,L.shirt,{clip:(x,y)=>torso(x,y)&&y>=bodyTop+5});
+    for(let i=0;i<3;i++){const y=bodyTop+7+i*3;for(let x=23;x<41;x++)if(Math.abs(x-32)>1)px(x,y,L.ribs);}for(let y=bodyTop+6;y<64;y++)px(32,y,L.ribs);
+    rect(6,bodyTop+6,9,11,L.shirt);rect(49,bodyTop+6,9,11,L.shirt);}
+  else{rect(8,bodyTop,48,17,L.shirt,{clip:torso});
+    if(L.coat){const C=L.coat;rect(8,bodyTop,17,17,C,{clip:(x,y)=>torso(x,y)&&x<=24+(y-bodyTop)*.15});rect(39,bodyTop,17,17,C,{clip:(x,y)=>torso(x,y)&&x>=40-(y-bodyTop)*.15});
+      for(let y=bodyTop;y<64;y++){px(24+Math.floor((y-bodyTop)*.15),y,L.trim||ramp(C)[1]);px(40-Math.floor((y-bodyTop)*.15),y,L.trim||ramp(C)[1]);}
+      for(let i=0;i<5;i++){px(24-i,bodyTop+i,ramp(C)[4]);px(40+i,bodyTop+i,ramp(C)[4]);}}
+    for(let i=0;i<6;i++){px(29+i*.0,bodyTop+i,null);} // collar line
+    for(let i=0;i<6;i++){px(28+Math.floor(i/2),bodyTop+i,ramp(L.shirt)[0]);px(36-Math.floor(i/2),bodyTop+i,ramp(L.shirt)[0]);}
+    if(L.badge){rect(41,bodyTop+6,3,3,'#e8c040');px(41,bodyTop+6,'#fff4b0');}
+    if(L.bag){for(let i=0;i<17;i++)px(14+i*.9,bodyTop+i,'#6a4a30'),px(15+i*.9,bodyTop+i,L.bag);}
+    if(L.bandana&&!L.tv)ell(32,bodyTop+1,7,3,L.bandana,{clip:(x,y)=>y>=bodyTop-1});}
+  // ---- neck ----
+  rect(28,38,9,10,skin,{flat:1});for(let x=28;x<37;x++){px(x,39,S[1]);px(x,40,S[1]);}for(let y=38;y<48;y++)px(36,y,S[1]);
+  if(L.tv){ // =========== Static: CRT television head ===========
+    const T='#3a3d46',TR=ramp(T);
+    for(let i=0;i<9;i++){px(25-i*.6,9-i,'#9a9ea8');px(39+i*.6,9-i,'#9a9ea8');}ell(20,1,1.6,1.6,'#c8ccd4');ell(44,1,1.6,1.6,'#c8ccd4');
+    rect(15,9,34,30,T);for(let x=15;x<49;x++){px(x,9,TR[4]);px(x,38,TR[0]);}for(let y=9;y<39;y++){px(15,y,TR[3]);px(48,y,TR[0]);}
+    for(let y=13;y<35;y++)for(let x=18;x<42;x++){const n=hsh(x,y,7);px(x,y,n>.86?'#3a4652':n>.6?'#18222c':'#0e151c');}
+    for(let x=18;x<42;x++){px(x,13,'#060a0e');}for(let y=13;y<35;y++)px(18,y,'#060a0e');
+    const G1='#8ff6ff',G2='#e8ffff';
+    // glowing eyes
+    for(const ex of [24,34]){rect(ex,19,5,5,G1,{flat:1});px(ex+1,20,G2);px(ex+2,20,G2);px(ex+1,21,G2);for(let i=-1;i<6;i++){if(!get(ex+i,18)||get(ex+i,18)[0]<40)px(ex+i,18,'#2a7a86');}}
+    // grin
+    if(open){rect(23,27,15,4,G1,{flat:1});for(let x=24;x<37;x+=2)px(x,28,'#0e151c');px(22,26,G1);px(38,26,G1);}
+    else{for(let x=23;x<38;x++)px(x,28+(x<25||x>35?-1:0),G1);px(22,26,G1);px(38,26,G1);}
+    rect(43,15,4,2,'#2a2c32',{flat:1});px(45,32,'#ff4a5a');px(44,32,'#ff9aa4');
+  } else {
+    // ---- ears / animal ears ----
+    if(!egg||egg==='bunny'&&false){ell(19,29,2.6,3.6,skin);ell(45,29,2.6,3.6,skin);}
+    if(egg==='smashed'){for(const [cx,dir] of [[20,-1],[44,1]]){for(let y=4;y<18;y++){const w=Math.floor((y-4)*.55);for(let x=-w;x<=w;x++){const X=cx+x+dir*Math.floor((18-y)*.25);px(X,y,y<8?'#ffc048':Math.abs(x)<w-1&&y>9?'#f4c8a0':ramp(L.ears)[Math.abs(x)===w?1:2]);}}}}
+    // ---- head ----
+    ell(32,27,12.5,14,skin);
+    // jaw shading + cheeks
+    for(let x=24;x<41;x++)px(x,39-Math.floor(Math.abs(x-32)/4),S[1]);
+    // ---- hair (front) ----
+    const hairTop=(x,y)=>y<=23-Math.max(0,(Math.abs(x-32)-9))*-0.6;
+    ell(32,19,14.5,11,L.hair,{clip:(x,y)=>y<=22||Math.abs(x-32)>10&&y<=31});
+    if(L.hairStyle===1||egg==='smashed'){for(let i=0;i<7;i++){const bx=19+i*4.3,h=6+((i*37)%5);for(let y=0;y<h;y++){const w=Math.max(0,2.4-y*.4);for(let x=-w;x<=w;x++)px(bx+x+(i-3)*.4*y/h,9-y,y>h-2?H[3]:H[2]);}}}
+    // bangs
+    for(let i=0;i<9;i++){const bx=20+i*3,len=3+((i*5)%4);for(let y=0;y<len;y++){px(bx,21+y,H[y<1?3:2]);px(bx+1,21+y,H[2]);if(y<len-1)px(bx+2,21+y,H[1]);}}
+    if(L.hairStyle===2){for(let y=22;y<46;y++){px(18,y,H[1]);px(19,y,H[2]);px(20,y,H[3]);px(46,y,H[1]);px(45,y,H[2]);px(44,y,H[2]);}}
+    if(egg==='bunny'){ // hair swept over her right eye
+      for(let y=21;y<33;y++)for(let x=34;x<43;x++)if(x-34<9-(y-21)*.35)px(x,y,H[(x*2+y)%5?2:3]);}
+    // ---- eyes ----
+    const eyeY=28,iris=L.eyec||(L.glow?L.glow:'#4a3040');
+    const eye=(ex,hide)=>{if(hide)return;rect(ex,eyeY,6,5,'#f8f8ff',{flat:1});rect(ex+1,eyeY,4,5,iris,{flat:1});rect(ex+2,eyeY+1,2,3,ramp(iris)[0],{flat:1});px(ex+1,eyeY+1,'#ffffff');px(ex+4,eyeY+3,ramp(iris)[4]);
+      for(let x=ex-1;x<ex+7;x++)px(x,eyeY-1,'#2a1a20');if(female){px(ex-1,eyeY-2,'#2a1a20');px(ex+6,eyeY-2,'#2a1a20');px(ex+6,eyeY,'#2a1a20');}
+      for(let x=ex;x<ex+6;x++)px(x,eyeY+5,S[1]);};
+    eye(23,false);eye(35,egg==='bunny');
+    if(egg==='bunny'){for(let x=35;x<42;x++)px(x,eyeY+2,H[1]);}
+    // brows
+    if(egg!=='bunny')for(let x=23;x<29;x++){px(x,24-(x>26?1:0),H[0]);px(x+12,23+(x>26?1:0),H[0]);}
+    // nose + mouth
+    px(32,32,S[1]);px(31,33,S[1]);
+    if(open){rect(29,35,6,3,'#5a1e28',{flat:1});px(30,37,'#d05a6a');px(31,37,'#d05a6a');px(29,35,'#3a1018');px(34,35,'#3a1018');}
+    else if(egg==='smashed'){for(let x=29;x<35;x++)px(x,36-(x>32?1:0),'#5a2a28');}
+    else{for(let x=29;x<35;x++)px(x,36,'#7a3a38');px(28,35,S[1]);px(35,35,S[1]);}
+    if(female||egg==='bunny'){px(24,34,'#f08a9a');px(25,34,'#f8a8b4');px(39,34,'#f08a9a');px(40,34,'#f8a8b4');}
+    // ---- headwear ----
+    if(L.cap){ell(32,15,15,8,L.cap,{clip:(x,y)=>y<=19});rect(16,18,32,3,L.cap,{bias:-.4});for(let x=14;x<36;x++)px(x,21,ramp(L.cap)[0]);}
+    if(L.visor){for(let x=20;x<45;x++)for(let y=eyeY-1;y<eyeY+5;y++){const c=get(x,y);if(c)px(x,y,y===eyeY?'#ffffff':ramp(L.visor)[y<eyeY+2?3:2]);}}
+    if(L.bandana){rect(18,17,28,3,L.bandana);}
+    if(egg==='bunny'){ // sea bunny ears / antennae
+      for(const cx of [22,42]){ell(cx,9,5,10,L.bow);ell(cx,10,2.4,7,L.bowIn||'#b48cf0',{flat:1});for(let a=0;a<14;a++){const ang=a/14*Math.PI;px(cx+Math.cos(ang)*5,9-Math.sin(ang)*10,ramp(L.bow)[0]);}}}
+  }
+  // ---- outline ----
+  const out=buf.slice();for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(buf[y*N+x])continue;if(get(x-1,y)||get(x+1,y)||get(x,y-1)||get(x,y+1))out[y*N+x]=[26,18,28];}
+  const c=mkCanvas(N,N),g=c.getContext('2d'),im=g.createImageData(N,N);
+  out.forEach((v,i)=>{if(!v)return;im.data[i*4]=v[0];im.data[i*4+1]=v[1];im.data[i*4+2]=v[2];im.data[i*4+3]=255;});g.putImageData(im,0,0);return c;
+}
+// Who is talking? "Name: line" → that character's look.
+function speakerLook(str){const m=/^([^:]{1,26}):\s/.exec(str||'');if(!m)return null;const n=m[1].trim();if(!G)return null;const f=FR();
+  if(n===G.name)return LOOK.player;if(n===f.riv.name)return LOOK.rival;if(n===f.pal.name)return LOOK.wren;
+  const T={'Prof. Hazel':'prof','Hazel':'prof','Professor Ondine':'ondine','Professor Linnea':'linnea','Mom':'mom','Hale':'hale','Director Hale':'hale','Vasquez':'vasquez','Dr. Vasquez':'vasquez','Rook':'rook','Sable':'sable','Quill':'quill','Kade':'kade','Pip':'pipgirl'};
+  if(T[n]&&LOOK[T[n]])return LOOK[T[n]];
+  if(n==='Static')return STATIC_LOOK;if(n==='Bunny')return BUNNY_LOOK;if(n==='Smashed')return SMASHED_LOOK;
+  if(/^Prof/.test(n)&&/Ondine/.test(n))return LOOK.ondine;if(/Linnea/.test(n))return LOOK.linnea;return null;}
+function drawPortraitBox(c,look,talking,x,y,scale){scale=scale||1;const p=portraitOf(look);const img=talking&&Math.floor(frame/5)%2?p.open:p.closed;
+  box(c,x,y,64*scale+8,64*scale+8,'info');c.save();c.imageSmoothingEnabled=false;c.drawImage(img,0,0,64,64,x+4,y+4,64*scale,64*scale);c.restore();}
+
 'use strict';
 // ===================== ASSEMBLE WORLD =====================
 const BIOME_W={meadow:{Normal:3,Grass:2,Bug:2,Flying:2,Electric:1,Poison:1,Fighting:1,Ground:1},forest:{Bug:3,Grass:3,Poison:2,Ghost:1,Normal:1,Psychic:1,Dark:1},
@@ -2997,13 +3108,16 @@ function runScript(fn){lock=true;return Promise.resolve().then(fn).catch(e=>{con
 
 // say(): GBA style 2-line text box
 function say(str,opts={}){str=glitchText(friendText(str));window.LASTSAY=str;
+  const look=opts.portrait===false?null:(opts.portrait||speakerLook(str));
   return new Promise(res=>{
     const lines=wrapText(ctx,str,214,9);const pages=[];for(let i=0;i<lines.length;i+=2)pages.push(lines.slice(i,i+2));
     const el={pi:0,ch:0,t:0,update(p){const pg=pages[this.pi],full=pg.join('').length+pg.length;
       if(this.ch<full){this.ch+=(G&&G.opts.textFast?3:1.6)*(held.a||held.b?3:1);if(p.has('a')||p.has('b'))this.ch=full;return;}
       this.t++;
-      if(p.has('a')||p.has('b')||(opts.auto&&this.t>opts.auto)){SFX.sel();this.pi++;this.ch=0;this.t=0;if(this.pi>=pages.length){popUI(this);res();}}},
-      draw(c){box(c,2,H-46,236,44,opts.style||'std');const pg=pages[Math.min(this.pi,pages.length-1)];let n=this.ch;
+      if(p.has('a')||p.has('b')||(opts.auto&&this.t>opts.auto)){SFX.sel();this.pi++;this.ch=0;this.t=0;if(this.pi>=pages.length){window.TALKING=false;popUI(this);res();}}},
+      draw(c){const pgx=pages[Math.min(this.pi,pages.length-1)],talking=this.ch<pgx.join('').length+pgx.length;window.TALKING=talking;
+        if(look&&scene==='world'&&H-46-74>=0)drawPortraitBox(c,look,talking,2,H-46-74);
+        box(c,2,H-46,236,44,opts.style||'std');const pg=pages[Math.min(this.pi,pages.length-1)];let n=this.ch;
         pg.forEach((l,i)=>{const s=l.slice(0,Math.max(0,Math.floor(n)));n-=l.length+1;text(c,s,12,H-38+i*15,'#404040',9);});
         if(this.ch>=pg.join('').length+pg.length&&!opts.auto&&Math.floor(frame/16)%2)text(c,'▼',226,H-15,'#e05050',7,false);}};
     pushUI(el);
@@ -3358,22 +3472,23 @@ async function optionsMenu(){
   }
 }
 // DOM overlay panels for name entry / export / import
-function domPanel(kind){return new Promise(res=>{
+function domPanel(kind,opt){return new Promise(res=>{
   const ov=document.getElementById('overlay');ov.innerHTML='';ov.style.display='flex';
   const card=document.createElement('div');card.className='card';ov.appendChild(card);
   const h=document.createElement('h3');card.appendChild(h);
   const close=v=>{ov.style.display='none';ov.innerHTML='';res(v);};
-  if(kind==='name'){h.textContent='What\'s your name?';const i=document.createElement('input');i.maxLength=10;i.value='Kit';i.autocomplete='off';card.appendChild(i);
-    const b=document.createElement('button');b.textContent='OK';card.appendChild(b);b.onclick=()=>close((i.value.trim()||'Kit').slice(0,10));setTimeout(()=>{i.focus();i.select();},50);
+  const sugRow=(sugs,onPick)=>{if(!sugs)return;const row=document.createElement('div');row.className='row';row.style.cssText='flex-wrap:wrap;gap:6px;margin:8px 0 2px';
+    sugs.forEach(n=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.style.cssText='padding:6px 10px;font-size:13px';b.onclick=()=>onPick(n);row.appendChild(b);});card.appendChild(row);};
+  if(kind==='name'){h.textContent='What\'s your name?';const i=document.createElement('input');i.maxLength=11;i.value='Kit';i.autocomplete='off';card.appendChild(i);
+    sugRow(opt&&opt.sugs,n=>{i.value=n;});
+    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close((i.value.trim()||'Kit').slice(0,11));setTimeout(()=>{i.focus();i.select();},50);
     i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
-  else if(kind==='friends'){h.textContent='Your childhood friends';
-    const mk=(label,def,g)=>{const wrap=document.createElement('div');wrap.style.margin='8px 0';const l=document.createElement('div');l.textContent=label;l.style.cssText='font-size:13px;color:#605848;margin-bottom:4px';wrap.appendChild(l);
-      const i=document.createElement('input');i.maxLength=10;i.value=def;i.autocomplete='off';wrap.appendChild(i);
-      const row=document.createElement('div');row.className='row';row.style.marginTop='6px';let gv=g;const bs=[['m','Boy'],['f','Girl']].map(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.type='button';b.onclick=()=>{gv=v;paint();};row.appendChild(b);return[v,b];});
-      const paint=()=>bs.forEach(([v,b])=>{b.style.opacity=v===gv?'1':'.4';b.style.outline=v===gv?'2px solid #404858':'none';});paint();wrap.appendChild(row);card.appendChild(wrap);
-      return()=>({name:(i.value.trim()||def).slice(0,10),g:gv});};
-    const a=mk('Your rival (the Professor\'s grandchild)','Rowan','m'),p=mk('Your best friend','Wren','f');
-    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close({riv:a(),pal:p()});}
+  else if(kind==='friend'){h.textContent=opt.title;const i=document.createElement('input');i.maxLength=11;i.value=opt.def;i.autocomplete='off';card.appendChild(i);
+    sugRow(opt.sugs,n=>{i.value=n;});
+    const row=document.createElement('div');row.className='row';row.style.marginTop='8px';let gv=opt.g;const bs=[['m','Boy'],['f','Girl']].map(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.type='button';b.onclick=()=>{gv=v;paint();};row.appendChild(b);return[v,b];});
+    const paint=()=>bs.forEach(([v,b])=>{b.style.opacity=v===gv?'1':'.4';b.style.outline=v===gv?'2px solid #404858':'none';});paint();card.appendChild(row);
+    const b=document.createElement('button');b.textContent='OK';b.style.marginTop='10px';card.appendChild(b);b.onclick=()=>close({name:(i.value.trim()||opt.def).slice(0,11),g:gv});
+    i.addEventListener('keydown',e=>{if(e.key==='Enter')b.onclick();});}
   else if(kind==='export'){h.textContent='Save code (back this up somewhere safe)';const t=document.createElement('textarea');t.readOnly=true;t.value=btoa(unescape(encodeURIComponent(JSON.stringify({v:1,t:Date.now(),G}))));card.appendChild(t);
     const row=document.createElement('div');row.className='row';card.appendChild(row);
     const cp=document.createElement('button');cp.textContent='Copy';row.appendChild(cp);cp.onclick=()=>{navigator.clipboard.writeText(t.value).then(()=>cp.textContent='Copied!',()=>{t.select();cp.textContent='Select + copy manually';});};
@@ -3575,23 +3690,33 @@ async function titleFlow(){
   await fadeTo(1,15);scene='world';if(!MAPS[G.map]){G.map=G.lastHeal.map;G.x=G.lastHeal.x;G.y=G.lastHeal.y;}loadMap(G.map,G.x,G.y,G.dir);if(solidAt(player.x,player.y)){const h=G.lastHeal;loadMap(h.map,h.x,h.y,'down');}await fadeTo(0,15);
 }
 let introSpr=null;
-function drawIntro(c){if(introSpr){c.save();c.imageSmoothingEnabled=false;c.drawImage(introSpr,0,0,16,21,96,20,48,63);c.restore();}}
+function drawIntro(c){if(introSpr){const sc=H-58>=140?2:1,w=64*sc+8;c.save();c.translate(0,-MY);drawPortraitBox(c,introSpr,!!window.TALKING,Math.floor((W-w)/2),Math.max(4,Math.floor((H-46-w)/2)),sc);c.restore();}}
 async function newGameFlow(){
-  await fadeTo(1,15);scene='intro';introSpr=charSprite(LOOK.prof).down[0];await fadeTo(0,15);
+  await fadeTo(1,15);scene='intro';introSpr=LOOK.prof;await fadeTo(0,15);
   await say('Hello there! Welcome to the world of Wyldkin. My name is Hazel, but people call me the Wyldkin Professor.');
   await say('This world is full of Wyldkin, from the valleys of Aldera to the shores of Coralmere and the peaks of Frostfell.');
   await say('Some people keep them as pets, others battle with them. Lately, ByteBound has even linked them to its ByteNet.');
   await say('And me? I study them. Now, tell me about yourself.');
-  const name=await domPanel('name');
-  G=newGame(name);
-  await say('And these two have been your best friends since you were little. What are their names?');
-  const fr=await domPanel('friends');G.friends=fr;applyFriendLooks();
-  await say(`Right! ${fr.riv.name}, my grandchild, and ${fr.pal.name}, from the blue-roofed house down the lane. The three of you have been inseparable forever.`);
+  const eggOrder=['Static','BunnyRX','SmashedAtom'].sort(()=>Math.random()-.5);
+  const sug=(pool,egg)=>{const n=2+Math.floor(Math.random()*2);const pick=pool.slice().sort(()=>Math.random()-.5).slice(0,n);pick.splice(Math.floor(Math.random()*(n+1)),0,egg);return pick;};
+  const name=await domPanel('name',{sugs:sug(['Kit','Ash','Remy','Nova','Sky','Jun','Rory','Sage'],eggOrder[0])});
+  G=newGame(name);G.friends={riv:{name:'Rowan',g:'m'},pal:{name:'Wren',g:'f'}};applyFriendLooks();introSpr=LOOK.player;
+  await say(`${name}, is it? Wonderful.`);introSpr=LOOK.prof;
+  await say('Now, you have two best friends you\'ve known since you were little. First, my grandchild. Your rival since the day you could walk. What\'s their name?');
+  introSpr=LOOK.rival;
+  const riv=await domPanel('friend',{title:'Your rival (the Professor\'s grandchild)',def:'Rowan',g:'m',sugs:sug(['Rowan','Blake','Jace','Rex','Dante','Max'],eggOrder[1])});
+  G.friends.riv=riv;applyFriendLooks();await say(`${riv.name}! That's right. Always trying to one-up you.`);
+  introSpr=LOOK.prof;await say('And your other best friend, from the blue-roofed house down the lane. What\'s their name?');
+  introSpr=LOOK.wren;
+  const pal=await domPanel('friend',{title:'Your best friend',def:'Wren',g:'f',sugs:sug(['Wren','Mira','Ivy','Lark','Juniper','Cleo'],eggOrder[2])});
+  G.friends.pal=pal;applyFriendLooks();const fr=G.friends;await say(`${pal.name}! Of course. Kind, curious, and always right behind you.`);
+  introSpr=LOOK.prof;
+  await say(`${fr.riv.name}, ${fr.pal.name} and ${name}. The three of you have been inseparable forever.`);
   if(staticEgg())await staticBoot(isStatic(name)?'you':'friend');
   if(bunnyWho())await bunnyBoot();
   if(isSmashed(name))await say(`Hazel: ${name}. Still smell like smoke and potion fumes, I see. And you\'ve already told me my lab is "a mess." Thank you, dear.`);
   else if(smashedFriend())await say(`Hazel: Ah, ${smashedFriend()==='riv'?fr.riv.name:fr.pal.name}. Blunt as a brick, loves anything with fire or fur. But when it counts, he\'s always the first one there.`);
-  introSpr=charSprite(LOOK.player).down[0];
+  introSpr=LOOK.player;
   await say(`${name}! Your very own adventure is about to unfold. A world of dreams and adventures awaits. Let's go!`);
   await fadeTo(1,20);scene='world';loadMap('house1',5,2,'up');await fadeTo(0,20);
   await say('(Use the D-pad to move, A to talk or check things, B to run or cancel, and START for the menu.)');
