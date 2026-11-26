@@ -92,6 +92,10 @@ You can unplug from the PC now. You won't need it again.
 
 ---
 
+## Trading
+
+START → TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.
+
 ## Troubleshooting
 
 - **The build says WyldBound.html is missing.** Upload it to the top level of the repository, not inside a folder.

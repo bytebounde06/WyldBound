@@ -1,0 +1,11 @@
+WyldBound bundles these open-source libraries inside WyldBound.html (minified, otherwise unmodified):
+
+jsQR 1.4.0 - QR code reading
+  Copyright 2017 Cosmo Wolfe
+  Apache License 2.0 - https://github.com/cozmo/jsQR
+
+qrcode-generator 2.0.4 - QR code creation
+  Copyright (c) 2009 Kazuhiko Arase
+  MIT License - https://github.com/kazuhikoarase/qrcode-generator
+
+Pixelify Sans font - see OFL-PixelifySans.txt
