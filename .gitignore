@@ -1,0 +1,6 @@
+web/
+build/
+Payload/
+*.ipa
+ios/WyldBoundApp/WyldBound/WyldBound.html
+ios/WyldBoundApp/WyldBound/Assets.xcassets/AppIcon.appiconset/icon-1024.png

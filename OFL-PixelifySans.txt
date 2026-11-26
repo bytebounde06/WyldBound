@@ -1,0 +1,10 @@
+WyldBound embeds the font "Pixelify Sans".
+
+Pixelify Sans — Copyright 2021 The Pixelify Sans Project Authors
+(https://github.com/eifetx/Pixelify-Sans)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+The full license text is available at: https://openfontlicense.org
+
+The font is bundled unmodified inside WyldBound.html. It is not sold by itself,
+and the name "Pixelify Sans" is not used for the game.

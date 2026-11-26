@@ -1,0 +1,74 @@
+name: Build WyldBound
+
+# Runs whenever WyldBound.html (or anything else) is uploaded, or by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: wyldbound
+  cancel-in-progress: true
+
+jobs:
+  # 1) Home Screen web app -> GitHub Pages
+  web:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow && python3 tools/prepare.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+          include-hidden-files: true
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  # 2) iPhone app (.ipa) for SideStore -> Releases page
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare game files and icon
+        run: |
+          python3 -m pip install --break-system-packages pillow || python3 -m pip install pillow
+          python3 tools/prepare.py
+      - name: Build app (unsigned; SideStore signs it with your Apple ID)
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project ios/WyldBoundApp/WyldBound.xcodeproj \
+            -target WyldBound \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package WyldBound.ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/WyldBound.app Payload/
+          zip -qry WyldBound.ipa Payload
+          ls -lh WyldBound.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WyldBound-ipa
+          path: WyldBound.ipa
+      - name: Publish to Releases (tag "latest")
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest WyldBound.ipa \
+            --title "WyldBound (build ${{ github.run_number }})" \
+            --notes "On your iPhone: tap WyldBound.ipa to download it, then in SideStore go to My Apps and tap + to install it."
