@@ -2988,7 +2988,7 @@ function tradePanel(title,code,note){return new Promise(res=>{const ov=document.
   const btn=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.onclick=f;row.appendChild(b);return b;};
   const accept=txt=>{const o=unpackTrade(txt);if(!o){msg.textContent='That isn\'t a WyldBound trade code.';return false;}close(o);return true;};
   if(code){ // ---- show ----
-    const showQR=()=>{body.innerHTML='';row.innerHTML='';p.textContent=(note?note+' ':'')+'Hold your screen up so your friend can scan it in their TRADE menu.';body.appendChild(qrCanvas(code,300));
+    const showQR=()=>{body.innerHTML='';row.innerHTML='';p.textContent=(note?note+' ':'')+'Hold your screen up so your friend can scan it from TRADE on a healing center PC.';body.appendChild(qrCanvas(code,300));
       btn('Done',()=>close(true));btn('Text code instead',showText);};
     const showText=()=>{body.innerHTML='';row.innerHTML='';p.textContent='Send this text to your friend (Messages, AirDrop, Notes...).';const t=document.createElement('textarea');t.readOnly=true;t.value=code;body.appendChild(t);
       if(navigator.share)btn('Share',()=>navigator.share({text:code}).catch(()=>{}));
@@ -3026,7 +3026,7 @@ async function tradeMenu(){
     const r=await choose(items,{x:30,y:6,w:190});if(r<0)return;const it=items[r];
     if(it==='BACK')return;
     if(it==='HOW IT WORKS'){
-      await say('Stand together with your phones. 1. One of you picks OFFER A WYLDKIN and shows the QR code.');
+      await say('Both players need to be at a healing center PC to trade.');await say('Stand together with your phones. 1. One of you picks OFFER A WYLDKIN and shows the QR code.');
       await say('2. The other picks ANSWER A FRIEND\'S OFFER, scans it, picks a Wyldkin to send back, and shows their reply QR.');
       await say('3. The first player picks FINISH MY OFFER and scans the reply, then shows a confirm QR.');
       await say('4. The second player picks COMPLETE MY ANSWER and scans it. Done!');
@@ -3756,7 +3756,7 @@ async function startMenu(){
   SFX.ok();
   let sel=0;
   while(true){
-    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase());if(nuzOn())items.push('MEMORIAL');else if(G.flags.starter)items.push('TRADE');items.push('SAVE','OPTIONS','EXIT');
+    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase());if(nuzOn())items.push('MEMORIAL');items.push('SAVE','OPTIONS','EXIT');
     const r=await choose(items,{x:W-84,y:2,w:82,start:sel});if(r<0||items[r]==='EXIT')return;sel=r;const it=items[r];
     if(it==='MEMORIAL')await memorialScreen();
     if(it==='TRADE')await tradeMenu();
@@ -3917,8 +3917,11 @@ async function pcMenu(){
   await say(`${G.name} turned on the PC. Connected to ByteNet Storage.`);
   if((G.locked||[]).length)await say(`${G.locked.length} Wyldkin are held behind the E06 border lock. They\'ll be released when you become Champion of ${REGIONS[curRegion()]}.`);
   while(true){
-    const r=await choose(['WITHDRAW','DEPOSIT','LOG OFF'],{x:8,y:8,w:96});
-    if(r<0||r===2)return;
+    const canTrade=/rest/.test(MAPID)&&G.flags.starter&&!nuzOn();
+    const opts=canTrade?['WITHDRAW','DEPOSIT','TRADE','LOG OFF']:['WITHDRAW','DEPOSIT','LOG OFF'];
+    let r=await choose(opts,{x:8,y:8,w:96});
+    if(r<0||opts[r]==='LOG OFF')return;
+    if(opts[r]==='TRADE'){await say('Connecting to the Trade Link...');await tradeMenu();continue;}
     if(r===0){if(!G.box.length){await say('There are no Wyldkin in storage.');continue;}
       const i=await listMenu({title:`STORAGE (${G.box.length})`,items:G.box.map(m=>({label:monName(m),right:`Lv${m.lvl}`})),rows:8,onDraw:(c,s)=>{const m=G.box[s];if(m){box(c,150,24,86,86,'info');c.drawImage(spriteOf(m.sid).front,161,34);}},lw:146});
       if(i<0)continue;if(G.party.length>=6){await say('Your team is full!');continue;}
