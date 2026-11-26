@@ -3001,6 +3001,7 @@ async function tradeMenu(){
   if(nuzOn())return say('Trading is turned off in Nuzlocke runs. Every Wyldkin has to be your own.');
   gameId();
   while(true){const pend=G.tradePending,ans=G.tradeAnswer;const items=[];
+    if(G.tradeJournal){const r=await choose(['NEARBY TRADE (WI-FI)','BACK'],{x:30,y:6,w:190,prompt:`A trade with ${G.tradeJournal.partnerName} is on hold. Connect with them to settle it.`});if(r===0){await nearbyTrade();continue;}return;}
     if(pend)items.push('FINISH MY OFFER','CANCEL MY OFFER');else items.push('OFFER A WYLDKIN');
     if(ans)items.push('COMPLETE MY ANSWER');else items.push('ANSWER A FRIEND\'S OFFER');
     items.push('NEARBY TRADE (WI-FI)','TRADE ON THIS PHONE','HOW IT WORKS','BACK');
@@ -3098,34 +3099,71 @@ function nearbyConnect(){return new Promise(res=>{const ov=document.getElementBy
     y.onclick=()=>{PEER.post({op:'answer',id:ev.id,ok:true});msg.textContent='Connecting...';};n.onclick=()=>{PEER.post({op:'answer',id:ev.id,ok:false});draw();};};
   (async()=>{while(true){const ev=await PEER.next();if(ov.style.display==='none')return;if(ev.type==='connected'){close(ev.name);return;}if(ev.type==='error')msg.textContent='Problem: '+ev.message;}})();
 });}
+// ---- Safe nearby trades: a journal is saved before anything changes, and the swap only happens
+//      once both games have saved that they're ready. If the connection drops, both games keep their
+//      own Wyldkin. In the rare case the drop happens in the final split second, the next nearby
+//      connection between the same two games settles it automatically, the same way on both phones.
+function tradeLogHas(tid,outcome){return(G.tradeLog||[]).some(e=>e.tid===tid&&(!outcome||e.outcome===outcome));}
+function tradeLogAdd(tid,partner,outcome){G.tradeLog=(G.tradeLog||[]).concat({tid,partner,outcome}).slice(-40);}
+function findTagged(tid){for(const arr of [G.party,G.box]){const i=arr.findIndex(m=>m.tk===tid);if(i>=0)return{arr,i};}return null;}
+function swapNow(j){const f=findTagged(j.tid);if(f)f.arr.splice(f.i,1);const t=cleanMon(j.theirs);delete t.tk;receiveMon(t,j.partnerName);}
+function clearTag(tid){const f=findTagged(tid);if(f)delete f.arr[f.i].tk;}
+function helloMsg(theirGid){const j=G.tradeJournal;return{t:'hello',gid:G.gid,journal:j&&{tid:j.tid,role:j.role,state:j.state,partner:j.partner},log:(G.tradeLog||[]).filter(e=>!theirGid||e.partner===theirGid)};}
+// Settle an unfinished trade with this partner (both phones run the same rules on the same data).
+async function reconcile(h){const j=G.tradeJournal;if(!j||j.partner!==h.gid)return;
+  const tj=h.journal&&h.journal.tid===j.tid?h.journal:null,tl=(h.log||[]).find(e=>e.tid===j.tid);
+  let finish;
+  if(j.role==='L')finish=j.state==='committed';                       // the leader committed → it happened
+  else finish=(tj&&tj.state==='committed')||(tl&&tl.outcome==='completed'); // follower finishes only if the leader committed
+  if(finish){if(j.role==='F')swapNow(j);else clearTag(j.tid);
+    tradeLogAdd(j.tid,j.partner,'completed');G.tradeJournal=null;writeSave('manual');
+    await say(j.role==='F'?`Your unfinished trade with ${j.partnerName} is now complete. You received ${monName(j.theirs)}.`:`Your earlier trade with ${j.partnerName} is fully settled.`);}
+  else{clearTag(j.tid);tradeLogAdd(j.tid,j.partner,'aborted');G.tradeJournal=null;writeSave('manual');
+    await say(`Your unfinished trade with ${j.partnerName} was cancelled. You kept ${monName(j.mine)}.`);}}
 async function nearbyTrade(){
   if(!PEER.ok())return say('Nearby trading over Wi-Fi works in the WyldBound iPhone app (the SideStore version). In the web app, trade with QR codes instead.');
-  if(G.party.length<2)return say('You need at least two Wyldkin on your team to trade one away.');
+  if(!G.tradeJournal&&G.party.length<2)return say('You need at least two Wyldkin on your team to trade one away.');
   PEER.inbox=[];PEER.waiters=[];PEER.connected=null;gameId();PEER.post({op:'start',name:G.name});
   const who=await nearbyConnect();if(!who)return;
+  const send=o=>PEER.post({op:'send',data:JSON.stringify(o)});
   const end=async(m)=>{PEER.post({op:'stop'});PEER.connected=null;if(m)await say(m);};
+  const nextData=async(ms,want)=>{while(true){const ev=await PEER.next(ms);if(ev.type==='disconnected'||ev.type==='timeout')return null;if(ev.type!=='data')continue;if(!want||want.includes(ev.msg.t)||ev.msg.t==='quit')return ev.msg;}};
   await say(`Connected to ${who.replace(/ #\d+$/,'')}!`);
+  // 1. say hello and settle any unfinished trade between these two games
+  send(helloMsg());const hello=await nextData(20000,['hello']);if(!hello||hello.t!=='hello')return end('The connection was lost.');
+  if(G.tradeJournal){if(G.tradeJournal.partner===hello.gid){await reconcile(hello);}else{send({t:'quit'});return end(`You have an unfinished trade with ${G.tradeJournal.partnerName}. Connect with them first to settle it.`);}}
+  if(hello.journal&&hello.journal.partner===G.gid&&!G.tradeJournal){/* they'll settle on their side using our log */}
+  if(G.party.length<2){send({t:'quit'});return end('You need at least two Wyldkin on your team to trade one away.');}
+  if(!await yesno('Start a new trade?')){send({t:'quit'});return end();}
+  // 2. pick and show offers
   const i=await pickToTrade('Which Wyldkin will you offer?');
-  if(i==null){PEER.post({op:'send',data:JSON.stringify({t:'quit'})});return end('You left the trade.');}
-  const mine=G.party[i];PEER.post({op:'send',data:JSON.stringify({t:'offer',gid:G.gid,from:G.name,mon:mine})});
-  let theirOffer=null,theirReady=false,iAmReady=false;
-  const handle=ev=>{if(ev.type==='disconnected'||ev.type==='timeout')return'gone';if(ev.type!=='data')return null;const m=ev.msg;
-    if(m.t==='quit')return'quit';if(m.t==='offer'){theirOffer=m;}if(m.t==='ready'){theirReady=m.ok;if(!m.ok)return'declined';}return m.t;};
+  if(i==null){send({t:'quit'});return end('You left the trade.');}
+  const mine=G.party[i];send({t:'offer',gid:G.gid,from:G.name,mon:mine});
   await say('Waiting for your friend to pick a Wyldkin...',{auto:1});
-  while(!theirOffer){const r=handle(await PEER.next(120000));if(r==='gone')return end('The connection was lost. Nothing was traded.');if(r==='quit')return end('Your friend left the trade. Nothing was traded.');}
-  const theirs=cleanMon(theirOffer.mon);if(!theirs){PEER.post({op:'send',data:JSON.stringify({t:'quit'})});return end('Something is wrong with that Wyldkin\'s data. Nothing was traded.');}
-  const ok=await yesno(`${theirOffer.from} offers ${monName(theirs)} (${SPECIES[theirs.sid].name} Lv${theirs.lvl}). Trade your ${monName(mine)} for it?`);
-  PEER.post({op:'send',data:JSON.stringify({t:'ready',ok})});if(!ok)return end('You declined. Nothing was traded.');iAmReady=true;
+  const offer=await nextData(180000,['offer']);if(!offer)return end('The connection was lost. Nothing was traded.');if(offer.t==='quit')return end('Your friend left the trade. Nothing was traded.');
+  const theirs=cleanMon(offer.mon);if(!theirs){send({t:'quit'});return end('Something is wrong with that Wyldkin\'s data. Nothing was traded.');}
+  const ok=await yesno(`${offer.from} offers ${monName(theirs)} (${SPECIES[theirs.sid].name} Lv${theirs.lvl}). Trade your ${monName(mine)} for it?`);
+  send({t:'ready',ok});if(!ok)return end('You declined. Nothing was traded.');
   await say('Waiting for your friend to confirm...',{auto:1});
-  while(!theirReady){const r=handle(await PEER.next(120000));if(r==='gone')return end('The connection was lost. Nothing was traded.');if(r==='declined'||r==='quit')return end('Your friend declined. Nothing was traded.');}
-  // Both confirmed. The phone with the "smaller" game ID leads, so both sides swap in a fixed order.
-  const apply=async()=>{const idx=G.party.indexOf(mine);if(idx<0)return;G.party.splice(idx,1);receiveMon(theirs,theirOffer.from);writeSave('manual');await tradeScene(mine,theirs,theirOffer.from);};
-  if(G.gid<theirOffer.gid){PEER.post({op:'send',data:JSON.stringify({t:'commit'})});
-    while(true){const r=handle(await PEER.next(15000));if(r==='done')break;if(r==='gone')return end('The connection dropped before the trade finished. Nothing was traded on your side.');}
-    await apply();}
-  else{while(true){const r=handle(await PEER.next(30000));if(r==='commit')break;if(r==='gone')return end('The connection dropped before the trade finished. Nothing was traded.');}
-    PEER.post({op:'send',data:JSON.stringify({t:'done'})});await apply();}
-  await end();
+  const rd=await nextData(180000,['ready']);if(!rd)return end('The connection was lost. Nothing was traded.');if(rd.t==='quit'||!rd.ok)return end('Your friend declined. Nothing was traded.');
+  // 3. two-step commit
+  const lead=G.gid<offer.gid,partner=offer.gid,partnerName=offer.from;
+  const journal=tid=>{mine.tk=tid;G.tradeJournal={tid,role:lead?'L':'F',state:'prepared',partner,partnerName,mine:JSON.parse(JSON.stringify(mine)),theirs};writeSave('manual');}; // save BEFORE the trade
+  const lost='The connection dropped, so the trade was cancelled. You kept your Wyldkin.';
+  if(lead){const tid=G.gid+'-'+partner+'-'+Date.now().toString(36);journal(tid);send({t:'prepare',tid});
+    const pr=await nextData(12000,['prepared']);
+    if(!pr||pr.t!=='prepared'||pr.tid!==tid){clearTag(tid);tradeLogAdd(tid,partner,'aborted');G.tradeJournal=null;writeSave('manual');return end(lost);}
+    G.tradeJournal.state='committed';swapNow(G.tradeJournal);writeSave('manual');send({t:'commit',tid});     // swap + save together
+    await tradeScene(mine,theirs,partnerName);
+    const dn=await nextData(12000,['done']);
+    if(dn&&dn.t==='done'){tradeLogAdd(tid,partner,'completed');G.tradeJournal=null;writeSave('manual');return end();}   // save AFTER it's fully done
+    return end(`The trade finished on your side, but the connection dropped before ${partnerName}'s game confirmed. Next time you both open NEARBY TRADE, their game will finish it automatically.`);}
+  else{const pp=await nextData(12000,['prepare']);if(!pp||pp.t!=='prepare')return end(lost);
+    journal(pp.tid);send({t:'prepared',tid:pp.tid});
+    const cm=await nextData(15000,['commit']);
+    if(!cm||cm.t!=='commit'){return end(`The connection dropped at the last second, so this trade is on hold and you still have ${monName(mine)}. Next time you and ${partnerName} open NEARBY TRADE, both games will settle it the same way.`);}
+    swapNow(G.tradeJournal);tradeLogAdd(pp.tid,partner,'completed');G.tradeJournal=null;writeSave('manual');send({t:'done',tid:pp.tid});
+    await tradeScene(mine,theirs,partnerName);return end();}
 }
 
 'use strict';
