@@ -3467,6 +3467,8 @@ async function startBattle(opts){
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
   const assists=opts.assist?[].concat(opts.assist):[];
   assists.forEach(a=>{if((a.name==='Rowan'&&isBunny(FR().riv.name))||(a.name==='Wren'&&isBunny(FR().pal.name)))a.mon._pink=1;});
+  // Two friends helping (all three easter eggs): ByteBound's Wyldkin come in 5 levels stronger to keep it a fight.
+  if(tr&&assists.length>1){tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,Math.min(100,l+5)));tr.boosted=1;}
   const pi=G.party.findIndex(m=>m.hp>0);
   B={assists:assists.map(a=>Object.assign(mkBattler(a.mon,'a'),{owner:a.name})),story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
@@ -3479,6 +3481,7 @@ async function startBattle(opts){
     addSeen(B.f.mon.sid);await bsay(`${tr.cls} ${tr.name} sent out ${monName(B.f.mon)}!`);await appearAnim(B.f);}
   for(let t=0;t<14;t++){B.fx.tp.x=-t*6;await wait(1);}B.fx.tp=null;
   await bsay(`Go! ${monName(B.p.mon)}!`);await appearAnim(B.p);
+  if(tr&&tr.boosted)await bsay(`${tr.name} sees the odds and powers up! Their Wyldkin are stronger than usual!`);
   for(const a of B.assists)await bsay(`${a.owner} jumps in to help! ${a.owner}'s ${monName(a.mon)} is backing you up!`);
   let result;
   while(true){const act=await chooseAction();const r=await doTurn(act);if(r){result=r;break;}}
@@ -3604,7 +3607,7 @@ async function assistMove(a){
   if(!best||bv<=0)return null;
   await bsay(`${a.owner}'s ${monName(a.mon)} used ${best.name}!`);
   const e=effMulti(best.type,dT);const r=calcDamage(a,B.f,best,e);SFX.hit();burst(B.f,best.type);await blink(B.f);
-  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*(B.assists.length>1?.45:.6))));await tweenHP(B.f);
+  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6)));await tweenHP(B.f);
   if(e>1)await bsay('It\'s super effective!');else if(e<1)await bsay('It\'s not very effective...');
   return await checkFaints();
 }
