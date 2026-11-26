@@ -2754,7 +2754,7 @@ async function beachScene(){if(G.flags.beachScene)return;const b=eggHolder('bunn
 const EGG_SPOTS={static:'ferrowick',smashed:'emberfall',bunny:'sunbask'};
 function eggTeam(kind,L,seed){
   if(kind==='static')return[...pickTeam(['Electric','Steel'],L-1,2,seed),[SPECIES[evolvedAt(SP_BY.Pixelon.id,L+1)].name,L+1]];
-  if(kind==='smashed')return[...pickTeam(null,L-1,2,seed),[SPECIES[evolvedAt(SP_BY.Cinderpup.id,L)].name,L],['Pyrevix',L+1]];
+  if(kind==='smashed')return[...pickTeam(null,L-1,2,seed,{filter:s=>s.fam!==SP_BY.Cinderpup.fam&&s.fam!==SP_BY.Pyrevix.fam}),[SPECIES[evolvedAt(SP_BY.Cinderpup.id,L)].name,L],['Pyrevix',L+1]];
   return pickTeam(null,L,4,seed,{filter:cuteOrCreepy});}
 const EGG_LOOK={static:()=>STATIC_LOOK,smashed:()=>SMASHED_LOOK,bunny:()=>BUNNY_LOOK};
 const EGG_TALK={
@@ -3500,7 +3500,7 @@ function smashedFriend(){if(!G)return null;const f=FR();return isSmashed(f.riv.n
 function smashedTrainer(name){const f=FR();return(name==='Rowan'&&isSmashed(f.riv.name))||(name==='Wren'&&isSmashed(f.pal.name));}
 function fireStarter(r){return STARTERS.slice(r*3,r*3+3).find(s=>SPECIES[s].types.includes('Fire'));}
 // Smashed keeps a balanced team but always slips a fire dog in: swap his first non-fire, non-ace Wyldkin for Cinderpup's line at the same level.
-function smashedParty(party){if(party.length<2)return party;const out=party.map(p=>p.slice());const i=out.findIndex((p,k)=>k<out.length-1&&!SPECIES[SP_BY[p[0]].id].types.includes('Fire'));
+function smashedParty(party){if(party.length<2)return party;const out=party.map(p=>p.slice());if(out.some(p=>DOG_WYLD.includes(p[0])&&SPECIES[SP_BY[p[0]].id].types.includes('Fire')))return out;const i=out.findIndex((p,k)=>k<out.length-1&&!SPECIES[SP_BY[p[0]].id].types.includes('Fire'));
   if(i>=0){const l=out[i][1];out[i]=[SPECIES[evolvedAt(SP_BY.Cinderpup.id,l)].name,l];}return out;}
 function isBunny(n){return typeof n==='string'&&/^bunny(rx)?$/i.test(n.trim());}
 function bunnyWho(){if(!G)return null;if(isBunny(G.name))return'you';const f=FR();if(isBunny(f.riv.name))return'riv';if(isBunny(f.pal.name))return'pal';return null;}
