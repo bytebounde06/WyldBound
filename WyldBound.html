@@ -3295,7 +3295,7 @@ const SAVE_KEY='wildbound_v2_';const NSLOTS=5;let SLOT=1;
 function slotLabel(){return SLOT>NSLOTS?`NUZLOCKE FILE ${SLOT-NSLOTS}`:`FILE ${SLOT}`;}let dbRef=null;const dbChain={};
 (async()=>{try{if(typeof claude==='undefined'||!claude.use)return;const db=await claude.use('db');const user=await claude.use('user');if(!db||!user)return;const id=await user.id();if(!id)return;dbRef={db,id};}catch(e){}})();
 // migrate v1 saves into file 1
-try{['manual','auto'].forEach(k=>{const o=localStorage.getItem('wildbound_v1_'+k);if(o&&!localStorage.getItem(SAVE_KEY+'1_'+k))localStorage.setItem(SAVE_KEY+'1_'+k,o);});}catch(e){}
+try{['manual','auto'].forEach(k=>{const o=localStorage.getItem('wildbound_v1_'+k);if(o&&!localStorage.getItem(SAVE_KEY+'1_'+k))localStorage.setItem(SAVE_KEY+'1_'+k,o);localStorage.removeItem('wildbound_v1_'+k);});}catch(e){}
 const docPath=(slot,kind)=>`data/users/${dbRef.id}/save${slot}_${kind}`;
 // native iOS wrapper storage (survives even if web storage is cleared)
 const NStore={ok:()=>!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.wbStore),data:window.WB_NATIVE_STORE||{},
@@ -3733,11 +3733,19 @@ function drawTitle(c){
   text(c,'Three regions. One journey.',120,48,'#e8f0ff',8,true,'center');
   if(!ui.length&&Math.floor(frame/30)%2)text(c,'PRESS A',120,140,'#ffffff',9,true,'center');
 }
+async function deleteFilesMenu(){
+  while(true){const all=[];for(let i=1;i<=NSLOTS*2;i++)all.push(await readSlot(i));
+    const items=all.map((sv,i)=>{const n=newest(sv),lab=i<NSLOTS?`FILE ${i+1}`:`NUZ FILE ${i+1-NSLOTS}`;return n?`${lab}  ${n.G.name}`:`${lab}  - empty -`;});items.push('BACK');
+    const r=await choose(items,{x:30,y:MY+4,w:180});if(r<0||r===NSLOTS*2)return;
+    if(!newest(all[r])){await say('That file is already empty.');continue;}
+    const lab=r<NSLOTS?`FILE ${r+1}`:`NUZLOCKE FILE ${r+1-NSLOTS}`;
+    if(await yesno(`Delete ${lab} (${newest(all[r]).G.name})? This can't be undone.`)){await deleteSlot(r+1);SFX.ok();await say(`${lab} was deleted.`);}}}
 function newest(sv){if(!sv)return null;const a=sv.manual,b=sv.auto;return a&&b?(a.t>=b.t?a:b):(a||b||null);}
 async function titleFlow(){
   scene='title';await fadeTo(0,20);await waitKey();
   while(true){
-    const top=await choose(['NORMAL FILES','NUZLOCKE FILES','LOAD SAVE CODE'],{x:50,y:MY+70,w:140,cancel:false});
+    const top=await choose(['NORMAL FILES','NUZLOCKE FILES','LOAD SAVE CODE','DELETE FILES'],{x:50,y:MY+64,w:140,cancel:false});
+    if(top===3){await deleteFilesMenu();continue;}
     if(top===2){const o=await domPanel('import');if(!o)continue;const base=o.G&&o.G.nuz?NSLOTS:0;const all=[];for(let i=1;i<=NSLOTS;i++)all.push(await readSlot(base+i));
       const t=await choose(all.map((sv,i)=>`${base?'NUZLOCKE ':''}FILE ${i+1}`+(newest(sv)?' (overwrite)':'')),{x:40,y:MY+30,w:170});if(t<0)continue;SLOT=base+t+1;loadState(o);writeSave('manual');break;}
     const base=top===1?NSLOTS:0,nuzFiles=top===1;const slots=[];for(let i=1;i<=NSLOTS;i++)slots.push(await readSlot(base+i));
