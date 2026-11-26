@@ -1581,6 +1581,7 @@ async function profTalk(){
   let sid=-1;
   const pk=eggKind(G.name);if(pk==='static'){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Hm. What\'s my lab PC doing?');await eggGetsPartner('static',0,'you');sid=eggPartnerId('static',0);}
   else if(pk==='bunny'){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Wait. Is something in the air vent?');await eggGetsPartner('bunny',0,'you');sid=eggPartnerId('bunny',0);}
+  else if(pk==='smashed'){await say('Prof. Hazel: Oh dear. I only have three partners, and your two friends... Is that smoke coming from the doorway?');await eggGetsPartner('smashed',0,'you');sid=eggPartnerId('smashed',0);}
   else sid=await chooseStarter(0);
   const sp=SPECIES[sid];
   const mon=makeMon(sid,5);G.party.push(mon);addSeen(sid);addCaught(sid);
@@ -2299,7 +2300,7 @@ async function regionStarter(r){
   await say(`Professor ${PROF[r]}: You must be ${G.name}! Professor Hazel told me all about you. The border lock trapped your team, didn\'t it?`);
   await say(`Your friends Rowan and Wren got here an hour ago. Same story, their teams are locked too. So all three of you need new partners.`);
   let sid;
-  const pk=eggKind(G.name);if(pk==='static'||pk==='bunny'){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await eggGetsPartner(pk,r,'you');sid=eggPartnerId(pk,r);}
+  const pk=eggKind(G.name);if(pk){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await eggGetsPartner(pk,r,'you');sid=eggPartnerId(pk,r);}
   else{await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
   sid=await chooseStarter(r);}
   const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
