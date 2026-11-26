@@ -2931,6 +2931,88 @@ async function memorialScreen(){const gr=G.nuz.grave;
       gr.slice(top,top+6).forEach((g,i)=>{const y=22+i*22;box(c,8,y,224,20,'dark');c.drawImage(spriteOf(g.sid).front,0,0,64,64,12,y+1,18,18);
         text(c,`${g.nick}  ${SPECIES[g.sid].name} Lv${g.lvl}`,36,y+3,'#ffffff',8);text(c,`Fell at ${g.where} to ${g.by}`,36,y+12,'#a8a0b8',6);});}};pushUI(el);});}
 
+// =====================================================================
+//  TRADING
+//   - Between two phones: trade codes (copy/paste through Messages, AirDrop, Notes...).
+//       1. You OFFER a Wyldkin → it leaves your team and you get an offer code.
+//       2. Your friend pastes it, picks what to send back → they receive yours and get a reply code.
+//       3. You paste the reply code → you receive theirs. (You can cancel an offer until then.)
+//   - Between two files on the same phone: swap directly.
+//   Nuzlocke files can't trade.
+// =====================================================================
+function gameId(){if(!G.gid)G.gid=Math.random().toString(36).slice(2,10);return G.gid;}
+function tsum(s){let h=7;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h.toString(36);}
+function packTrade(o){const j=JSON.stringify(o);return'WBT1-'+btoa(unescape(encodeURIComponent(j)))+'-'+tsum(j);}
+function unpackTrade(code){const m=/^WBT1-([A-Za-z0-9+/=]+)-([a-z0-9]+)$/.exec((code||'').replace(/\s+/g,''));if(!m)return null;
+  try{const j=decodeURIComponent(escape(atob(m[1])));if(tsum(j)!==m[2])return null;return JSON.parse(j);}catch(e){return null;}}
+function cleanMon(m){if(!m||!SPECIES[m.sid])return null;const c=JSON.parse(JSON.stringify(m));c.lvl=Math.max(1,Math.min(100,c.lvl|0));
+  c.moves=(c.moves||[]).filter(x=>x&&MOVES[x.id]).slice(0,4);if(!c.moves.length)return null;calcStats(c);c.hp=Math.min(Math.max(1,c.hp|0),c.stats[0]);return c;}
+function receiveMon(m,from){m.ot=m.ot||from;addSeen(m.sid);addCaught(m.sid);if(G.party.length<6)G.party.push(m);else G.box.push(m);}
+function tradePanel(title,code,note){return new Promise(res=>{const ov=document.getElementById('overlay');ov.innerHTML='';ov.style.display='flex';
+  const card=document.createElement('div');card.className='card';ov.appendChild(card);const close=v=>{ov.style.display='none';ov.innerHTML='';res(v);};
+  const h=document.createElement('h3');h.textContent=title;card.appendChild(h);if(note){const p=document.createElement('p');p.textContent=note;p.style.cssText='font-size:13px;color:#605848;margin:4px 0 8px';card.appendChild(p);}
+  const t=document.createElement('textarea');card.appendChild(t);const msg=document.createElement('p');msg.style.cssText='font-size:13px;color:#c03040';card.appendChild(msg);
+  const row=document.createElement('div');row.className='row';card.appendChild(row);
+  if(code){t.readOnly=true;t.value=code;
+    if(navigator.share){const sh=document.createElement('button');sh.textContent='Share';row.appendChild(sh);sh.onclick=()=>navigator.share({text:code}).catch(()=>{});}
+    const cp=document.createElement('button');cp.textContent='Copy';row.appendChild(cp);cp.onclick=()=>{navigator.clipboard.writeText(code).then(()=>cp.textContent='Copied!',()=>{t.select();cp.textContent='Select + copy';});};
+    const d=document.createElement('button');d.textContent='Done';row.appendChild(d);d.onclick=()=>close(true);}
+  else{t.placeholder='Paste the trade code here';const ok=document.createElement('button');ok.textContent='OK';row.appendChild(ok);const cn=document.createElement('button');cn.textContent='Cancel';row.appendChild(cn);
+    cn.onclick=()=>close(null);ok.onclick=()=>{const o=unpackTrade(t.value);if(!o){msg.textContent='That code didn\'t work. Make sure you copied all of it.';return;}close(o);};}
+});}
+async function pickToTrade(prompt){if(G.party.length<2){await say('You need at least two Wyldkin on your team to trade one away.');return null;}
+  const i=await teamScreen('pick',{msg:prompt});if(i==null||i<0||!G.party[i])return null;return i;}
+async function tradeMenu(){
+  if(nuzOn())return say('Trading is turned off in Nuzlocke runs. Every Wyldkin has to be your own.');
+  gameId();
+  while(true){const pend=G.tradePending;
+    const items=pend?['FINISH MY OFFER','CANCEL MY OFFER','TRADE ON THIS PHONE','BACK']:['OFFER A WYLDKIN','ANSWER A FRIEND\'S OFFER','TRADE ON THIS PHONE','HOW IT WORKS','BACK'];
+    const r=await choose(items,{x:40,y:10,w:180});if(r<0)return;const it=items[r];
+    if(it==='BACK')return;
+    if(it==='HOW IT WORKS'){await say('Trading with another phone: 1. One of you picks OFFER A WYLDKIN and sends the code. 2. The other picks ANSWER A FRIEND\'S OFFER, pastes it, and picks a Wyldkin to send back.');await say('3. They send you their reply code. Pick FINISH MY OFFER and paste it. Send codes any way you like: Messages, AirDrop, Notes.');continue;}
+    if(it==='OFFER A WYLDKIN'){const i=await pickToTrade('Which Wyldkin will you offer?');if(i==null)continue;const m=G.party[i];
+      if(!await yesno(`Offer ${monName(m)}? It leaves your team until the trade finishes or you cancel.`))continue;
+      const id=Math.random().toString(36).slice(2,10);G.party.splice(i,1);G.tradePending={id,mon:m};writeSave('manual');
+      await tradePanel(`Offer code for ${monName(m)}`,packTrade({k:'offer',id,gid:G.gid,from:G.name,mon:m}),'Send this to your friend. When they reply with their code, choose TRADE → FINISH MY OFFER.');continue;}
+    if(it==='ANSWER A FRIEND\'S OFFER'){const o=await tradePanel('Paste your friend\'s offer code');if(!o)continue;
+      if(o.k!=='offer'){await say('That\'s a reply code, not an offer. The person who made the offer should paste it.');continue;}
+      if(o.gid===G.gid){await say('That\'s your own offer! Send it to a friend instead.');continue;}
+      if((G.tradesDone||[]).includes(o.id)){await say('You already answered that offer.');continue;}
+      const theirs=cleanMon(o.mon);if(!theirs){await say('Something is wrong with that Wyldkin\'s data. The trade can\'t happen.');continue;}
+      await say(`${o.from} is offering ${monName(theirs)} (${SPECIES[theirs.sid].name}, Lv${theirs.lvl}).`);
+      const i=await pickToTrade(`What will you send ${o.from} for ${monName(theirs)}?`);if(i==null)continue;const mine=G.party[i];
+      if(!await yesno(`Trade your ${monName(mine)} for ${o.from}'s ${monName(theirs)}?`))continue;
+      G.party.splice(i,1);receiveMon(theirs,o.from);G.tradesDone=(G.tradesDone||[]).concat(o.id).slice(-50);writeSave('manual');
+      await tradeScene(mine,theirs,o.from);
+      await tradePanel('Reply code',packTrade({k:'reply',id:o.id,from:G.name,mon:mine}),`Send this back to ${o.from} so they receive ${monName(mine)}.`);continue;}
+    if(it==='FINISH MY OFFER'){const o=await tradePanel('Paste your friend\'s reply code');if(!o)continue;
+      if(o.k!=='reply'||o.id!==pend.id){await say('That code doesn\'t match your current offer.');continue;}
+      const theirs=cleanMon(o.mon);if(!theirs){await say('Something is wrong with that Wyldkin\'s data.');continue;}
+      receiveMon(theirs,o.from);G.tradePending=null;writeSave('manual');await tradeScene(pend.mon,theirs,o.from);continue;}
+    if(it==='CANCEL MY OFFER'){if(!await yesno(`Cancel the offer and take ${monName(pend.mon)} back? Only do this if your friend hasn't answered it yet.`))continue;
+      receiveMon(pend.mon,G.name);G.tradePending=null;writeSave('manual');await say(`${monName(pend.mon)} came back to your team.`);continue;}
+    if(it==='TRADE ON THIS PHONE'){await localTrade();continue;}
+  }
+}
+async function localTrade(){
+  const files=[];for(let s=1;s<=NSLOTS;s++){if(s===SLOT)continue;const sv=await readSlot(s);const n=newest(sv);if(n&&!n.G.nuz&&n.G.party&&n.G.party.length)files.push({s,sv,n});}
+  if(!files.length)return say('There are no other normal files on this phone to trade with.');
+  const f=await choose(files.map(x=>`FILE ${x.s}  ${x.n.G.name}`).concat('BACK'),{x:40,y:20,w:170});if(f<0||f===files.length)return;const other=files[f],OG=other.n.G;
+  const i=await pickToTrade(`What will you send to ${OG.name}?`);if(i==null)return;
+  if(OG.party.length<2)return say(`${OG.name} needs at least two Wyldkin on their team to trade.`);
+  const j=await choose(OG.party.map(m=>`${monName(m)}  Lv${m.lvl}`).concat('CANCEL'),{x:40,y:10,w:170,prompt:`Which of ${OG.name}'s Wyldkin do you want?`});if(j<0||j===OG.party.length)return;
+  const mine=G.party[i],theirs=cleanMon(OG.party[j]);
+  if(!await yesno(`Trade your ${monName(mine)} for ${OG.name}'s ${monName(theirs)}? Both files will be saved.`))return;
+  G.party.splice(i,1);receiveMon(theirs,OG.name);OG.party.splice(j,1);const give=cleanMon(mine);give.ot=give.ot||G.name;
+  if(OG.party.length<6)OG.party.push(give);else OG.box.push(give);if(!OG.caught.includes(give.sid))OG.caught.push(give.sid);if(!OG.seen.includes(give.sid))OG.seen.push(give.sid);
+  const keep=G,keepSlot=SLOT;G=OG;SLOT=other.s;writeSave('manual');if(other.sv.auto)writeSave('auto');G=keep;SLOT=keepSlot;writeSave('manual');
+  await tradeScene(mine,theirs,OG.name);}
+// a short animation: the two Wyldkin swap places
+function tradeScene(out,inn,who){return new Promise(res=>{let t=0;SFX.ok();const el={full:1,bgc:'#203048',update(p){t++;if(t===60)SFX.lvl();if(t>140&&(p.has('a')||p.has('b')||t>260)){popUI(el);res();}},
+  draw(c){text(c,'TRADE',120,8,'#f8f0c0',12,true,'center');const u=Math.min(1,t/90);
+    c.globalAlpha=1-u*.9;c.drawImage(spriteOf(out.sid).front,0,0,64,64,30+u*150,40-Math.sin(u*Math.PI)*24,64,64);c.globalAlpha=Math.min(1,u*1.3);c.drawImage(spriteOf(inn.sid).front,0,0,64,64,146-u*116,40+Math.sin(u*Math.PI)*24,64,64);c.globalAlpha=1;
+    if(t>90){text(c,`Sent ${monName(out)} to ${who}.`,120,116,'#c8d8f0',8,true,'center');text(c,`Received ${monName(inn)}!`,120,130,'#ffffff',9,true,'center');}}};pushUI(el);});}
+
 'use strict';
 // ===================== ASSEMBLE WORLD =====================
 const BIOME_W={meadow:{Normal:3,Grass:2,Bug:2,Flying:2,Electric:1,Poison:1,Fighting:1,Ground:1},forest:{Bug:3,Grass:3,Poison:2,Ghost:1,Normal:1,Psychic:1,Dark:1},
@@ -3499,9 +3581,10 @@ async function startMenu(){
   SFX.ok();
   let sel=0;
   while(true){
-    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase());if(nuzOn())items.push('MEMORIAL');items.push('SAVE','OPTIONS','EXIT');
+    const items=[];if(G.flags.starter)items.push('CODEX');if(G.party.length)items.push('TEAM');items.push('BAG');if(travelTargets().length>1&&!MAP.indoor)items.push('TRAVEL');items.push(G.name.toUpperCase());if(nuzOn())items.push('MEMORIAL');else if(G.flags.starter)items.push('TRADE');items.push('SAVE','OPTIONS','EXIT');
     const r=await choose(items,{x:W-84,y:2,w:82,start:sel});if(r<0||items[r]==='EXIT')return;sel=r;const it=items[r];
     if(it==='MEMORIAL')await memorialScreen();
+    if(it==='TRADE')await tradeMenu();
     if(it==='CODEX')await codexScreen();
     else if(it==='TEAM')await teamScreen('view');
     else if(it==='BAG')await bagScreen('field');
