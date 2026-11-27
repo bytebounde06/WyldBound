@@ -426,9 +426,16 @@ SPECIES.forEach(sp=>sp.learn=buildLearnset(sp));
 function expFor(sp,l){return sp.growth==='slow'?Math.floor(5*l*l*l/4):l*l*l;}
 function calcStats(m){const sp=SPECIES[m.sid];m.stats=sp.base.map((b,i)=>i===0?Math.floor((2*b+m.ivs[i])*m.lvl/100)+m.lvl+10:Math.floor((2*b+m.ivs[i])*m.lvl/100)+5);}
 let UID=Date.now()%100000;
+// ---- gender: most Wyldkin are male or female; some are genderless; a few lines are one gender only (like Nidoran) ----
+const SEX_LOCK=[[/^(barbelle|thornmare|thornqueen|nursebun|carebun|frostdiva|psychantress|lilydancer)$/i,'f'],[/^(barbuck|thornbuck|thornking)$/i,'m']];
+function speciesSex(sp){for(const[rx,g] of SEX_LOCK)if(rx.test(sp.name))return g;
+  if(sp.rar==='L'||sp.rar==='M')return'none';const pl=(typeof conceptOf==='function'&&conceptOf(sp).plan)||sp.plan;
+  if(['orb','cube','crystal','star','jelly'].includes(pl)||/egg|pixel|orb$|sphere|prism|shard|compass|clay/i.test(sp.name))return'none';return null;}
+function monGender(m){if(!m)return null;if(m.gender===undefined){const sx=speciesSex(SPECIES[m.sid]);m.gender=sx==='none'?null:sx||((((m.uid|0)*2654435761)>>>0)%2?'f':'m');}return m.gender;}
 function makeMon(sid,lvl){
   const sp=SPECIES[sid];
   const m={uid:++UID,sid,lvl,exp:expFor(sp,lvl),ivs:[0,0,0,0,0,0].map(()=>Math.floor(Math.random()*32)),moves:[],status:null,slp:0,hp:0};
+  {const sx=speciesSex(sp);m.gender=sx==='none'?null:sx||(Math.random()<.5?'f':'m');}
   const known=[];sp.learn.forEach(e=>{if(e[0]<=lvl&&!known.includes(e[1]))known.push(e[1]);});
   // pick up to 3 of the strongest attacks (favoring own types) plus the newest status move
   const sp_=SPECIES[sid];const dmg=known.filter(id=>MOVES[id].pow>0).sort((a,b)=>{const va=MOVES[a].pow*(sp_.types.includes(MOVES[a].type)?1.5:1),vb=MOVES[b].pow*(sp_.types.includes(MOVES[b].type)?1.5:1);return vb-va;});
@@ -1134,7 +1141,7 @@ function makeRamp(rgb){const[h,s,l]=rgb2hsl(rgb);return[
   rgb,
   hsl2rgb([hueToward(h,.15,.05),s*.95,Math.min(.95,l+.1)]),
   hsl2rgb([hueToward(h,.15,.1),s*.8,Math.min(.97,l+.2)])];}
-function genSprite(sp){
+function genSprite(sp,fem){
   const K=SPRK,N=SPR*K,Lb=new Uint8Array(N*N),Pt=new Uint16Array(N*N);let pid=0;const eyes=[],mouths=[],dots=[];
   const inb=(x,y)=>x>=0&&y>=0&&x<N&&y<N;const get=(x,y)=>inb(x,y)?Lb[y*N+x]:0,gp=(x,y)=>inb(x,y)?Pt[y*N+x]:0;
   const put=(x,y,l,m,p)=>{if(!inb(x,y))return;const i=y*N+x;if(m===1){if(Lb[i])Lb[i]=l;return;}if(m===2&&Lb[i])return;Lb[i]=l;Pt[i]=p;};
@@ -1183,6 +1190,7 @@ function genSprite(sp){
   const D1=10+TYPES.indexOf(T1),D2=T2?10+TYPES.indexOf(T2):D1;
   const gy=61;let plan=sp.plan;
   const CN=conceptOf(sp);Object.assign(f,CN.f);
+  const sexLock=speciesSex(sp);const femLook=!!fem||sexLock==='f';const femShift=!!fem&&!sexLock;fem=femLook;
   if(CN.plan&&!(sp.early&&sp.stage<2))plan=CN.plan;
   if(sp.early&&sp.stage===0)plan='larva';if(sp.early&&sp.stage===1)plan='pupa';
   // faces: concept first, then type, then a per-species roll (so even family members differ a little)
@@ -1251,17 +1259,38 @@ function genSprite(sp){
     if(f.pat==='tip'&&t!=='tuft')ell(ex,ey,thick*1.3,thick*1.3,3,{m:1});
     return[ex,ey];
   }
+  // ---- legs & feet that suit the creature ----
+  const nmL=sp.name.toLowerCase();
+  const LS=CN.legStyle||(
+    /mare|steed|foal|stag|hart|buck|fawn|deer|antler|goat|bull|charge|rhino|wool|fleece|ram|barbelle|camel|hump|myst/.test(nmL)?'hoof':
+    /tusk|trunk|bear|ursa|grizz|cub$|turtle|shell|terravast|ironfort|sumo|slumbear|tortoise/.test(nmL)||plan==='turtle'||(f.bw>1.3&&plan==='quad')?'stout':
+    /geck|lizard|chamel|tyrant|draglet|toad|frog|bogking|croc|drake|wyrm/.test(nmL)||plan==='drake'?'reptile':
+    /brawl|grapp|titan|maul|brute|kick|sumo|fist|punch|champ|yeti/.test(nmL)||(plan==='biped'&&(T1==='Fighting'||f.hulk))?'muscle':
+    /diva|dancer|queen|belle|psychant|lily|ribbon|nurse|fairy/.test(nmL)||(plan==='biped'&&T1==='Fairy')?'slender':
+    /pup|hound|wolf|fang|kit$|cat$|lynx|vix|fox|paw$|coon|mongo|sleek/.test(nmL)?'runner':'paw');
+  const legNone=plan==='golem'&&(sp.stage===0||/pebb|rubbl|boulder|stone/.test(nmL))&&!/titan|colossus|frostus|ferrus|granitus|glaciron/.test(nmL);
+  legMul*={hoof:1.35,runner:1.2,paw:.9,stout:.72,reptile:.68,muscle:1,slender:1.2}[LS]||1;
   const legs=(CN.legs||sp.legs||1)*legMul;
+  // leg(xHip,yHip,xFoot,yFoot,r): one leg + foot in the creature's style
+  function leg(x1,y1,x2,y2,r){const L=y2-y1;const kn=(fem&&LS!=='stout')?.85:1;
+    if(LS==='hoof'){const r2=r*.62*kn;cap(x1,y1,x1+(x2-x1)*.5,y1+L*.5,r*.85*kn,1);cap(x1+(x2-x1)*.5,y1+L*.5,x2,y2-1.4,r2,1,{p:pid});const hw=r2+.7;tri(x2-hw,y2-1.8,x2+hw,y2-1.8,x2-hw-.4,y2,58);tri(x2+hw,y2-1.8,x2+hw+.4,y2,x2-hw-.4,y2,58);return;}
+    if(LS==='runner'){const kx=x1-1.2,ky=y1+L*.42,hx_=x1+1.2,hy_=y1+L*.72;cap(x1,y1,kx,ky,r*.95*kn,1);cap(kx,ky,hx_,hy_,r*.62*kn,1,{p:pid});cap(hx_,hy_,x2-1,y2-1,r*.55*kn,1,{p:pid});ell(x2-1.6,y2-1,r*.8+.6,r*.55,1);dots.push([x2-2.6,y2-.6],[x2-1.4,y2-.4]);return;}
+    if(LS==='stout'){const rr=r*1.35;cap(x1,y1,x2,y2-1,rr,1);ell(x2,y2-1,rr*1.15,rr*.55,1);for(let i=-1;i<=1;i++)ell(x2+i*rr*.55-.3,y2-.6,.75,.6,45,{m:1});return;}
+    if(LS==='reptile'){const kx=x1-r*1.3,ky=y1+L*.35;cap(x1,y1,kx,ky,r*.95,1);cap(kx,ky,x2-r,y2-1,r*.75,1,{p:pid});ell(x2-r,y2-1,r*.9+.4,r*.45,1);for(let i=0;i<3;i++)tri(x2-r-2.2+i*1.4,y2-.6,x2-r-1.4+i*1.4,y2-.6,x2-r-2.6+i*1.4,y2+.6,45);return;}
+    if(LS==='muscle'){ell(x1,y1+L*.25,r*1.35,L*.32,1);cap(x1,y1+L*.45,x2,y2-1.5,r*1.05,1,{p:pid});ell(x1-.4,y1+L*.68,r*.95,L*.16,1,{p:pid});ell(x2-.5,y2-1,r*1.3,r*.7,3);cap(x1-r*.5,y1+L*.2,x1-r*.2,y1+L*.38,.35,6,{m:1});return;}
+    if(LS==='slender'){cap(x1,y1,x2,y2-1.5,r*.62,1,{r2:r*.45});tri(x2-r*.6-1.4,y2,x2+r*.5,y2,x2-.2,y2-2.2,fem?44:3);return;}
+    cap(x1,y1,x2,y2-1,r,1);foot(x2-.5,y2-1.2,r);}
+  function birdLeg(x,y1,y2){cap(x,y1,x,y2-.8,.6,48);cap(x,y2-.8,x-2.6,y2-.2,.45,48);cap(x,y2-.8,x-1,y2,.45,48);cap(x,y2-.8,x+1.4,y2-.3,.4,48);}
   if(plan==='quad'||plan==='mole'){
     const mole=plan==='mole';const legH=(mole?3.5:7)*s*legs,rx=13*s*f.bw*(mole?1.1:1),ry=8*s*f.bh*(mole?1.15:1),bcx=34,bcy=gy-legH-ry*.7;
     const hr=(6+2.5*s)*f.hs;const hcx=bcx-rx*.82,hcy=bcy-ry*(mole?.35:.85)-hr*.25;
     A={back:[bcx+rx*.1,bcy-ry],head:[hcx,hcy-hr*.9],face:[hcx,hcy],body:[bcx,bcy,rx,ry],hr};
     A.tail=tailF(bcx+rx*.85,bcy-ry*.2,(f.tail==='short'?7:13)*s*1.2,(1.7+st*.3)*s+.5);
     const lr=(2.3+st*.5)*s+.6;
-    [bcx-rx*.55+3,bcx+rx*.55+3].forEach(x=>{cap(x,bcy,x+1,gy-1,lr,1);});
+    [bcx-rx*.55+3,bcx+rx*.55+3].forEach(x=>{leg(x,bcy,x+1,gy,lr);});
     const bp=ell(bcx,bcy,rx,ry,1);
     if(f.mane||st===2&&f.spikes){for(let i=0;i<4+st;i++)ell(bcx-rx*.55+i*rx*.25,bcy-ry*.85+Math.sin(i)*1,2.4+st*.4,2.4+st*.4,f.mane?3:1,{p:bp});}
-    [bcx-rx*.6,bcx+rx*.5].forEach(x=>{cap(x,bcy+ry*.5,x-1,gy-2,lr,1);foot(x-1.5,gy-1.5,lr);});
+    [bcx-rx*.6,bcx+rx*.5].forEach(x=>{leg(x,bcy+ry*.5,x-1,gy,lr);});
     if(f.belly)ell(bcx-2,bcy+ry*.5,rx*.72,ry*.48,2,{m:1});
     if(f.pat==='stripes')for(let i=0;i<3;i++)cap(bcx-rx*.2+i*rx*.3,bcy-ry,bcx-rx*.1+i*rx*.3,bcy-ry*.2,1.1,3,{m:1});
     if(f.pat==='spots')for(let i=0;i<4;i++)ell(bcx-rx*.5+i*rx*.33,bcy-ry*.35+(i%2)*2.5,1.6,1.4,3,{m:1});
@@ -1285,8 +1314,7 @@ function genSprite(sp){
     if(f.tail!=='short')A.tail=tailF(tcx+rx*.6,tcy+ry*.4,10*s,1.8*s+.5);else A.tail=[tcx+rx,tcy];
     const lr=(2.4+st*.5)*s+.6;
     cap(tcx+rx*.6,tcy-ry*.3,tcx+rx*1.25,tcy+ry*.25,lr*.85,1);
-    cap(tcx-rx*.45,tcy+ry*.6,tcx-rx*.5,gy-2,lr,1);cap(tcx+rx*.45,tcy+ry*.6,tcx+rx*.5,gy-2,lr,1);
-    foot(tcx-rx*.6,gy-1.5,lr+.5);foot(tcx+rx*.6,gy-1.5,lr+.5);
+    leg(tcx-rx*.45,tcy+ry*.6,tcx-rx*.55,gy,lr);leg(tcx+rx*.45,tcy+ry*.6,tcx+rx*.55,gy,lr);
     const tp=ell(tcx,tcy,rx,ry,1);
     if(f.belly)ell(tcx,tcy+ry*.15,rx*.62,ry*.7,2,{m:1});
     if(f.pat==='stripes')for(let i=0;i<3;i++)cap(tcx-rx,tcy-ry*.3+i*4,tcx-rx*.5,tcy-ry*.3+i*4,1,3,{m:1});
@@ -1309,7 +1337,7 @@ function genSprite(sp){
       if(sp.rar==='L'||sp.rar==='M'){feather(bcx+rx*.6,bcy,-.15,tf*1.9,1.1,3);feather(bcx+rx*.6,bcy+1,.12,tf*1.6,1.1,57);}
       var spreadW=(sp.rar==='L'||sp.rar==='M'||st>=2||(st===1&&nr2()<.6)||(sp.stages===1&&nr2()<.5));
       if(spreadW)featherWing(bcx+2,bcy-ry*.6-1,(15+st*4)*s+5,{behind:1,arm:-.95,tilt:.1});
-      cap(bcx-2,bcy+ry*.7,bcx-3,gy-1,1.1,8);cap(bcx+3,bcy+ry*.7,bcx+3,gy-1,1.1,8);dots.push([bcx-5,gy-1],[bcx,gy-1]);}
+      birdLeg(bcx-2,bcy+ry*.7,gy);birdLeg(bcx+3,bcy+ry*.7,gy);}
     const bp=rell(bcx,bcy,rx,ry,-.2,1);
     if(f.belly)rell(bcx-3,bcy+ry*.35,rx*.65,ry*.55,-.2,2,{m:1});
     if(!bat){if(spreadW)featherWing(bcx-2,bcy-ry*.45,(16+st*4)*s+6,{arm:-.7,tilt:.15});else foldedWing(bcx-rx*.35,bcy-ry*.35,rx*1.6+2);}
@@ -1327,10 +1355,10 @@ function genSprite(sp){
     if(drake){const rx=12*s*f.bw+1,ry=7.5*s*f.bh+1,bcx=36,bcy=gy-8*s-ry*.6;
       const wl=(16+st*5)*s+6;if(CN.feathered)featherWing(bcx-1,bcy-ry*.6,wl,{arm:-1.15});else{batWing(bcx+3,bcy-ry*.7,wl,{behind:1,arm:-1.35,tilt:-.1});batWing(bcx-2,bcy-ry*.55,wl,{arm:-1.0,tilt:.2});}
       A.tail=tailF(bcx+rx*.8,bcy,14*s,2.2*s+.5);
-      [bcx-rx*.5+3,bcx+rx*.5+3].forEach(x=>cap(x,bcy,x+1,gy-1,2.4*s+.8,1));
+      [bcx-rx*.5+3,bcx+rx*.5+3].forEach(x=>leg(x,bcy,x+1,gy,2.4*s+.8));
       const bp=ell(bcx,bcy,rx,ry,1);ell(bcx-2,bcy+ry*.45,rx*.75,ry*.45,2,{m:1});
       for(let i=0;i<4;i++)cap(bcx-rx*.5+i*rx*.3,bcy+ry*.2,bcx-rx*.5+i*rx*.3,bcy+ry*.85,.5,1,{m:1});
-      [bcx-rx*.6,bcx+rx*.5].forEach(x=>{cap(x,bcy,x-1,gy-2,2.6*s+.8,1);foot(x-1.5,gy-1.5,2.4*s+.6);});
+      [bcx-rx*.6,bcx+rx*.5].forEach(x=>{leg(x,bcy,x-1,gy,2.6*s+.8);});
       const nx=bcx-rx*.85,ny=bcy-ry*1.4;cap(bcx-rx*.5,bcy-ry*.2,nx,ny,3*s+1,1);
       const hr=(5+2*s)*f.hs,hcx=nx-2,hcy=ny-hr*.6;const hp=ell(hcx,hcy,hr*1.1,hr*.85,1);ell(hcx-hr*.95,hcy+hr*.25,hr*.65,hr*.42,1,{p:hp});ell(hcx-hr*1.45,hcy+hr*.1,1.3,1,6,{m:1});
       A.back=[bcx+2,bcy-ry];A.head=[hcx,hcy-hr*.8];A.face=[hcx,hcy];A.hr=hr;A.body=[bcx,bcy,rx,ry];
@@ -1374,7 +1402,7 @@ function genSprite(sp){
       if(st>=1)for(let k=0;k<5;k++){const a=-Math.PI/2+Math.PI/5+k*Math.PI*2/5;tri(32+Math.cos(a)*R*.8,cy+Math.sin(a)*R*.8,32+Math.cos(a+.5)*R*.35,cy+Math.sin(a+.5)*R*.35,32+Math.cos(a-.5)*R*.35,cy+Math.sin(a-.5)*R*.35,3,{p});}
       addEye(32-R*.15,cy-1,eR(R*.09+.9),true);addEye(32+R*.15,cy-1,eR(R*.09+.9),true);
     } else if(plan==='golem'){const w=14*s*f.bw+2,h=12*s*f.bh+2,cx=33,cy=gy-h-5*s;
-      cap(cx-w*.45,cy+h*.5,cx-w*.5,gy-2,3.2*s+1,1);cap(cx+w*.45,cy+h*.5,cx+w*.5,gy-2,3.2*s+1,1);
+      if(!legNone){const ls=LS;leg(cx-w*.45,cy+h*.5,cx-w*.5,gy,3.2*s+1);leg(cx+w*.45,cy+h*.5,cx+w*.5,gy,3.2*s+1);}
       cap(cx+w*.8,cy-h*.3,cx+w*1.05,cy+h*.6,3*s+1,1);
       const bp=rell(cx,cy,w,h,0,1);for(let i=0;i<4;i++){const r=mulberry32(sp.seed+i);ell(cx-w*.6+r()*w*1.2,cy-h*.6+r()*h*1.2,2+st,1.6+st*.6,3,{m:1});}
       cap(cx-w*.85,cy-h*.3,cx-w*1.15,cy+h*.6,3*s+1,1);ell(cx-w*1.15,cy+h*.75,3.6*s+1,3.2*s+1,1);
@@ -1450,7 +1478,7 @@ function genSprite(sp){
     const sp_=ell(bcx,bcy,rx,ry,3);ell(bcx,bcy+ry*.6,rx*1.02,ry*.28,8,{m:1});
     for(let i=-1;i<=1;i++)ell(bcx+i*rx*.45,bcy-ry*.25,rx*.2,ry*.3,1,{m:1});
     if(st>=1)for(let i=0;i<3+st;i++){const x=bcx-rx*.6+i*rx*.4;tri(x-2,bcy-ry*.8,x+2,bcy-ry*.8,x,bcy-ry-3-st*1.5,D1);}
-    [bcx-rx*.65,bcx+rx*.5].forEach(x=>{cap(x,bcy+ry*.4,x-1,gy-2,2.8*s+.8,1);foot(x-1.5,gy-1.5,2.6*s+.6);});
+    [bcx-rx*.65,bcx+rx*.5].forEach(x=>{leg(x,bcy+ry*.4,x-1,gy,2.8*s+.8);});
     const hr=(5+2*s)*f.hs,hcx=bcx-rx-hr*.4,hcy=bcy-ry*.2;cap(bcx-rx*.7,bcy+1,hcx+2,hcy+1,hr*.55,1);
     const hp=ell(hcx,hcy,hr,hr*.9,1);ell(hcx-hr*.6,hcy+hr*.3,hr*.5,hr*.38,2,{p:hp});
     A={tail:[bcx+rx,bcy],back:[bcx,bcy-ry],head:[hcx,hcy-hr],face:[hcx,hcy],hr,body:[bcx,bcy,rx,ry],noEar:1};
@@ -1499,7 +1527,7 @@ function genSprite(sp){
     A.tail=tailF(cx+rx*.7,gy-4,(f.tail==='short'?6:11)*s*1.2,(1.6+st*.3)*s+.5);
     ell(cx-rx*.8,gy-ry*.35,rx*.55,ry*.45,1);ell(cx+rx*.8,gy-ry*.35,rx*.55,ry*.45,1);
     const bp=ell(cx,cy,rx,ry,1);if(f.belly)ell(cx,cy+ry*.2,rx*.6,ry*.62,2,{m:1});
-    cap(cx-rx*.38,cy+ry*.1,cx-rx*.42,gy-2,lr,1);cap(cx+rx*.38,cy+ry*.1,cx+rx*.42,gy-2,lr,1);foot(cx-rx*.45,gy-1.5,lr);foot(cx+rx*.45,gy-1.5,lr);
+    leg(cx-rx*.38,cy+ry*.1,cx-rx*.44,gy,lr);leg(cx+rx*.38,cy+ry*.1,cx+rx*.44,gy,lr);
     const hr=(6.5+2.4*s)*f.hs;const hcx=cx,hcy=cy-ry*.82-hr*.45;const hp=ell(hcx,hcy,hr,hr*.9,1);
     if(f.snout||f.snoutLong)ell(hcx,hcy+hr*.45,hr*(f.snoutLong?.5:.42),hr*.32,2,{p:hp});if(f.pig)ell(hcx,hcy+hr*.42,hr*.3,hr*.24,7,{p:hp});
     if(f.pat==='mask')ell(hcx,hcy-hr*.05,hr*.85,hr*.3,CN.x.includes('whiskers')?6:3,{m:1});
@@ -1860,9 +1888,11 @@ function genSprite(sp){
   if(T1==='Normal')main=adj(hex2rgb(NATURAL[Math.floor(pr()*NATURAL.length)]),(pr()-.5)*.08,(pr()-.5)*.1);
   if(CN.col)main=adj(hex2rgb(CN.col),(pr()-.5)*.06,(pr()-.5)*.08,(pr()-.5)*.02);
   if(sp.rar==='L'||sp.rar==='M')main=adj(main,.03,.12);
+  if(femShift){main=adj(main,.09,.08,.07);f.bw*=.95;}
   const bellyC=T2&&!CN.col?mix(hex2rgb(TYPE_COLOR[T2]),[248,240,216],.5):mix(main,[250,242,220],.62);
   let accent=T2?adj(hex2rgb(TYPE_COLOR[T2]),-.04):adj(main,-.16,.05,.06);
-  if(CN.col2)accent=hex2rgb(CN.col2);else if(CN.col&&TYPE_COLOR[T1]){const tc=hex2rgb(TYPE_COLOR[T1]);const d=Math.abs(rgb2hsl(tc)[0]-rgb2hsl(main)[0]);if(d>.06&&!T2)accent=tc;}
+  if(CN.col2)accent=hex2rgb(CN.col2);
+  if(femShift)accent=mix(accent,[245,120,170],.35);else if(CN.col&&TYPE_COLOR[T1]){const tc=hex2rgb(TYPE_COLOR[T1]);const d=Math.abs(rgb2hsl(tc)[0]-rgb2hsl(main)[0]);if(d>.06&&!T2)accent=tc;}
   const spikeC=(()=>{const a=rgb2hsl(accent),m=rgb2hsl(main);return(Math.abs(a[0]-m[0])>.06||Math.abs(a[2]-m[2])>.18)?accent:adj(main,-.42,-.05);})();
   const wingC=adj(main,-.1,-.02),tipC=CN.col2?hex2rgb(CN.col2):(sp.rar==='L'||sp.rar==='M')?accent:adj(main,-.3,-.04);
   const pal={59:adj(main,-.26,-.04),58:[44,32,38],56:wingC,57:tipC,55:spikeC,1:main,2:bellyC,3:accent,6:adj(main,-.35,-.25),7:[240,150,170],8:[240,220,160],9:[250,250,250],40:[255,140,180],41:[230,240,255],42:[240,200,60],43:[44,40,52],44:[220,60,70],45:[236,228,206],46:[150,100,60],47:[255,236,120],48:[240,160,50],49:[80,170,70],50:[200,236,255],51:[70,140,230],53:[150,150,160],54:[250,220,70]};
@@ -1960,6 +1990,8 @@ function genSprite(sp){
     ring(cxx,cyy,rx,ry,lid,true);
     hl(Math.round(cxx+ox-r*.3),Math.round(cyy-r*.35),[255,255,255]);if(r>2.2)hl(Math.round(cxx+ox+r*.2),Math.round(cyy+r*.35),[230,240,255]);
   });
+  if(femLook&&!['visor','pixel','compound','hollow','glow','button','happy','beady'].includes(E))eyes.forEach(e=>{const r=e.r*K,cxx=e.x*K,cyy=e.y*K;const out=e.front?(e.x<A.face[0]?-1:1):1;
+    for(let k=0;k<2;k++){const x=Math.round(cxx+out*(r*.55+k*K*.9)),y=Math.round(cyy-r*.85-k*K*.6);for(let a=0;a<K;a++)for(let b=0;b<K;b++)setPx(x+a,y+b,[30,22,30]);}});
   if(E==='visor'&&eyes.length){const xs=eyes.map(e=>e.x),y0=Math.round(eyes[0].y),r=eyes[0].r;const x0=Math.round(Math.min(...xs)-r-.5),x1=Math.round(Math.max(...xs)+r+.5);
     for(let x=x0;x<=x1;x++){for(let d=-1;d<=1;d++)if(get64(x,y0+d))blk(x,y0+d,d===0?[150,255,250]:[60,200,230]);if(get64(x,y0-2))blk(x,y0-2,[30,30,40]);if(get64(x,y0+2))blk(x,y0+2,[30,30,40]);}}
   if(f.brow&&!['visor','hollow','glow','happy','pixel','button'].includes(E))eyes.forEach(e=>{const r=e.r,y=Math.round(e.y-r-1.2);const inner=e.front?(e.x<A.face[0]?1:-1):-1;
@@ -1968,7 +2000,7 @@ function genSprite(sp){
   const b=mkCanvas(N,N),bx=b.getContext('2d');bx.translate(N,0);bx.scale(-1,1);bx.drawImage(c,0,0);
   return{front:c,back:b,float:!!A.float};
 }
-function spriteOf(sid){return SPRITES[sid]||(SPRITES[sid]=genSprite(SPECIES[sid]));}
+function spriteOf(sid,fem){const k=fem?sid+'f':sid;return SPRITES[k]||(SPRITES[k]=genSprite(SPECIES[sid],!!fem));}
 // Pink versions of a Wyldkin's sprites (BunnyRX easter egg)
 const PINKSPR={};
 function pinkCanvas(src){const c=mkCanvas(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);const im=x.getImageData(0,0,c.width,c.height),d=im.data;
@@ -1978,8 +2010,12 @@ function pinkCanvas(src){const c=mkCanvas(src.width,src.height),x=c.getContext('
     const q=nl<.5?nl*(1+ns):nl+ns-nl*ns,p=2*nl-q,f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
     d[i]=f(nh+1/3)*255;d[i+1]=f(nh)*255;d[i+2]=f(nh-1/3)*255;}
   x.putImageData(im,0,0);return c;}
-function pinkSpriteOf(sid){if(PINKSPR[sid])return PINKSPR[sid];const s=spriteOf(sid);return PINKSPR[sid]={front:pinkCanvas(s.front),back:pinkCanvas(s.back),float:s.float};}
-function monSpr(m){return m&&typeof monIsPink==='function'&&monIsPink(m)?pinkSpriteOf(m.sid):spriteOf(m.sid);}
+function pinkSpriteOf(sid,fem){const k=fem?sid+'f':sid;if(PINKSPR[k])return PINKSPR[k];const s=spriteOf(sid,fem);return PINKSPR[k]={front:pinkCanvas(s.front),back:pinkCanvas(s.back),float:s.float};}
+function monSpr(m){const fm=!!m&&monGender(m)==='f';return m&&typeof monIsPink==='function'&&monIsPink(m)?pinkSpriteOf(m.sid,fm):spriteOf(m.sid,fm);}
+// little male / female symbol drawn next to a Wyldkin's level
+function drawGender(c,x,y,g){if(!g)return;c.fillStyle=g==='m'?'#3070e0':'#e04888';const P=(px,py,w=1,h=1)=>c.fillRect(x+px,y+py,w,h);
+  if(g==='m'){P(1,3,3,1);P(0,4,1,3);P(4,4,1,3);P(1,7,3,1);P(4,1,3,1);P(6,1,1,3);P(5,2,1,1);P(4,3,1,1);}
+  else{P(1,0,3,1);P(0,1,1,3);P(4,1,1,3);P(1,4,3,1);P(2,5,1,3);P(1,6,3,1);}}
 
 // ===================== TILES (shaded, neighbor-aware) =====================
 const TS=16;const TCACHE={};
@@ -4679,7 +4715,7 @@ function teamScreen(mode,opts={}){
       },
       draw(c){c.fillStyle='#4878a8';c.fillRect(0,0,W,H);c.fillStyle='#5888b8';for(let i=0;i<W;i+=16)c.fillRect(i,0,8,H);
         list.forEach((m,i)=>{const y=3+i*21,on=i===this.sel;box(c,4,y,232,20,on?'dark':'std');const tc=on?'#ffffff':'#404040';
-          c.drawImage(monSpr(m).front,0,0,SPRX,SPRX,7,y-2,22,22);text(c,monName(m),32,y+3,tc,9);text(c,`Lv${m.lvl}`,98,y+4,tc,8);
+          c.drawImage(monSpr(m).front,0,0,SPRX,SPRX,7,y-2,22,22);text(c,monName(m),32,y+3,tc,9);text(c,`Lv${m.lvl}`,98,y+4,tc,8);drawGender(c,89,y+5,monGender(m));
           hpBar(c,124,y+8,64,m.hp,m.stats[0]);text(c,`${m.hp}/${m.stats[0]}`,230,y+5,tc,7,true,'right');
           if(m.hp<=0){c.fillStyle='#c84040';c.fillRect(124,y+2,24,7);text(c,'FNT',136,y+2,'#fff',6,false,'center');}
           else if(m.status){c.fillStyle=STATUS_COL[m.status];c.fillRect(124,y+2,24,7);text(c,STATUS_TAG[m.status],136,y+2,'#fff',6,false,'center');}
@@ -4705,7 +4741,7 @@ function summaryScreen(start){
     draw(c){const m=G.party[this.i],sp=SPECIES[m.sid];c.fillStyle='#e8e0c8';c.fillRect(0,0,W,H);c.fillStyle='#c84848';c.fillRect(0,0,W,16);
       text(c,'WYLDKIN INFO',8,3,'#fff',9);text(c,'▲▼ switch  B: back',232,4,'#fff',7,true,'right');
       box(c,4,20,84,84,'info');c.drawImage(monSpr(m).front,14,28,64,64);
-      text(c,`No.${String(sp.num).padStart(3,'0')}`,8,108,'#404040',8);text(c,monName(m),8,118,'#404040',10);text(c,`Lv ${m.lvl}`,8,131,'#404040',9);
+      text(c,`No.${String(sp.num).padStart(3,'0')}`,8,108,'#404040',8);text(c,monName(m),8,118,'#404040',10);text(c,`Lv ${m.lvl}`,8,131,'#404040',9);drawGender(c,44,132,monGender(m));
       sp.types.forEach((t,k)=>typeTag(c,t,8+k*33,144));
       const lab=['HP','ATTACK','DEFENSE','SP.ATK','SP.DEF','SPEED'];box(c,92,20,144,62,'info');
       lab.forEach((l,k)=>{text(c,l,98,23+k*8.5,'#605848',7);text(c,k===0?`${m.hp}/${m.stats[0]}`:`${m.stats[k]}`,230,23+k*8.5,'#404040',7,true,'right');});
@@ -5228,10 +5264,10 @@ function drawBattle(c){
   drawMon(c,B.f,'f',sl);drawMon(c,B.p,'p',sl);
   (B.fx.parts||[]).forEach(p=>{c.globalAlpha=Math.min(1,p.l/12);c.fillStyle=p.c;c.fillRect(p.x-1,p.y-1,3,3);});c.globalAlpha=1;
   if(B.fx.orb){const o=B.fx.orb;c.save();c.translate(o.x,o.y);c.rotate(o.rot);c.drawImage(ORB_IMG,-8,-9);c.restore();if(o.caught&&frame%20<10)text(c,'✦',o.x+6,o.y-12,'#f0d050',8,false);}
-  if(B.fx.slide===0&&!B.f.hidden&&!B.fx.tf){const m=B.f.mon;box(c,6,10,106,30,'info');text(c,monName(m),12,13,'#404040',9);text(c,`Lv${m.lvl}`,106,14,'#404040',8,true,'right');
+  if(B.fx.slide===0&&!B.f.hidden&&!B.fx.tf){const m=B.f.mon;box(c,6,10,106,30,'info');text(c,monName(m),12,13,'#404040',9);text(c,`Lv${m.lvl}`,106,14,'#404040',8,true,'right');drawGender(c,82,15,monGender(m));
     if(G.caught.includes(m.sid)&&B.wild)c.drawImage(ORB_IMG,94,25,9,9);text(c,'HP',12,26,'#e09020',7);hpBar(c,24,27,68,B.f.disp,m.stats[0]);
     if(m.status){c.fillStyle=STATUS_COL[m.status];c.fillRect(70,14,20,8);text(c,STATUS_TAG[m.status],80,14.5,'#fff',6,false,'center');}}
-  if(!B.p.hidden||B.p.fainted){const m=B.p.mon;if(!B.p.hidden){box(c,126,72,110,40,'info');text(c,monName(m),132,75,'#404040',9);text(c,`Lv${m.lvl}`,230,76,'#404040',8,true,'right');
+  if(!B.p.hidden||B.p.fainted){const m=B.p.mon;if(!B.p.hidden){box(c,126,72,110,40,'info');text(c,monName(m),132,75,'#404040',9);text(c,`Lv${m.lvl}`,230,76,'#404040',8,true,'right');drawGender(c,206,77,monGender(m));
     text(c,'HP',134,88,'#e09020',7);hpBar(c,146,89,84,B.p.disp,m.stats[0]);text(c,`${Math.ceil(B.p.disp)}/${m.stats[0]}`,230,95,'#404040',8,true,'right');
     c.fillStyle='#404040';c.fillRect(146,106,86,3);c.fillStyle='#48a8f8';c.fillRect(147,107,84*B.p.dispExp,1);text(c,'EXP',130,103,'#808080',5);
     if(m.status){c.fillStyle=STATUS_COL[m.status];c.fillRect(134,96,22,8);text(c,STATUS_TAG[m.status],145,96.5,'#fff',6,false,'center');}}}
