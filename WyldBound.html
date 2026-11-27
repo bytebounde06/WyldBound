@@ -1761,7 +1761,7 @@ async function friendAssist(tr){
   else if(always(f.pal.name))who=['Wren'];
   else if(G.assistN%2===1)who=[(G.assistN>>1)%2===0?'Wren':'Rowan'];
   if(!who.length)return null;
-  const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace-3);
+  const ace=Math.max(...tr.party.map(p=>p[1]));const lvl=Math.max(5,ace);
   // A friend who hates the player's name (doctor / badge / sysadmin) still shows up, but won't help.
   for(const w of ['Rowan','Wren']){const n=w==='Rowan'?f.riv.name:f.pal.name;const kd=eggKind(n);if(kd&&eggHates(kd)){await say(hateArrive(kd,w));who=who.filter(x=>x!==w);}}
   if(!who.length)return null;
@@ -4113,11 +4113,12 @@ async function startBattle(opts){
     if(kd&&eggHates(kd))tr.grudge=1;}
   if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}tr.lose='Tch. Fine. You won. Your team\'s still sloppy though. Fix your weak spots before ByteBound finds them.';}
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
-  if(tr&&tr.grudge)tr.mons.forEach(m=>{const pk=m._pink;Object.assign(m,makeMon(m.sid,Math.min(100,m.lvl+(tr.party.length>1?5:2))));if(pk)m._pink=1;});
+  if(tr&&tr.grudge)tr.mons.forEach(m=>{const pk=m._pink;Object.assign(m,makeMon(m.sid,Math.min(100,m.lvl+Math.max(1,Math.min(tr.party.length>1?4:2,Math.floor(m.lvl/12))))));if(pk)m._pink=1;});
   const assists=opts.assist?[].concat(opts.assist):[];
   assists.forEach(a=>{if((a.name==='Rowan'&&isBunny(FR().riv.name))||(a.name==='Wren'&&isBunny(FR().pal.name)))a.mon._pink=1;});
   // Two friends helping (all three easter eggs): ByteBound's Wyldkin come in 5 levels stronger to keep it a fight.
-  if(tr&&assists.length>1){tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,Math.min(100,l+5)));tr.boosted=1;}
+  // Two helpers: enemies get a few extra levels, scaled so early fights stay fair (none below Lv12, up to +4 late).
+  if(tr&&assists.length>1){const ace=Math.max(...tr.party.map(p=>p[1])),up=Math.min(4,Math.floor(ace/12));tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,Math.min(100,l+up)));tr.boosted=1;}
   const pi=G.party.findIndex(m=>m.hp>0);
   B={assists:assists.map(a=>Object.assign(mkBattler(a.mon,'a'),{owner:a.name,kind:a.kind})),story:!!opts.story,wild:!tr,trainer:tr,foes:tr?tr.mons:[opts.wild],pi,parts:new Set([pi]),runs:0,leveled:new Set(),fx:{tf:tr?{look:tr.look,x:0}:null,tp:{x:0},orb:null,slide:1},bg:(MAP&&MAP.bg)||'grass'};
   for(let i=0;i<3;i++){flashA=.85;await wait(9);}
@@ -4259,7 +4260,7 @@ async function assistMove(a){
   await bsay(`${a.owner}'s ${monName(a.mon)} used ${best.name}!`);
   const e=effMulti(best.type,dT);const r=calcDamage(a,B.f,best,e);SFX.hit();burst(B.f,best.type);await blink(B.f);
   const bonus=a.kind&&eggVsBonus(a.kind,B.trainer);if(bonus&&!a.told){a.told=1;await bsay(a.kind==='bunny'?`${a.owner} sees the lab coat and goes pale... then furious!`:a.kind==='smashed'?`${a.owner}'s fur bristles at the uniform!`:`${a.owner}'s screen flashes red: ADMIN DETECTED.`);}
-  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*.6*(bonus?1.5:1))));await tweenHP(B.f);
+  B.f.mon.hp=Math.max(0,B.f.mon.hp-Math.max(1,Math.floor(r.dmg*(bonus?1.5:1))));await tweenHP(B.f);
   if(e>1)await bsay('It\'s super effective!');else if(e<1)await bsay('It\'s not very effective...');
   return await checkFaints();
 }
