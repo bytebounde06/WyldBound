@@ -3508,18 +3508,18 @@ function bunnyName(){const w=bunnyWho();return w==='you'?G.name:w==='riv'?FR().r
 function monIsPink(m){if(!m)return false;if(m._pink)return true;return!!G&&isBunny(G.name)&&(G.party.includes(m)||G.box.includes(m)||(G.locked||[]).includes(m));}
 function bunnyRoofs(){const out=[];if(bunnyWho())for(let y=20;y<22;y++)for(let x=19;x<25;x++)out.push([x,y,'N']);return out;}
 function staticEgg(){return!!G&&(isStatic(G.name)||(G.friends&&(isStatic(G.friends.riv.name)||isStatic(G.friends.pal.name))));}
-const GL={t:0,len:0,cd:900,err:0};
+const GL={t:0,len:0,cd:6000,err:0};
 function glitchNow(len){GL.t=GL.len=len||18;if(AC&&G&&G.opts.sound){for(let i=0;i<4;i++)setTimeout(()=>beep(80+Math.random()*1800,.03,'sawtooth',.03),i*40);}}
 function glitchTick(){if(!staticEgg()||scene==='title')return;if(GL.t>0)GL.t--;if(GL.err>0)GL.err--;
-  if(--GL.cd<=0){GL.cd=1500+Math.floor(Math.random()*2400);glitchNow(10+Math.floor(Math.random()*20));if(Math.random()<.35)GL.err=110;}}
+  // Ambient effect stays subtle: no full-screen glitch, just a rare ERROR E06 tag flickering in the corner every few minutes.
+  if(--GL.cd<=0){GL.cd=12000+Math.floor(Math.random()*12000);if(scene==='world')GL.err=110;}}
 function glitchDraw(c){if(!staticEgg()||scene==='title')return;
   if(GL.t>0){const cv=c.canvas;c.save();c.setTransform(1,0,0,1,0,0);const Wd=cv.width,Hd=cv.height;
     for(let i=0;i<5;i++){const y=Math.floor(Math.random()*Hd),h=Math.floor(4+Math.random()*Hd/10),dx=Math.floor((Math.random()-.5)*Wd*.12);c.drawImage(cv,0,y,Wd,h,dx,y,Wd,h);}
     c.globalCompositeOperation='screen';c.globalAlpha=.18;c.fillStyle='#00f0ff';c.fillRect(0,Math.random()*Hd,Wd,Hd*.06);c.fillStyle='#ff2ad4';c.fillRect(0,Math.random()*Hd,Wd,Hd*.04);
     c.globalCompositeOperation='source-over';c.globalAlpha=.5;for(let i=0;i<260;i++){const v=Math.random()*255|0;c.fillStyle=`rgb(${v},${v},${v})`;c.fillRect(Math.random()*Wd|0,Math.random()*Hd|0,S*2,S);}c.restore();}
   if(GL.err>0&&Math.floor(GL.err/6)%4!==0){box(c,W-74,4,70,26,'dark');text(c,'ERROR E06',W-70,8,'#ff5a6a',8);text(c,'0x5747_STATIC',W-70,19,'#7ff4ff',6);}}
-function glitchText(s){if(!staticEgg()||typeof s!=='string'||Math.random()>.1)return s;const g='#%/?0116E';const a=s.split('');const n=1+Math.floor(Math.random()*3);
-  for(let i=0;i<n;i++){const k=Math.floor(Math.random()*a.length);if(/[a-z]/i.test(a[k]))a[k]=g[Math.floor(Math.random()*g.length)];}s=a.join('');if(Math.random()<.25)s+=' ...E06';glitchNow(8);return s;}
+function glitchText(s){return s;}
 async function bunnyDiary(){const n=bunnyName();const P=[
   `A pink diary with a bat-wing sticker on the cover. "${n}'s Diary. PRIVATE!!"`,
   '"Dear Diary, the TV glitched again last night. ERROR E06. Then words showed up. I think someone named Static lives in there."',
