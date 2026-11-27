@@ -1148,6 +1148,29 @@ function genSprite(sp){
   const rell=(cx,cy,rx,ry,a,l,o)=>rellR(cx*K,cy*K,rx*K,ry*K,a,l,o);
   const cap=(x1,y1,x2,y2,r,l,o)=>capR(x1*K,y1*K,x2*K,y2*K,r*K,l,sc(o));
   const tri=(ax,ay,bx,by,cx,cy,l,o)=>triR(ax*K,ay*K,bx*K,by*K,cx*K,cy*K,l,o);
+
+  // ---- wings: real feathered wings (bird) and boned membrane wings (bat / dragon) ----
+  const rad=(x,y,a,d)=>[x+Math.cos(a)*d,y+Math.sin(a)*d];
+  function feather(x,y,a,len,w,l,o){const[c1,c2]=rad(x,y,a,len*.5);return rell(c1,c2,len*.5,w,a,l,o);}
+  function featherWing(sx,sy,L,o={}){const m=o.behind?{m:2}:undefined;const fl=o.flip?-1:1;const A_=a=>fl>0?a:Math.PI-a;const aArm=o.arm!=null?o.arm:-.85,n=o.n||5;
+    const[wx,wy]=rad(sx,sy,A_(aArm),L*.4);
+    for(let i=n-1;i>=0;i--){const u=i/(n-1);feather(wx,wy,A_(-1.3+u*1.15+(o.tilt||0)),L*(.7-u*.28),1.3+st*.2,57,m);}
+    for(let i=0;i<4;i++){const t=.15+i*.27;const px=sx+(wx-sx)*t,py=sy+(wy-sy)*t;feather(px,py,A_(-.12+i*.05+(o.tilt||0)*.5),L*(.36+i*.06),1.35+st*.15,56,m);}
+    const mx=(sx+wx)/2,my=(sy+wy)/2;rell(mx+fl,my,L*.25,2.4+st*.4,A_(aArm),1,m);rell(mx+2.5*fl,my+1.2,L*.22,1.9+st*.3,A_(aArm+.15),56,m);
+    if(!o.behind)for(let i=0;i<3;i++){const t=.25+i*.25;const px=sx+(wx-sx)*t+2.5*fl,py=sy+(wy-sy)*t+2.2;cap(px-1,py,px+1,py+.6,.35,6,{m:1});}
+    return[wx,wy];}
+  function foldedWing(sx,sy,L,o={}){const m=o.behind?{m:2}:undefined;
+    for(let i=0;i<3;i++)feather(sx+L*.42,sy+L*.08+i*.9,.16-i*.12,L*.55,1.2+st*.15,57,m);
+    rell(sx+L*.3,sy+L*.1,L*.42,L*.2,.16,56,m);rell(sx+L*.12,sy+L*.02,L*.24,L*.15,.1,1,m);
+    if(!o.behind)for(let r_=0;r_<2;r_++)for(let i=0;i<3;i++){const px=sx+L*(.08+i*.15+r_*.1),py=sy+L*(.1+r_*.11);cap(px-1,py,px+1,py+.5,.35,6,{m:1});}}
+  function batWing(sx,sy,L,o={}){const m=o.behind?{m:2}:{};const l=o.l||3;const fl=o.flip?-1:1;const A_=a=>fl>0?a:Math.PI-a;const[wx,wy]=rad(sx,sy,A_(o.arm!=null?o.arm:-1.15),L*.4);
+    const angs=[-1.45,-.95,-.45],lens=[.62,.66,.5];const tips=angs.map((a,i)=>rad(wx,wy,A_(a+(o.tilt||0)),L*lens[i]));
+    const base=[sx+fl*L*.55,sy+L*.12];const pts=[...tips,base];const p=++pid;
+    for(let i=0;i<pts.length-1;i++){const[a1,b1]=pts[i],[a2,b2]=pts[i+1];const ix=wx+((a1+a2)/2-wx)*.72,iy=wy+((b1+b2)/2-wy)*.72;
+      triR(wx*K,wy*K,a1*K,b1*K,ix*K,iy*K,l,Object.assign({p},m));triR(wx*K,wy*K,ix*K,iy*K,a2*K,b2*K,l,Object.assign({p},m));}
+    triR(sx*K,sy*K,wx*K,wy*K,base[0]*K,base[1]*K,l,Object.assign({p},m));
+    if(!o.behind){cap(sx,sy,wx,wy,1.1+st*.15,1);tips.forEach(([tx_,ty_])=>cap(wx,wy,tx_,ty_,.55,6,{m:1}));ell(wx,wy,1.3,1.3,1);tri(wx-1,wy,wx+1,wy,wx-.5,wy-2.5,8);}
+    return[wx,wy];}
   const get64=(x,y)=>get(Math.floor(x*K+K/2),Math.floor(y*K+K/2));
   const fr=mulberry32(sp.seed);const pick=a=>a[Math.floor(fr()*a.length)];
   const f={bw:.88+fr()*.3,bh:.88+fr()*.3,hs:.9+fr()*.25,ear:pick(['point','round','long','none','point','horn','floppy','tuft']),tail:pick(['long','short','bushy','long','curl','club','tuft']),
@@ -1281,28 +1304,28 @@ function genSprite(sp){
     const bat=plan==='bat';const legH=5*s,rx=11*s*f.bw+1,ry=8*s*f.bh+1,bcx=35,bcy=gy-legH-ry-(bat?8:0);
     const hr=(5.5+2*s)*f.hs;const hcx=bcx-rx*.7,hcy=bcy-ry*.9-hr*.3;
     A={tail:[bcx+rx+4,bcy-2],back:[bcx+2,bcy-ry],head:[hcx,hcy-hr],face:[hcx,hcy],body:[bcx,bcy,rx,ry],hr,float:bat};
-    if(bat){const wl=12+st*5;const wing=(dx,dy,col)=>{const p=tri(bcx,bcy-3,bcx+dx*.3,bcy-wl*s-4,bcx+dx,bcy-wl*.4*s+dy,col);tri(bcx,bcy-1,bcx+dx,bcy-wl*.4*s+dy,bcx+dx*.6,bcy+6,col,{p});cap(bcx,bcy-3,bcx+dx*.3,bcy-wl*s-4,.8,6,{m:1});cap(bcx,bcy-2,bcx+dx,bcy-wl*.4*s+dy,.8,6,{m:1});};
-      wing(22*s+4,0,3);}
-    else{const tf=6+st*3;tri(bcx+rx*.6,bcy-3,bcx+rx*.6,bcy+3,bcx+rx+tf*s+3,bcy-tf*.6*s,1);const tp=tri(bcx+rx*.6,bcy,bcx+rx*.6,bcy+4,bcx+rx+tf*s+2,bcy+2,1);tri(bcx+rx*.6,bcy,bcx+rx*.6,bcy+2,bcx+rx+tf*s+4,bcy-1,3,{m:1});
+    if(bat){const wl=(15+st*5)*s+6;batWing(bcx+rx*.4,bcy-2,wl,{arm:-.75,tilt:.15});batWing(bcx-rx*.4,bcy-2,wl,{arm:-.75,tilt:.15,flip:1});}
+    else{const tf=(6+st*3)*s+4;const nt=3+Math.min(st,2);for(let i=0;i<nt;i++){const a=-.42+i*(.6/(nt-1));feather(bcx+rx*.55,bcy-1+i*.6,a,tf*(1-Math.abs(i-(nt-1)/2)*.12),1.5+st*.2,i%2?57:56);}
+      if(sp.rar==='L'||sp.rar==='M'){feather(bcx+rx*.6,bcy,-.15,tf*1.9,1.1,3);feather(bcx+rx*.6,bcy+1,.12,tf*1.6,1.1,57);}
+      var spreadW=(sp.rar==='L'||sp.rar==='M'||st>=2||(st===1&&nr2()<.6)||(sp.stages===1&&nr2()<.5));
+      if(spreadW)featherWing(bcx+2,bcy-ry*.6-1,(15+st*4)*s+5,{behind:1,arm:-.95,tilt:.1});
       cap(bcx-2,bcy+ry*.7,bcx-3,gy-1,1.1,8);cap(bcx+3,bcy+ry*.7,bcx+3,gy-1,1.1,8);dots.push([bcx-5,gy-1],[bcx,gy-1]);}
     const bp=rell(bcx,bcy,rx,ry,-.2,1);
     if(f.belly)rell(bcx-3,bcy+ry*.35,rx*.65,ry*.55,-.2,2,{m:1});
-    if(!bat){if(st>=1){const wp=tri(bcx-2,bcy-ry*.3,bcx+rx*.7,bcy-ry*.5,bcx+rx*.4+st*4,bcy-ry-10*s-st*3,1);for(let i=0;i<3;i++)cap(bcx+i*3,bcy-ry*.4-i,bcx+rx*.3+i*3+st*2,bcy-ry-6*s-st*2+i*3,.6,3,{m:1});}
-      const wp2=rell(bcx+2,bcy-1,rx*.75,ry*.52,-.35,T2==='Flying'||T1==='Flying'?ACC:D2);for(let i=0;i<3;i++)cap(bcx-2+i*4,bcy+1,bcx+3+i*4,bcy+ry*.35,.6,6,{m:1});}
+    if(!bat){if(spreadW)featherWing(bcx-2,bcy-ry*.45,(16+st*4)*s+6,{arm:-.7,tilt:.15});else foldedWing(bcx-rx*.35,bcy-ry*.35,rx*1.6+2);}
     else{tri(bcx-rx*.5,bcy+ry*.6,bcx+rx*.5,bcy+ry*.6,bcx,bcy+ry+3,1);}
     const hp=ell(hcx,hcy,hr,hr,1);
     if(bat){tri(hcx-hr*.6,hcy-hr*.4,hcx-hr*.1,hcy-hr*.6,hcx-hr*.5,hcy-hr-4*s-2,1,{p:hp});tri(hcx+hr*.1,hcy-hr*.6,hcx+hr*.6,hcy-hr*.4,hcx+hr*.5,hcy-hr-4*s-2,1,{p:hp});
       addEye(hcx-hr*.4,hcy,eR(hr*.22+.6),true);addEye(hcx+hr*.35,hcy,eR(hr*.22+.6),true);mouths.push({x:hcx,y:hcy+hr*.5,w:hr*.4,front:1,fang:1});A.front=1;}
     else{const bl=3+3*s;tri(hcx-hr*.6,hcy-1.5,hcx-hr*.6,hcy+2.5,hcx-hr-bl,hcy+1.5,8);cap(hcx-hr*.7,hcy+1,hcx-hr-bl+1,hcy+1.4,.4,6,{m:1});
-      tri(hcx+hr*.1,hcy-hr*.7,hcx+hr*.8,hcy-hr*.5,hcx+hr*.9+2*st,hcy-hr-3-2*st,3);if(st>=2)tri(hcx+hr*.4,hcy-hr*.6,hcx+hr*1.1,hcy-hr*.3,hcx+hr*1.5+st,hcy-hr-1,3);
+      if(nr2()<.55||st>=2){const nc=2+Math.min(st,1);for(let i=0;i<nc;i++)feather(hcx+hr*(.15+i*.25),hcy-hr*.75+i*.6,-1.15+i*.38,hr*.7+2+st*1.5-i,1.1,i%2?57:1);}
       if(f.pat==='mask'||f.pat==='back')ell(hcx-hr*.2,hcy-hr*.1,hr*.6,hr*.28,6,{m:1});
       addEye(hcx-hr*.35,hcy-hr*.12,eR(hr*.22+.9),false);}
     A.noEar=1;
   } else if(plan==='serpent'||plan==='drake'){
     const drake=plan==='drake';
     if(drake){const rx=12*s*f.bw+1,ry=7.5*s*f.bh+1,bcx=36,bcy=gy-8*s-ry*.6;
-      const wl=14+st*4;const wp=tri(bcx-4,bcy-ry*.5,bcx+8,bcy-ry*.6,bcx+14*s+st*3,bcy-ry-wl*s-4,3);tri(bcx-4,bcy-ry*.5,bcx+14*s+st*3,bcy-ry-wl*s-4,bcx+rx+8,bcy-ry*.8,3,{p:wp});
-      for(let i=0;i<3;i++)cap(bcx-2+i*3,bcy-ry*.5,bcx+10*s+i*3+st*2,bcy-ry-wl*s*.8+i*4,.6,6,{m:1});
+      const wl=(16+st*5)*s+6;if(CN.feathered)featherWing(bcx-1,bcy-ry*.6,wl,{arm:-1.15});else{batWing(bcx+3,bcy-ry*.7,wl,{behind:1,arm:-1.35,tilt:-.1});batWing(bcx-2,bcy-ry*.55,wl,{arm:-1.0,tilt:.2});}
       A.tail=tailF(bcx+rx*.8,bcy,14*s,2.2*s+.5);
       [bcx-rx*.5+3,bcx+rx*.5+3].forEach(x=>cap(x,bcy,x+1,gy-1,2.4*s+.8,1));
       const bp=ell(bcx,bcy,rx,ry,1);ell(bcx-2,bcy+ry*.45,rx*.75,ry*.45,2,{m:1});
@@ -1487,7 +1510,8 @@ function genSprite(sp){
   }
   if(plan==='owl'){const rx=10.5*s*f.bw+2,ry=12*s*f.bh+2,cx=32,cy=gy-ry-2;
     cap(cx-3,cy+ry-1,cx-4,gy-1,1.2,48);cap(cx+3,cy+ry-1,cx+4,gy-1,1.2,48);dots.push([cx-5,gy-1],[cx+4,gy-1]);
-    rell(cx-rx*.85,cy+ry*.1,rx*.38,ry*.72,.25,3);rell(cx+rx*.85,cy+ry*.1,rx*.38,ry*.72,-.25,3);
+    [-1,1].forEach(d=>{const wx_=cx+d*rx*.86,wy_=cy+ry*.05;for(let i=0;i<3;i++)feather(wx_-d*(i-1)*1.4,wy_+ry*.35,Math.PI/2+d*(.12-i*.1),ry*.55,1.2,57);rell(wx_,wy_,rx*.36,ry*.62,d*.2,56);
+      for(let r_=0;r_<2;r_++)for(let i=0;i<2;i++){const px=wx_+d*(i-.5)*2.4,py=wy_-ry*.2+r_*ry*.3;cap(px-1,py,px+1,py+.5,.35,6,{m:1});}});
     const bp=ell(cx,cy,rx,ry,1);ell(cx,cy+ry*.35,rx*.6,ry*.5,2,{m:1});
     for(let i=0;i<3;i++)for(let j=0;j<2;j++)tri(cx-3+j*5-i*1,cy+ry*.1+i*3,cx-1+j*5-i*1,cy+ry*.1+i*3,cx-2+j*5-i,cy+ry*.1+i*3+1.6,3,{m:1});
     const fy=cy-ry*.35,g=rx*.42;ell(cx-g,fy,rx*.4,rx*.4,2,{m:1});ell(cx+g,fy,rx*.4,rx*.4,2,{m:1});
@@ -1572,8 +1596,8 @@ function genSprite(sp){
     if(has('gem')){const gx=fx-(fw?0:hr*.15),gy_=fy-hr*.62;tri(gx-1.6,gy_,gx+1.6,gy_,gx,gy_-2.4,44);tri(gx-1.6,gy_,gx+1.6,gy_,gx,gy_+2,44);}
     if(has('nursecap')){const cy_=hy+.5;rell(hx,cy_,hr*.55,1.8,0,9);ell(hx,cy_-.2,1.2,1.2,44,{m:1});}
     if(has('eartufts')){tri(fx-hr*.85,fy-hr*.5,fx-hr*.4,fy-hr*.85,fx-hr*1.0,fy-hr*1.35-st,1);tri(fx+hr*.85,fy-hr*.5,fx+hr*.4,fy-hr*.85,fx+hr*1.0,fy-hr*1.35-st,1);}
-    if(has('crest')){const n=2+st;for(let k=0;k<n;k++){const x=hx+(fw?(k-(n-1)/2)*2.4:1+k*2.2);const y=topAt(x);if(y==null)continue;spikeAt(x,y+.6,fw?(k-(n-1)/2)*.25:.45,-1,3.5+st+(k===Math.floor(n/2)?1.5:0),2.4,3);}}
-    if(has('longtail')){for(let i=0;i<3;i++)cap(tx,ty,tx+6+i*2,ty+6+i*3,.8,3);}
+    if(has('crest')&&plan!=='bird'){const n=2+st;for(let k=0;k<n;k++){const x=hx+(fw?(k-(n-1)/2)*2.4:1+k*2.2);const y=topAt(x);if(y==null)continue;spikeAt(x,y+.6,fw?(k-(n-1)/2)*.25:.45,-1,3.5+st+(k===Math.floor(n/2)?1.5:0),2.4,3);}}
+    if(has('longtail')&&plan!=='bird'){for(let i=0;i<3;i++)feather(tx,ty,.25+i*.35,9+st*2-i,1.1,i%2?57:3);}
     if(has('forktail')){tri(tx-1,ty-1,tx+6,ty-4,tx+4,ty,1);tri(tx-1,ty+1,tx+6,ty+4,tx+4,ty,1);}
     if(has('hookbeak')){cap(fx-hr-2.5,fy+1.5,fx-hr-2,fy+3.5,.6,8);}
     if(has('parrotbeak')){const p=ell(fx-hr*.95,fy+1,2.6,2.8,8);tri(fx-hr*1.3,fy+1,fx-hr*.8,fy+3.5,fx-hr*1.25,fy+5,8,{p});}
@@ -1619,7 +1643,7 @@ function genSprite(sp){
     if(has('leafcrown')){for(let i=-1;i<=1;i++)rell(hx+i*3,hy-1,1.6,3.6+st*.5,i*.6,49);}
     if(has('vines')){cap(B[0]-B[2],B[1]-B[3]*.6,B[0]+B[2],B[1]+B[3]*.4,.7,49,{m:1});cap(B[0]-B[2],B[1]+B[3]*.2,B[0]+B[2]*.8,B[1]-B[3]*.7,.7,49,{m:1});}
     if(has('lilypad')){ell(hx,hy+1,hr*.95,hr*.3,49);tri(hx,hy+1,hx+hr*.5,hy-.5,hx+hr*.6,hy+1.5,1,{m:1});}
-    if(has('wingsmall')){rell(bx+3,by-3,4+st*1.5,2.4,-.7,41,{m:2});}
+    if(has('wingsmall')){const mem=['Dragon','Ghost','Dark','Poison','Bug'].includes(T1);const Lw=8+st*3;if(fw){[-1,1].forEach(d=>{if(mem)batWing(B[0]+d*B[2]*.6,B[1]-B[3]*.4,Lw,{arm:-.8,flip:d<0,behind:1});else featherWing(B[0]+d*B[2]*.6,B[1]-B[3]*.4,Lw,{arm:-.8,flip:d<0,behind:1,n:4});});}else{if(mem)batWing(bx,by+1,Lw,{arm:-1.0,behind:1});else featherWing(bx,by+1,Lw,{arm:-.9,behind:1,n:4});}}
     if(has('mushroomcap')){const w=hr*1.35+st,cy_=hy+hr*.2;const p=rell(hx+(fw?0:1),cy_,w,hr*.7,0,3);ell(hx+(fw?0:1),cy_+hr*.55,w*.95,hr*.25,3,{p});for(let i=0;i<4;i++)ell(hx-w*.55+i*w*.38,cy_-hr*.2+(i%2)*2,1.4,1.2,9,{m:1});}
     if(has('cactusspines')){const r=mulberry32(sp.seed+5);for(let i=0;i<9;i++){const x=Math.round(B[0]+(r()-.5)*B[2]*1.6),y=Math.round(B[1]+(r()-.5)*B[3]*1.6);dots.push([x,y]);}}
     if(has('flowertop')){for(let k=0;k<5;k++){const a=k*Math.PI*2/5;ell(hx+Math.cos(a)*2,hy-1+Math.sin(a)*1.6,1.6,1.4,40);}ell(hx,hy-1,1,1,42);}
@@ -1741,7 +1765,7 @@ function genSprite(sp){
       case 'Fighting':if(A.arm)ell(A.arm[0],A.arm[1],2.5,1.4,L,{m:1});break;
       case 'Dark':if(!A.pupa&&!A.larva&&A.face)ell(A.face[0]-(A.front?0:A.hr*.3),A.face[1]-A.hr*.08,A.hr*(A.front?.85:.55),A.hr*.3,L,{m:1});if(st>=1&&!A.noEar)tri(hx-3,hy+3,hx+3,hy+3,hx+5,hy-4-st,L);break;
       case 'Ground':if(A.body)for(let i=0;i<2+st;i++)ell(A.body[0]-A.body[2]*.4+i*4,A.body[1]-A.body[3]*.7,1,A.body[3]*.25,L,{m:1});break;
-      case 'Flying':if(!['bird','bug','bat','drake','owl','puff','orb','plant','star','spider','seal'].includes(plan)&&!CN.x.includes('wingsmall')&&!CN.x.includes('mantawings')&&A.body){const w=rell(A.body[0]+3,A.body[1]-A.body[3]-2,6+st*2,3,-.6,41);}break;
+      case 'Flying':if(!['bird','bug','bat','drake','owl','puff','orb','plant','star','spider','seal'].includes(plan)&&!CN.x.includes('wingsmall')&&!CN.x.includes('mantawings')&&A.body){const B_=A.body,Lw=9+st*3;if(A.front)[-1,1].forEach(d=>featherWing(B_[0]+d*B_[2]*.6,B_[1]-B_[3]*.4,Lw,{arm:-.8,flip:d<0,behind:1,n:4}));else featherWing(A.back[0],A.back[1]+1,Lw,{arm:-.9,behind:1,n:4});}break;
       case 'Normal':break;
     }
   }
@@ -1757,7 +1781,8 @@ function genSprite(sp){
   let accent=T2?adj(hex2rgb(TYPE_COLOR[T2]),-.04):adj(main,-.16,.05,.06);
   if(CN.col2)accent=hex2rgb(CN.col2);else if(CN.col&&TYPE_COLOR[T1]){const tc=hex2rgb(TYPE_COLOR[T1]);const d=Math.abs(rgb2hsl(tc)[0]-rgb2hsl(main)[0]);if(d>.06&&!T2)accent=tc;}
   const spikeC=(()=>{const a=rgb2hsl(accent),m=rgb2hsl(main);return(Math.abs(a[0]-m[0])>.06||Math.abs(a[2]-m[2])>.18)?accent:adj(main,-.42,-.05);})();
-  const pal={55:spikeC,1:main,2:bellyC,3:accent,6:adj(main,-.35,-.25),7:[240,150,170],8:[240,220,160],9:[250,250,250],40:[255,140,180],41:[230,240,255],42:[240,200,60],43:[44,40,52],44:[220,60,70],45:[236,228,206],46:[150,100,60],47:[255,236,120],48:[240,160,50],49:[80,170,70],50:[200,236,255],51:[70,140,230],53:[150,150,160],54:[250,220,70]};
+  const wingC=adj(main,-.1,-.02),tipC=CN.col2?hex2rgb(CN.col2):(sp.rar==='L'||sp.rar==='M')?accent:adj(main,-.3,-.04);
+  const pal={56:wingC,57:tipC,55:spikeC,1:main,2:bellyC,3:accent,6:adj(main,-.35,-.25),7:[240,150,170],8:[240,220,160],9:[250,250,250],40:[255,140,180],41:[230,240,255],42:[240,200,60],43:[44,40,52],44:[220,60,70],45:[236,228,206],46:[150,100,60],47:[255,236,120],48:[240,160,50],49:[80,170,70],50:[200,236,255],51:[70,140,230],53:[150,150,160],54:[250,220,70]};
   TYPES.forEach((t,i)=>{pal[10+i]=hex2rgb(DECOR_COL[t]);});
   const ramps={};const rampOf=l=>ramps[l]||(ramps[l]=makeRamp(pal[l]||main));
   // ---- distance field per part ----
