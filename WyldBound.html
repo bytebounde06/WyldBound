@@ -2824,6 +2824,52 @@ STORY_AFTER_BUILD.push(()=>{
   // beach scene on first visit to Sunbask
   const sb=MAPS.sunbask;if(sb)sb.onEnter=[].concat(sb.onEnter||[],{cond:()=>!G.flags.beachScene&&!!(eggHolder('bunny')||eggHolder('smashed')||eggHolder('static')),run:beachScene});
 });
+// ---------- Bunny and Smashed talk like themselves when they're your rival or best friend ----------
+// Each entry: [pattern for the regular line (without "Rowan: "/"Wren: "), Bunny's version, Smashed's version]. $1, $2 = captured bits.
+const EGG_VOICE_LINES=[
+ [/^(?:Gramps-- er, )?The Professor said the three of us could each pick one/,'Sweetie, there you are! The Professor said we each get a partner today. I saved you a spot. Did you eat breakfast?','Finally. The Professor said we each get one. You\'re late. Again. Some things never change.'],
+ [/^Can you believe it\? The three of us/,'Can you believe it? Partners! All three of us, just like we always dreamed. Pick whichever one you love, sweetie. I\'ll look after whoever\'s left.','Pick already. And don\'t bother looking at the fire one. That one\'s mine.'],
+ [/^Then I'll take (.+)!$/,'Then I\'ll take $1! Oh, look at its little face!','Then I\'m taking $1. Not up for debate.'],
+ [/^(I'll take|And that leaves) (.+) for me\. Hi there, little one!$/,'$1 $2 for me. Hi, sweetie! Mama\'s got you now.','$1 $2 for me. Don\'t get attached. ...Too late, I\'m attached.'],
+ [/^Okay, here's the deal\. Winner stays on/,'Okay, everyone! Winner stays on, just like when we were kids. And nobody cries. ...Much.','Winner stays on. Same rules as when we were kids. No crying.'],
+ [/^(Champion or not, )?I'm first! Come on, (.+)!$/,'$1I\'ll go first! Don\'t worry, I\'ll be gentle, $2.','$1I\'m first. Come on, $2. Hold back and I\'ll be insulted.'],
+ [/^Hmph\. Beginner's luck\.$/,'Aww, you won! I\'m so proud of you. ...Even if it was a teeny bit of luck.','Tch. Lucky. ...Okay, that was decent.'],
+ [/^Winner stays on! (.+), you're up against me now!$/,'Winner stays on! $1, it\'s my turn, sweetie!','My turn. Winner stays on, $1. Get ready.'],
+ [/^Two wins in a row!/,'Two in a row! Somebody\'s been practicing. I\'m making you a snack after this.','Two in a row. Don\'t let it go to your head.'],
+ [/^I did it! Sorry, not sorry!$/,'I won! Oh, don\'t make that face. Come here, let me fix your hair.','Told you. Fix your weak spots.'],
+ [/^Ha! Told you I'd win!$/,'I won! Oh no, are you okay? Here, have a tissue.','Ha. Called it.'],
+ [/^Winner stays on! (.+), you're mine!$/,'Winner stays on! $1, be nice to me, okay?','Winner stays on. $1, you\'re next.'],
+ [/^No way\.\.\. Rematch later/,'Oh! You beat me! Good job, sweetie. Rematch later, okay?','...Whatever. Rematch later. Count on it.'],
+ [/^Aww\. Next time, (.+)!$/,'Aww. Next time, $1! I\'ll bake you something anyway.','Tch. Next time, $1.'],
+ [/^(.+), want to battle me too\?$/,'$1, want to battle me too? I\'ll go easy on you. Probably.','$1. Want a round with me too, or are you scared?'],
+ [/^Okay, okay, you're good!$/,'You\'re so good! I\'m telling everyone.','Fine. You\'re good. Happy now?'],
+ [/^Hehe, I'm on a roll!$/,'Hehe! Mama\'s on a roll!','Yeah, I\'m on a roll. Deal with it.'],
+ [/^Next time, then!$/,'Next time, then! Stay hydrated!','Your loss.'],
+ [/^(?:Remember when we used to pretend sticks were Wyldkin\? Now they're real!|New region, same three of us\.) I'll be training up ahead, (.+)\.$/,'I packed you snacks for the road. Don\'t argue. I\'ll be training up ahead, $1. Call me if you need anything!','I\'m heading out. Try to keep up, $1.'],
+ [/^Don't get lost on Route 1 without me/,'Call me if anything happens on Route 1, okay? Anything at all. Bye, sweetie!','Don\'t get flattened on Route 1. I\'m not coming back to save you. ...I probably am.'],
+ [/^Hey, wait up! So you got Brenna's badge too/,'Sweetie, wait! You got Brenna\'s badge too? Let me see how much you\'ve grown!','So you got Brenna\'s badge too. Let\'s see if you actually earned it.'],
+ [/^You're getting good\. I'm heading to Ferrowick/,'You\'re getting so strong! I\'m heading to Ferrowick. Wear a jacket in Whisperwood, it gets chilly.','Not bad. I\'m going to Ferrowick. Try not to get lost in Whisperwood.'],
+ [/^Hey! I knew you'd come this way\. I've been training on the mountain/,'There you are! I\'ve been training on the mountain. Let\'s see how you\'re doing, sweetie!','Knew you\'d come this way. I\'ve been training on the mountain. Let\'s go.'],
+ [/^The League is past Saltmarsh Harbor/,'The League is past Saltmarsh Harbor. I\'ll be there cheering for you, with snacks!','The League\'s past Saltmarsh. I\'ll be there. Don\'t keep me waiting.'],
+ [/^The border lock took my whole team/,'They took all my babies at the border! Go see the Professor so we can get new partners, sweetie.','Border lock took my whole team. Even my Champion team. Go talk to the Professor before I break something.'],
+ [/^Starting over in a new region\?/,'Starting over? That\'s okay. New little ones to take care of!','Starting over. Whatever. More fire types to find.'],
+ [/^What\?! I picked the wrong one!$/,'Oh! You did so well, sweetie!','Tch. Wrong pick. Won\'t happen again.'],
+ [/^Aww! You two always were the strong ones\.$/,'Aww, you two were always the strong ones. I\'m so proud of you.','...Fine. You win this one.'],
+ [/^Argh! Not again!$/,'Oh my, not again! You\'re amazing.','Again? Tch.'],
+ [/^Again\?! How do you keep doing that\?$/,'How do you keep doing that? You have to teach me later!','How do you keep doing that? ...Don\'t answer.'],
+ [/^(.+)! I caught my first wild Wyldkin! Want to see how strong my team is\?$/,'$1! Look at my new babies! Want to see how strong they\'ve gotten?',null],
+ [/^(.+)! I've been studying type matchups\. Let's test my notes!$/,'$1! I\'ve been studying type matchups. Let\'s test my notes, sweetie!',null],
+ [/^(.+)! I've seen so many Wyldkin out here\. My team is ready for anything!$/,'$1! I\'ve met so many sweet Wyldkin out here. My team is ready for anything!',null],
+ [/^Wow, you're good! I'll keep training\.$/,'You\'re so good! I\'ll keep training, I promise.',null],
+ [/^Yay! My first trainer win!$/,'Yay! I won! Don\'t be sad, come here.',null],
+ [/^My notes said I'd win\.\.\. I need better notes!$/,'My notes said I\'d win... Oh well! I\'m proud of you anyway.',null],
+ [/^Ha! The notes were right!$/,'The notes were right! Now let\'s get your team healed up, sweetie.',null],
+ [/^You really are something\. Good luck with the League!$/,'You really are something. Good luck at the League! I\'ll be cheering the loudest.',null],
+ [/^I won! I can't believe it!$/,'I won! Oh, I can\'t believe it! Group hug!',null],
+];
+function eggVoice(s){if(typeof s!=='string'||!G||!G.friends)return s;const m=/^(Rowan|Wren): ([\s\S]*)$/.exec(s);if(!m)return s;
+  const f=FR();const kd=eggKind(m[1]==='Rowan'?f.riv.name:f.pal.name);const col=kd==='bunny'?1:kd==='smashed'?2:0;if(!col)return s;
+  for(const L of EGG_VOICE_LINES){const mm=L[0].exec(m[2]);if(mm&&L[col])return m[1]+': '+L[col].replace(/\$(\d)/g,(_,i)=>mm[+i]||'');}return s;}
 
 // =====================================================================
 //  Talking portraits: detailed 64x64 busts for story conversations and the intro.
@@ -3463,7 +3509,7 @@ function popUI(el){const i=ui.indexOf(el);if(i>=0)ui.splice(i,1);}
 function runScript(fn){lock=true;return Promise.resolve().then(fn).then(()=>nuzNickAll()).catch(e=>{console.error(e);}).finally(()=>{lock=false;refreshNPCs();});}
 
 // say(): GBA style 2-line text box
-function say(str,opts={}){str=glitchText(friendText(str));window.LASTSAY=str;
+function say(str,opts={}){str=glitchText(friendText(typeof eggVoice==='function'?eggVoice(str):str));window.LASTSAY=str;
   const look=opts.portrait===false?null:(opts.portrait||speakerLook(str));
   return new Promise(res=>{
     const lines=wrapText(ctx,str,214,9);const pages=[];for(let i=0;i<lines.length;i+=2)pages.push(lines.slice(i,i+2));
