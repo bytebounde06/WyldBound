@@ -102,7 +102,11 @@ On Android, **NEARBY TRADE (WI-FI)** works with both Android and iPhone players 
 
 ## Trading
 
-START → TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. In the phone apps (iPhone and Android), **NEARBY TRADE (WI-FI)** finds friends' phones on the same Wi-Fi automatically, and iPhones and Android phones can trade with each other. No codes needed; allow Local Network access when asked. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.
+Use the PC in any healing center and pick TRADE. With two phones together, one shows a QR code and the other scans it with the camera, three scans in all. Each phone asks for camera permission the first time. Every QR screen also has a text code for trading over Messages. In the phone apps (iPhone and Android), **NEARBY TRADE (WI-FI)** finds friends' phones on the same Wi-Fi automatically, and iPhones and Android phones can trade with each other. No codes needed; allow Local Network access when asked. Two files on the same phone can trade directly with TRADE ON THIS PHONE. Nuzlocke files can't trade.
+
+## Playing on a PC
+
+Open `https://bytebounde06.github.io/WyldBound/` in any browser. Arrow keys move, **A** = A button, **S** = B button, **Shift** = START, **Ctrl** = SELECT (quick save).
 
 ## Troubleshooting
 
