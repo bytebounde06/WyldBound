@@ -859,6 +859,230 @@ Borealux:'A legendary beast that walks on the aurora. When it appears, the north
 });
 
 'use strict';
+// ===================== WYLDKIN CONCEPTS =====================
+// Like Pokémon, every Wyldkin's look comes from its name: the animal or object in the name sets the body,
+// ears, tail, face and extras; element words (ember, frost, moss...) set colors and decorations.
+// Rules are checked in order and merged, so later (more specific) rules win.
+// Keys: plan, f (feature overrides), x (extra parts), eye, mouth, brow, col (main color), col2 (accent), legs.
+const CONCEPT_RULES=[
+ // ---------- mammals ----------
+ [/mouse|thunderat|gnawl/,{plan:'quad',f:{ear:'mouse',tail:'thin',snout:true,bw:.95,bh:.95},x:['whiskers'],mouth:'buck',eye:'beady'}],
+ [/thunderat|gnawlord/,{f:{bw:1.15,bh:1.05},x:['whiskers','spikes']}],
+ [/gnawl/,{col:'#9a8a80',col2:'#d8c8b8'}],
+ [/shrew/,{plan:'quad',f:{ear:'bear',tail:'short',snoutLong:true,bh:.9},eye:'beady',x:['whiskers']}],
+ [/spineshrew/,{x:['spines','whiskers'],f:{bw:1.1}}],
+ [/duneshrew|spineshrew/,{col:'#d8b070',col2:'#a07038'}],
+ [/pup$|^pup|sparkpup|snarlpup/,{plan:'quad',f:{ear:'floppy',tail:'short',snout:true,bw:.95},mouth:'tongue',eye:'big'}],
+ [/hound|wolf|fang$|surgefang/,{plan:'quad',f:{ear:'point',tail:'bushy',snout:true,snoutLong:true,bw:1.1,neck:.8},mouth:'fangs',brow:'angry',legs:1.15}],
+ [/kit$|^kit|cat$|purr|sleek|lynx|paw$/,{plan:'quad',f:{ear:'point',tail:'long',snout:false},x:['whiskers'],mouth:'w',eye:'slit'}],
+ [/lynx/,{f:{ear:'lynx'},x:['ruff','whiskers'],legs:1.15}],
+ [/purrcoin/,{x:['coin','whiskers'],col:'#e8d8b0',col2:'#d0a040'}],
+ [/sleekat/,{col:'#6a6070',f:{bw:1.15,bh:.85},legs:1.2,eye:'almond'}],
+ [/ribbon/,{x:['bow','whiskers'],col:'#f4e8f0',col2:'#e05080',eye:'big'}],
+ [/vix|fox/,{plan:'quad',f:{ear:'fox',tail:'fox',snout:true,snoutLong:true},x:['whiskers'],mouth:'smile',eye:'almond'}],
+ [/emberkit|ashkit|duskit|blossomkit/,{f:{ear:'fox',tail:'fox',snoutLong:true}}],
+ [/bun$|bun[a-z]*$|fuzzbit|burrowbun/,{plan:'quad',f:{ear:'long',tail:'puff',snout:false,bw:.9,bh:1.05},mouth:'buck',eye:'big',x:['blush']}],
+ [/nursebun|carebun/,{plan:'blob',f:{ear:'long',belly:true},x:['nursecap','blush'],eye:'happy',mouth:'smile',col:'#f8d8e0',col2:'#f070a0'}],
+ [/stag|hart|buck$|thornbuck|mystag|antler/,{plan:'quad',f:{ear:'point',tail:'puff',snout:true,bw:1,neck:.9},x:['antlers'],legs:1.35,eye:'almond'}],
+ [/fawn/,{plan:'quad',f:{ear:'long',tail:'puff',snout:true,pat:'spots'},legs:1.3,eye:'big'}],
+ [/barbelle/,{plan:'quad',f:{ear:'point',tail:'puff',snout:true,pat:'spots'},legs:1.25,eye:'big'}],
+ [/mare$|steed|foal|thornmare/,{plan:'quad',f:{ear:'point',tail:'horse',snout:true,snoutLong:true,neck:.95},x:['mane'],legs:1.45}],
+ [/bull|charge$|rhino/,{plan:'quad',f:{ear:'point',tail:'thin',snout:true,bw:1.2,bh:1.1},x:['bullhorns'],brow:'angry',mouth:'frown'}],
+ [/rhino|horncharge/,{x:['rhinohorn'],f:{ear:'bear'}}],
+ [/wool|fleece|ampram|cloudram/,{plan:'quad',f:{ear:'floppy',tail:'puff',snout:true},x:['wool'],eye:'sleepy'}],
+ [/ampram|cloudram/,{x:['wool','ramhorns']}],
+ [/cloudram/,{col:'#f0f0f8',col2:'#a0b8e0'}],
+ [/woolspark|fleecebolt|ampram/,{col:'#f8f0c8',col2:'#f0c020'}],
+ [/goat/,{plan:'quad',f:{ear:'floppy',tail:'puff',snout:true},x:['goathorns','beard'],legs:1.2,eye:'almond'}],
+ [/bear|cub$|ursa|grizz|slumbear|honeycub/,{plan:'quad',f:{ear:'bear',tail:'short',snout:true,bw:1.2,bh:1.15,hs:1.05},mouth:'smile'}],
+ [/slumbear/,{eye:'sleepy',f:{bw:1.35,bh:1.25}}],
+ [/honeycub/,{col:'#d89040',col2:'#f0d060',x:['honeypot']}],
+ [/grizzlor|timberursa/,{brow:'angry',mouth:'fangs',f:{bw:1.35,bh:1.2}}],
+ [/pinecub|firbear|timberursa/,{x:['pinecone']}],
+ [/pig|pork/,{plan:'quad',f:{ear:'pig',tail:'curl',pig:true,bw:1.15,bh:1.05,snout:true},col:'#f0a8c0',col2:'#c060a0',eye:'happy',x:['gem']}],
+ [/hump|camel/,{plan:'quad',f:{ear:'bear',tail:'thin',snout:true,snoutLong:true,neck:.9},x:['hump'],legs:1.3,eye:'sleepy'}],
+ [/sealpup|frostseal|glacseal|floelet/,{plan:'seal',x:['whiskers'],eye:'big',mouth:'smile',col:'#d8e8f0'}],
+ [/sealball|sealroll/,{plan:'blob',f:{ear:'none',belly:true},x:['whiskers','flippers'],eye:'big',col:'#c8e0f0'}],
+ [/walrusk|tusktide/,{plan:'seal',x:['whiskers','tusks'],eye:'beady',brow:'angry',col:'#a89080'}],
+ [/toad|frog/,{plan:'quad',f:{ear:'none',tail:'none',snout:false,pat:'spots',bw:1.2,bh:.95},eye:'top',mouth:'grin',legs:.6}],
+ [/bogking/,{x:['crown'],f:{bw:1.35,bh:1.1}}],
+ [/sloth|lazlet|idleking/,{plan:'quad',f:{ear:'none',tail:'short',snout:true,pat:'mask',bw:1.1},eye:'sleepy',mouth:'smile',legs:.8,x:['claws']}],
+ [/idleking/,{x:['crown','claws']}],
+ [/coon|stripetail|longstripe/,{plan:'quad',f:{ear:'point',tail:'ring',snout:true,snoutLong:true,pat:'mask'},x:['whiskers'],eye:'almond',mouth:'smile'}],
+ [/longstripe|rushcoon/,{f:{bw:1.3,bh:.9},legs:.9}],
+ [/stripetail|longstripe/,{col:'#a89070',col2:'#4a3a30'}],
+ [/dashcoon|rushcoon/,{col:'#8a8a98',col2:'#303040'}],
+ [/mole|tunnelpaw|digbug/,{f:{ear:'none',snoutLong:true},eye:'beady',x:['claws','whiskers']}],
+ [/moundmole|moundking|voltmole|dynamole|tunnelpaw|boremole/,{plan:'mole'}],
+ [/moundking/,{x:['crown','claws']}],
+ [/boremole|tunnelpaw/,{x:['drillnose','claws']}],
+ [/geck|lizard|chamel|lurk/,{plan:'quad',f:{ear:'none',tail:'long',snout:true,snoutLong:true,bh:.85},legs:.7,eye:'big',x:['crest']}],
+ [/chamelurk/,{f:{tail:'curl'},eye:'top',x:['crest']}],
+ [/trunk|tuskroll|montusk/,{plan:'quad',f:{ear:'elephant',tail:'thin',bw:1.25,bh:1.2},x:['trunk','tusks'],legs:1.1,eye:'beady'}],
+ [/montusk/,{plan:'quad',x:['trunk','tusks','rocks']}],
+ [/mongo/,{plan:'quad',f:{ear:'bear',tail:'bushy',snout:true,snoutLong:true,bw:1.25,bh:.85},legs:.9,mouth:'fangs',x:['claws']}],
+ [/yeti|yetling|yetimaul/,{plan:'biped',f:{ear:'none',tail:'short',snout:false},x:['furtufts'],col:'#f0f4f8',col2:'#80a8d0',mouth:'fangs'}],
+ [/monk|ape$|canopape/,{plan:'biped',f:{ear:'monkey',tail:'curl',snout:true},mouth:'smile',x:['leafcrown']}],
+ [/terravast/,{plan:'quad',f:{ear:'bear',tail:'short',bw:1.4,bh:1.25},x:['shellback','rocks'],legs:1.1,brow:'angry'}],
+ [/borealux/,{plan:'quad',f:{ear:'fox',tail:'fox'},x:['mane','auroraribbon'],legs:1.3,eye:'almond'}],
+ [/mane$|stormmane|embermane|rainmane/,{plan:'quad',f:{ear:'point',tail:'horse',snout:true},x:['mane'],legs:1.35,brow:'angry'}],
+ [/voltail|fulgurex/,{plan:'quad',f:{ear:'fox',tail:'bolt',snoutLong:true},legs:1.2,eye:'almond'}],
+ [/doomclaw/,{plan:'quad',f:{ear:'point',tail:'thin',snout:true},x:['claws','spikes'],brow:'angry',mouth:'fangs',col:'#3a3040'}],
+ [/draglet/,{plan:'quad',f:{ear:'horn',tail:'long',snout:true},x:['wingsmall'],eye:'big'}],
+ [/ironling|ironplate|ironfort/,{plan:'quad',f:{ear:'none',tail:'short',snout:true},x:['armor'],eye:'visor',col:'#9aa4b4'}],
+ [/ironfort/,{x:['armor','spikes'],f:{bw:1.3,bh:1.2}}],
+ [/bouncepig|psypork/,{x:['gem']}],
+ [/humpling|volcamel/,{x:['hump','volcano']}],
+ [/chamelurk/,{col:'#78c068'}],
+ [/burrowsnek/,{plan:'serpent',x:['dirt']}],
+ // ---------- birds ----------
+ [/owl|hoot|nightseer/,{plan:'owl',eye:'owl',x:['eartufts']}],
+ [/duck|quack/,{plan:'biped',f:{ear:'none',tail:'short',snout:false},x:['duckbill','wingarms'],eye:'big'}],
+ [/gull/,{plan:'bird',col:'#f4f4f8',col2:'#4880c0',x:['yellowbeak']}],
+ [/crow/,{plan:'bird',col:'#2a2a38',col2:'#6040a0',eye:'slit'}],
+ [/hawk|raptor/,{plan:'bird',x:['hookbeak','crest'],brow:'angry'}],
+ [/caw|squawk/,{plan:'bird',x:['parrotbeak','crest'],col:'#e04040',col2:'#40a0e0'}],
+ [/swift/,{plan:'bird',x:['forktail'],f:{bw:.85}}],
+ [/chirp|pip$|snowpip|peck/,{plan:'bird',f:{bw:.9,bh:1.05},eye:'big'}],
+ [/gust|gale/,{x:['crest']}],
+ [/kindlet/,{plan:'owl',eye:'owl',x:['eartufts']}],
+ [/fluffwing|wishwing/,{plan:'bird',x:['fluffruff']}],
+ [/totem/,{plan:'owl',eye:'owl',x:['totemstripes']}],
+ [/fossilwing/,{plan:'bird',x:['hookbeak','crest'],col:'#b0a080'}],
+ [/zephyrion|glaciaris|pyraxis|solaurex/,{x:['crest','longtail']}],
+ [/giftwing/,{x:['bow']}],
+ // ---------- reptiles / dragons / serpents ----------
+ [/snek|snake|mamba|viper|asp/,{plan:'serpent',mouth:'fangs',eye:'slit'}],
+ [/mamba|viper/,{x:['hood']}],
+ [/drifthorse|tidesteed/,{plan:'serpent',x:['seahorse','mane'],eye:'big'}],
+ [/slug|magmaslug/,{plan:'snail',x:[],eye:'sleepy'}],
+ [/lavashell/,{plan:'snail',x:['volcano']}],
+ [/snail|mossnail|verdeshell/,{plan:'snail'}],
+ // ---------- fish & sea ----------
+ [/shark|razorshark|fangfin|snapjaw/,{plan:'fish',x:['sharkfin'],mouth:'zig',brow:'angry'}],
+ [/whisker|quakecat|barbfin/,{plan:'fish',x:['whiskers','barbels'],eye:'beady'}],
+ [/spout|leviaspout|leviathos/,{plan:'fish',x:['spout'],f:{bw:1.25,bh:1.15},eye:'beady'}],
+ [/lumifin|lanternfin/,{plan:'fish',x:['lure'],eye:'big'}],
+ [/flopfish|drabfin/,{eye:'sleepy',mouth:'o'}],
+ [/manta/,{plan:'fish',x:['mantawings']}],
+ [/relicfish|coralord|reefling/,{x:['armor']}],
+ [/coral/,{x:['coralbranches'],col:'#f08080',col2:'#f0d0b0'}],
+ [/clam/,{plan:'blob',x:['clamshell'],f:{ear:'none'},eye:'big'}],
+ [/urchip|spikurchin/,{plan:'blob',x:['urchin'],f:{ear:'none'},eye:'beady'}],
+ [/star$|starlet|prismstar|wishstar/,{plan:'star'}],
+ [/jelly|jellume/,{plan:'jelly'}],
+ [/crab|crabbit|clawdron/,{plan:'crab'}],
+ [/crawlet|crawking|krakclaw|pinchlet/,{plan:'crab'}],
+ [/crawking/,{x:['crown']}],
+ [/glidescorp/,{plan:'crab',x:['scorptail','wingsmall']}],
+ [/pitjaw/,{plan:'crab',x:['mandibles'],mouth:'zig'}],
+ [/trilobit|bladelobe|clawfossil|armorclaw/,{plan:'crab',x:['armor']}],
+ [/finnow|driplet|grandfin/,{plan:'fish'}],
+ // ---------- bugs ----------
+ [/moth/,{plan:'bug',x:['mothwings','fuzz','featherantennae'],eye:'compound'}],
+ [/wasp|sting/,{plan:'bug',x:['stinger','bugstripes'],eye:'compound'}],
+ [/beetle|hornpincer/,{plan:'bug',x:['beetlehorn'],eye:'compound'}],
+ [/mantis/,{plan:'bug',x:['scythes'],eye:'compound'}],
+ [/web|spider/,{plan:'spider',eye:'compound'}],
+ [/dotbug|dotpunch/,{plan:'blob',x:['ladybug'],f:{ear:'none'},eye:'big'}],
+ [/dotpunch/,{x:['ladybug','gloves']}],
+ [/sparkfly/,{plan:'bug',x:['glowtail'],eye:'compound'}],
+ [/eyewing/,{plan:'bug',x:['eyespots'],eye:'compound'}],
+ [/pondskater/,{plan:'bug',x:['longlegs'],eye:'compound'}],
+ [/ninjabug/,{plan:'bug',x:['ninjamask'],eye:'angry'}],
+ [/silkgrub/,{col:'#f0ece0'}],[/silkpod/,{col:'#f4f0e8'}],[/silkmoth/,{col:'#f8f4ec',col2:'#c0b0e0'}],
+ [/dartfly|bladewing|flutterwing/,{plan:'bug',eye:'compound'}],
+ [/conebug|ironcone/,{plan:'blob',x:['pinecone'],f:{ear:'none'},eye:'beady'}],
+ [/shellsip/,{plan:'turtle'}],
+ [/nocturna/,{plan:'bug',x:['mothwings','eyespots'],eye:'glow'}],
+ [/sandvibe/,{plan:'bug',x:['mandibles'],eye:'compound'}],
+ // ---------- plants & fungi ----------
+ [/shroom|myco|spore|fungal/,{x:['mushroomcap'],f:{ear:'none'}}],
+ [/cact/,{x:['cactusspines','flowertop']}],
+ [/acorn|nutbrute/,{x:['acorncap'],f:{ear:'none'}}],
+ [/leafshogun/,{x:['acorncap','leafblade'],f:{ear:'none'}}],
+ [/bellvine/,{plan:'plant',x:['bellhead']}],
+ [/trapvine/,{plan:'plant',x:['trapjaw'],mouth:'zig'}],
+ [/gulpvine/,{plan:'plant',x:['pitcher'],mouth:'big'}],
+ [/rose|bloom$|flora|blossom|lily(?!hop)|rafflora|sunbloom|thornrose/,{x:['flowerhead']}],
+ [/sun(seed|bloom)/,{x:['sunpetals']}],
+ [/palm/,{x:['palmfronds']}],
+ [/puffseed|floatleaf|breezeblossom/,{x:['dandelion']}],
+ [/sprout|budlet|seed$|seedcluster/,{x:['sprout']}],
+ [/vinemonk|canopape/,{x:['vines']}],
+ [/padling|lilyhop|lilydancer/,{x:['lilypad']}],
+ [/lilyhop|lilydancer/,{plan:'biped',eye:'top',mouth:'grin'}],
+ [/mimictree/,{plan:'golem',x:['branches'],col:'#8a6040',col2:'#58a048'}],
+ [/frondel|arborex/,{x:['leafcrown']}],
+ [/fossilily|lilytomb/,{x:['flowerhead','rocks']}],
+ [/timesprout/,{x:['sprout','clockface']}],
+ [/palmbrain/,{x:['palmfronds','brain']}],
+ // ---------- ghosts ----------
+ [/wisp$|wisplet|lanternwisp|shadewisp|wailwisp/,{plan:'floater',eye:'glow',x:['wisptail']}],
+ [/lantern/,{x:['lantern']}],
+ [/skull/,{x:['skullmask'],eye:'hollow'}],
+ [/puppet|hexdoll/,{plan:'floater',x:['stitches','button'],eye:'button',mouth:'stitch'}],
+ [/phantom|wraith|gloomling|nightmaw/,{plan:'floater',eye:'glow',x:['sheet']}],
+ [/gravewarden/,{plan:'biped',x:['tombstone','hood'],eye:'glow'}],
+ [/gemshade/,{plan:'biped',x:['gems'],eye:'gem'}],
+ [/smog/,{plan:'floater',x:['gas','skullmark'],eye:'angry'}],
+ // ---------- blobs / goo / misc ----------
+ [/sludg|gulp|gorgemaw/,{plan:'blob',x:['drips'],f:{ear:'none'},mouth:'big'}],
+ [/sludgemaw|gorgemaw/,{mouth:'big',f:{bw:1.2}}],
+ [/puff$|celestipuff|cottonpuff/,{plan:'puff',eye:'happy',mouth:'smile',x:['blush']}],
+ [/starpuff|celestipuff/,{x:['starmarks','blush']}],
+ [/starpuff/,{col:'#f8e8a0',col2:'#f0b040'}],[/celestipuff/,{col:'#e0d0f8',col2:'#f0d060'}],
+ [/cottonpuff/,{col:'#f8f4f0',col2:'#90c0f0',x:['blush','wingsmall']}],
+ [/egg/,{plan:'blob',x:['eggshell'],f:{ear:'none'},eye:'big',col:'#f8f0e0'}],
+ [/mime|mirror/,{x:['clownface']}],
+ [/mimeblob|mirrorblob/,{plan:'blob',f:{ear:'none'},eye:'beady',mouth:'smile'}],
+ [/echolet|loudmouth|boomvox/,{plan:'biped',x:['speakerears'],mouth:'big'}],
+ [/orb$|sphere|coilorb|blastorb|boomsphere|steelorb/,{plan:'orb'}],
+ [/blastorb|boomsphere/,{x:['fuse']}],
+ [/coilorb|coilcluster/,{plan:'orb',x:['coils']}],
+ [/steelorb/,{x:['antenna'],eye:'cyclops'}],
+ [/pixel/,{plan:'orb',eye:'pixel',x:['pixelblocks','antenna']}],
+ [/boltnut|gearhulk|steelclaw|steeltitan|ferrus|psytron/,{x:['bolts'],eye:'visor'}],
+ [/gearhulk/,{x:['bolts','gear']}],
+ [/jawsteel/,{x:['bigjaw'],mouth:'zig'}],
+ // ---------- fighters & psychics ----------
+ [/brawl|voltbrawler|magmabrute|kickstrike/,{x:['gloves'],brow:'angry'}],
+ [/kickstrike/,{x:['headband'],brow:'angry'}],
+ [/grappl|titangrip/,{x:['belt'],brow:'angry'}],
+ [/sumo/,{x:['topknot','belt'],f:{bw:1.35}}],
+ [/zen/,{x:['headband','beads'],eye:'sleepy'}],
+ [/bonecub|skullguard/,{x:['skullmask','boneclub'],eye:'hollow'}],
+ [/mind|cerebr|psion|psylet|psychant|psyguard/,{x:['brain','gem']}],
+ [/frostdiva|psychantress|lilydancer/,{x:['dress']}],
+ [/duckmind/,{x:['duckbill','gem']}],
+ // ---------- rocks, crystals, sky ----------
+ [/pebble|rubble|granit|crag(?!oat)|compassrock|stonepupa|tyrantrock|claycolossus|clayspin|glaciron|frostus/,{plan:'golem'}],
+ [/compassrock/,{x:['compass'],eye:'cyclops'}],
+ [/clayspin|claycolossus/,{x:['claybands']}],
+ [/tyrantrock/,{plan:'quad',f:{ear:'none',tail:'long',snout:true,snoutLong:true,bw:1.3},x:['spikes'],mouth:'zig',brow:'angry',legs:1.1}],
+ [/shard|prism|crystal/,{x:['crystals']}],
+ [/lunarock/,{x:['moonmark'],col:'#c8c8d8'}],
+ [/solarock/,{x:['sunrays'],col:'#f0b040'}],
+ [/cosmion|primora|wishstar/,{x:['starmarks']}],
+ [/frostling/,{x:['icecrown']}],
+ [/boulderwyrm|ironwyrm|dunewyrm/,{x:['spikes']}],
+];
+// Name words that set the main color (type colors become the accent). [regex, main, accent?]
+const NAME_COLORS=[
+ [/^ash|ashkit|smog/,'#8a8890'],[/dusk|night|shadow|gloom|doom|nocturna|grave/,'#4a3a6a'],[/frost|snow|rime|glac|floe|ice|yet|boreal|pupfrost/,'#d8ecf8'],
+ [/ember|cinder|blaze|pyre|pyro|magma|lava|kindl|volcan|fire/,'#e8642c'],[/moss|leaf|vine|fern|pine|fir|frond|canopy|sprout|bud/,'#58a848'],
+ [/coral/,'#f08880'],[/gold|coin|honey|sun(?!bask)|solar/,'#e8b830'],[/sand|dune|desert/,'#dcc080'],[/mud|clay|burrow|mound|dig|tunnel/,'#9a6a40'],
+ [/iron|steel|ferr|gear|bolt(?!.)/,'#98a4b8'],[/rose|blossom|flora|ribbon|nurse|care/,'#f4a0c0'],[/lily/,'#f4ecf4'],[/prism|crystal|shard/,'#c8f0f8'],
+ [/bone|skull/,'#e8dcc0'],[/storm|volt|jolt|spark|thunder|fulgur/,'#f0d040'],[/azure|aqua|tide|surge|rain|puddle|bub|drip/,'#4890e0'],
+ [/aura|psy|mind|myst|cosm|wish/,'#b070e0'],[/silk|cotton|wool|fleece|cloud|fluff/,'#f4f0e8'],[/gem/,'#9060c0'],[/venom|sludg|toxic/,'#9050b0'],
+ [/stone|rock|crag|granit|pebble|rubble|boulder/,'#9a8a78'],[/thorn|bramble|barb/,'#6a8a3a'],[/luna|moon/,'#c8c8e0'],[/razor|fang|snap/,'#5a6a88'],
+];
+function conceptOf(sp){const n=sp.name.toLowerCase();const C={f:{},x:[]};
+  for(const[rx,o] of CONCEPT_RULES){if(!rx.test(n))continue;for(const k in o){if(k==='f')Object.assign(C.f,o.f);else if(k==='x')C.x=C.x.concat(o.x.filter(e=>!C.x.includes(e)));else C[k]=o[k];}}
+  if(!C.col)for(const[rx,c,c2] of NAME_COLORS)if(rx.test(n)){C.col=c;if(c2)C.col2=c2;break;}
+  return C;}
+
+'use strict';
 // ===================== COLOR =====================
 function hex2rgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function rgb2hsl([r,g,b]){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0,l=(mx+mn)/2;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6;}return[h,s,l];}
@@ -900,7 +1124,16 @@ function genSprite(sp){
   const T1=sp.types[0],T2=sp.types[1];
   const D1=10+TYPES.indexOf(T1),D2=T2?10+TYPES.indexOf(T2):D1;
   const gy=61;let plan=sp.plan;
+  const CN=conceptOf(sp);Object.assign(f,CN.f);
+  if(CN.plan&&!(sp.early&&sp.stage<2))plan=CN.plan;
   if(sp.early&&sp.stage===0)plan='larva';if(sp.early&&sp.stage===1)plan='pupa';
+  // faces: concept first, then type, then a per-species roll (so even family members differ a little)
+  {const nr=mulberry32(hashStr(sp.name)+7);const np_=a=>a[Math.floor(nr()*a.length)];
+   const tEye={Ghost:['glow','glow','hollow'],Bug:['compound','compound','big'],Steel:['visor','round'],Dark:['slit','angry','almond'],Psychic:['almond','sleepy','glow'],Fighting:['angry','angry','round'],Fairy:['big','happy']}[T1];
+   f.eye=CN.eye||(nr()<.6&&tEye?np_(tEye):np_(['round','almond','angry','sleepy','big','beady','happy','slit','round','big']));
+   f.mouth=CN.mouth||np_(['smile','line','smile','w','fangs','grin','o','frown','tongue','smile']);
+   f.brow=CN.brow||(f.eye==='angry'||T1==='Fighting'||T1==='Dark'?'angry':nr()<.12?'worried':null);
+   if(f.mouth==='fangs')f.fang=true;}
   let A={};
   // label ids: 1 body 2 belly 3 accent 6 dark 7 inner(pink) 8 ivory/beak 9 white
   const ACC=T2?3:3;
@@ -914,11 +1147,24 @@ function genSprite(sp){
       else if(e==='long'){rell(ex+o*2,ey-hr*.6,hr*.24+.5,hr*.78,o*.45,1);rell(ex+o*2,ey-hr*.55,hr*.1+.3,hr*.55,o*.45,7,{m:1});}
       else if(e==='floppy'){rell(ex+o*hr*.5,ey+hr*.2,hr*.22+.6,hr*.6,-o*1.1,1);}
       else if(e==='tuft'){tri(ex-hr*.3,ey+2,ex+hr*.3,ey+2,ex+o*4,ey-hr*.5,1);tri(ex-hr*.1,ey-hr*.2,ex+hr*.25,ey-hr*.2,ex+o*5,ey-hr*.75,1,{p:pid});}
-      else if(e==='horn'){cap(ex,ey+1,ex+o*3,ey-hr*.55-st*2,1.4+st*.3,8,{r2:.5});}});
+      else if(e==='horn'){cap(ex,ey+1,ex+o*3,ey-hr*.55-st*2,1.4+st*.3,8,{r2:.5});}
+      else if(e==='mouse'){ell(ex+o*2,ey-hr*.15,hr*.55,hr*.55,1);ell(ex+o*2,ey-hr*.12,hr*.34,hr*.34,7,{m:1});}
+      else if(e==='fox'||e==='lynx'){const p=tri(ex-hr*.42,ey+2,ex+hr*.42,ey+2,ex+o*3,ey-hr*1.05-1,1);tri(ex-hr*.2,ey+1.5,ex+hr*.2,ey+1.5,ex+o*2.5,ey-hr*.7,e==='fox'?2:7,{m:1});if(e==='lynx')cap(ex+o*3,ey-hr*1.05,ex+o*4,ey-hr*1.5-1,.5,6);}
+      else if(e==='bear'){ell(ex,ey,hr*.26,hr*.26,1);ell(ex,ey+.3,hr*.13,hr*.13,7,{m:1});}
+      else if(e==='pig'){tri(ex-hr*.28,ey+2,ex+hr*.28,ey+2,ex+o*4,ey-hr*.3,1);tri(ex-hr*.12,ey+1.5,ex+hr*.14,ey+1.5,ex+o*3.2,ey-hr*.12,7,{m:1});}
+      else if(e==='elephant'){rell(ex+o*hr*.5+(front?0:3),ey+hr*.45,hr*.62,hr*.8,o*.3,1,{m:2});}
+      else if(e==='monkey'){ell(ex+o*hr*.45,ey+hr*.45,hr*.3,hr*.34,1,{m:2});ell(ex+o*hr*.45,ey+hr*.45,hr*.17,hr*.2,2,{m:1});}});
   }
   function foot(x,y,r){const p=ell(x,y,r+1,r*.8,1);dots.push([x-r*.5,y+r*.2],[x+r*.1,y+r*.25]);return p;}
   function tailF(tx,ty,len,thick){
     const t=f.tail;let ex=tx+len*.5,ey=ty-len;
+    if(t==='none')return[tx,ty];
+    if(t==='thin'){cap(tx,ty,tx+len*.55,ty-len*.15,.9,1,{r2:.6});cap(tx+len*.55,ty-len*.15,tx+len*.85,ty-len*.75,.6,1,{p:pid});return[tx+len*.85,ty-len*.75];}
+    if(t==='puff'){ell(tx+1.5,ty-1,thick*1.6+1,thick*1.6+1,9);return[tx+1.5,ty-2];}
+    if(t==='horse'){const p=cap(tx,ty-1,tx+len*.45,ty+len*.15,thick*1.1,3);cap(tx+len*.4,ty+len*.1,tx+len*.5,ty+len*.75,thick*.9,3,{p,r2:thick*.4});return[tx+len*.4,ty];}
+    if(t==='ring'){cap(tx,ty,ex,ey,thick*1.15,1,{r2:thick*.8});for(let i=1;i<4;i++){const u=i/4;ell(tx+(ex-tx)*u,ty+(ey-ty)*u,thick*1.25,thick*.55,6,{m:1});}return[ex,ey];}
+    if(t==='fox'){const p=rell(tx+len*.3,ty-len*.5,thick*2.1+1.5,len*.62,.55,1);rell(tx+len*.55,ty-len*.98,thick*1.3+.6,len*.22,.55,9,{m:1});return[tx+len*.5,ty-len*.95];}
+    if(t==='bolt'){let x=tx,y=ty;const p=++pid;for(let i=0;i<3;i++){const nx=x+(i%2?-3:5),ny=y-4.5;cap(x,y,nx,ny,thick*1.1,1,{p});x=nx;y=ny;}tri(x-3,y,x+3,y,x+2,y-6,1,{p});return[x,y];}
     if(t==='bushy'){rell(tx+len*.25,ty-len*.5,thick*1.8+1,len*.6,.5,1);ex=tx+len*.45;ey=ty-len*.95;}
     else if(t==='curl'){cap(tx,ty,tx+len*.5,ty-len*.7,thick,1,{r2:thick*.8});ell(tx+len*.3,ty-len*.85,thick*1.6,thick*1.6,1);ell(tx+len*.3,ty-len*.85,thick*.6,thick*.6,1,{p:pid});ex=tx+len*.3;ey=ty-len;}
     else if(t==='club'){cap(tx,ty,ex,ey,thick*.8,1);ell(ex,ey,thick*1.9,thick*1.7,1);}
@@ -928,7 +1174,7 @@ function genSprite(sp){
     if(f.pat==='tip'&&t!=='tuft')ell(ex,ey,thick*1.3,thick*1.3,3,{m:1});
     return[ex,ey];
   }
-  const legs=(sp.legs||1);
+  const legs=(CN.legs||sp.legs||1)*(plan==='quad'&&CN.legs?1:1);
   if(plan==='quad'||plan==='mole'){
     const mole=plan==='mole';const legH=(mole?3.5:7)*s*legs,rx=13*s*f.bw*(mole?1.1:1),ry=8*s*f.bh*(mole?1.15:1),bcx=34,bcy=gy-legH-ry*.7;
     const hr=(6+2.5*s)*f.hs;const hcx=bcx-rx*.82,hcy=bcy-ry*(mole?.35:.85)-hr*.25;
@@ -949,7 +1195,9 @@ function genSprite(sp){
     if(f.mane&&st>=1){for(let i=0;i<5;i++){const a=-.6+i*.55;ell(hcx+Math.cos(a)*hr*.95+2,hcy+Math.sin(a)*hr*.95,hr*.42,hr*.42,3,{p:hp-0||undefined});}ell(hcx,hcy,hr*.92,hr*.88,1,{p:hp});}
     if(f.snout||mole){const sl=mole?.95:.75;ell(hcx-hr*sl,hcy+hr*.3,hr*(mole?.65:.55),hr*.4,f.belly?2:1,{p:hp});ell(hcx-hr*(sl+.48),hcy+hr*.15,1.5,1.2,6,{m:1});mouths.push({x:hcx-hr*.85,y:hcy+hr*.62,w:hr*.5,side:1});}
     else mouths.push({x:hcx-hr*.6,y:hcy+hr*.45,w:hr*.4,side:1});
-    if(f.pat==='mask')ell(hcx-hr*.3,hcy-hr*.1,hr*.55,hr*.3,3,{m:1});
+    if(f.snoutLong&&!mole){ell(hcx-hr*1.15,hcy+hr*.38,hr*.55,hr*.3,f.belly?2:1,{p:hp});ell(hcx-hr*1.62,hcy+hr*.3,1.6,1.3,6,{m:1});}
+    if(f.pig){ell(hcx-hr*1.05,hcy+hr*.3,hr*.3,hr*.36,7,{p:hp});dots.push([hcx-hr*1.1,hcy+hr*.18],[hcx-hr*1.1,hcy+hr*.45]);}
+    if(f.pat==='mask')ell(hcx-hr*.3,hcy-hr*.1,hr*.55,hr*.3,f.pat==='mask'&&CN.x.includes('whiskers')?6:3,{m:1});
     if(f.cheek)ell(hcx-hr*.15,hcy+hr*.35,hr*.22,hr*.15,7,{m:1});
     earsF(hcx,hcy,hr,false,hp);
     addEye(hcx-hr*.35,hcy-hr*.12,eR(hr*.22+.9),false);
@@ -1137,6 +1385,184 @@ function genSprite(sp){
     A={tail:[cx,cy+ry],back:[cx+rx,cy],head:[cx,cy-ry],face:[cx-2,cy-ry*.45],hr:6,body:[cx,cy,rx,ry],noEar:1,front:1,pupa:1};
     eyes.push({x:cx-3,y:cy-ry*.45,r:1.6,front:1,slit:1},{x:cx+3,y:cy-ry*.45,r:1.6,front:1,slit:1});
   }
+
+  // ---- extra body plans for name concepts ----
+  if(plan==='owl'){const rx=10.5*s*f.bw+2,ry=12*s*f.bh+2,cx=32,cy=gy-ry-2;
+    cap(cx-3,cy+ry-1,cx-4,gy-1,1.2,48);cap(cx+3,cy+ry-1,cx+4,gy-1,1.2,48);dots.push([cx-5,gy-1],[cx+4,gy-1]);
+    rell(cx-rx*.85,cy+ry*.1,rx*.38,ry*.72,.25,3);rell(cx+rx*.85,cy+ry*.1,rx*.38,ry*.72,-.25,3);
+    const bp=ell(cx,cy,rx,ry,1);ell(cx,cy+ry*.35,rx*.6,ry*.5,2,{m:1});
+    for(let i=0;i<3;i++)for(let j=0;j<2;j++)tri(cx-3+j*5-i*1,cy+ry*.1+i*3,cx-1+j*5-i*1,cy+ry*.1+i*3,cx-2+j*5-i,cy+ry*.1+i*3+1.6,3,{m:1});
+    const fy=cy-ry*.35,g=rx*.42;ell(cx-g,fy,rx*.4,rx*.4,2,{m:1});ell(cx+g,fy,rx*.4,rx*.4,2,{m:1});
+    tri(cx-1.6,fy+1,cx+1.6,fy+1,cx,fy+4+st*.5,48);
+    A={tail:[cx+rx*.6,cy+ry*.6],back:[cx,cy-ry],head:[cx,cy-ry],face:[cx,fy],hr:rx*.8,body:[cx,cy,rx,ry],front:1,noEar:1,owl:1};
+    addEye(cx-g,fy,eR(rx*.2+1.2),true);addEye(cx+g,fy,eR(rx*.2+1.2),true);
+  }
+  if(plan==='puff'){const R=11*s*f.bw+2,cx=32,cy=gy-R-3;A={tail:[cx+R,cy+2],back:[cx,cy-R],head:[cx,cy-R],face:[cx,cy],hr:R*.8,body:[cx,cy,R,R],front:1,blob:1,noEar:1};
+    ell(cx-R*.5,gy-2,2.6,2,1);ell(cx+R*.5,gy-2,2.6,2,1);
+    const bp=ell(cx,cy,R,R*.92,1);for(let k=0;k<9;k++){const a=k*Math.PI*2/9;ell(cx+Math.cos(a)*R*.92,cy+Math.sin(a)*R*.85,R*.36,R*.34,1,{p:bp});}
+    ell(cx,cy+R*.3,R*.55,R*.38,2,{m:1});
+    const g=R*.36;addEye(cx-g,cy-R*.12,eR(R*.13+1),true);addEye(cx+g,cy-R*.12,eR(R*.13+1),true);mouths.push({x:cx,y:cy+R*.22,w:R*.28,front:1});
+  }
+  if(plan==='seal'){const rx=15*s*f.bw+1,ry=7.5*s*f.bh+1,bcx=35,bcy=gy-ry;
+    tri(bcx+rx*.7,bcy+ry*.2,bcx+rx+6*s,bcy-ry*.3,bcx+rx+7*s,bcy+ry*.7,1);tri(bcx+rx*.7,bcy+ry*.3,bcx+rx+6*s,bcy+ry*.9,bcx+rx+3*s,bcy+ry,1);
+    const bp=rell(bcx,bcy,rx,ry,-.08,1);rell(bcx-2,bcy+ry*.45,rx*.75,ry*.45,-.08,2,{m:1});
+    const hr=(6+2.2*s)*f.hs,hcx=bcx-rx*.85,hcy=bcy-ry*.9;const hp=ell(hcx,hcy,hr,hr*.9,1);ell(hcx-hr*.65,hcy+hr*.3,hr*.5,hr*.38,2,{p:hp});ell(hcx-hr*1.08,hcy+hr*.2,1.4,1.1,6,{m:1});
+    rell(bcx-rx*.45,bcy+ry*.55,4*s+1,2*s+1,.7,1);
+    A={tail:[bcx+rx+5,bcy],back:[bcx,bcy-ry],head:[hcx,hcy-hr],face:[hcx,hcy],hr,body:[bcx,bcy,rx,ry],noEar:1};
+    mouths.push({x:hcx-hr*.75,y:hcy+hr*.55,w:hr*.45,side:1});addEye(hcx-hr*.25,hcy-hr*.2,eR(hr*.24+.9),false);
+  }
+  if(plan==='snail'){const sh=10*s*f.bw+2,bcx=32,bl=17*s+4,by=gy-3*s-1;
+    const bp=rell(bcx-2,by,bl,3.2*s+1.2,0,1);ell(bcx-bl+2,by-3*s-1,4*s+1.6,4.2*s+1.6,1,{p:bp});
+    const hx=bcx-bl+2,hy=by-3*s-1;cap(hx-1,hy-2,hx-3,hy-9*s-3,.8,1);cap(hx+2,hy-2,hx+2,hy-9*s-3,.8,1);
+    const sx=bcx+4,sy=by-sh*.85;const spp=ell(sx,sy,sh,sh,3);let a=0,r=sh*.85;const pts=[];while(r>1){pts.push([sx+Math.cos(a)*r*.75,sy+Math.sin(a)*r*.75]);a+=.5;r-=.42;}
+    for(let i=1;i<pts.length;i++)cap(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1],.55,6,{m:1});
+    A={tail:[bcx+bl,by],back:[sx,sy-sh],head:[hx,hy-4],face:[hx,hy],hr:4*s+1.6,body:[sx,sy,sh,sh],noEar:1,front:1};
+    eyes.push({x:hx-3,y:hy-9*s-3,r:1.4,front:1},{x:hx+2,y:hy-9*s-3,r:1.4,front:1});mouths.push({x:hx,y:hy+2,w:1.5,front:1});
+  }
+  if(plan==='spider'){const sz=s*(.9+st*.1),ax=38,ay=gy-9*sz-2;
+    for(let i=0;i<4;i++){const lx=ax-12*sz+i*5*sz;cap(lx,ay+1,lx-6,ay-4-i%2*2,1,6);cap(lx-6,ay-4-i%2*2,lx-8,gy-1,.9,6);}
+    const ab=ell(ax+5*sz,ay-2*sz,10*sz+1,8*sz+1,1);ell(ax+5*sz,ay-4*sz,4*sz,5*sz,3,{m:1});ell(ax+5*sz,ay-.5*sz,2*sz,2*sz,44,{m:1});
+    const hcx=ax-9*sz,hcy=ay;ell(hcx,hcy,6*sz+1,5*sz+1,1);cap(hcx-4*sz,hcy+3*sz,hcx-6*sz,hcy+6*sz,.9,8);cap(hcx-1*sz,hcy+3*sz,hcx-2*sz,hcy+6*sz,.9,8);
+    A={tail:[ax+14*sz,ay],back:[ax+5*sz,ay-10*sz],head:[hcx,hcy-5*sz],face:[hcx,hcy],hr:6*sz,body:[ax+5*sz,ay,10*sz,8*sz],noEar:1};
+    addEye(hcx-2.5,hcy-1.5,eR(1.7+sz*.6),false);dots.push([hcx+1,hcy-2.5],[hcx+2.5,hcy-1.5],[hcx-.5,hcy-3]);
+  }
+  if(plan==='orb'){const R=12*s*f.bw+2,cx=32,cy=gy-R-5;A={tail:[cx+R,cy],back:[cx,cy-R],head:[cx,cy-R],face:[cx,cy],hr:R*.8,body:[cx,cy,R,R],front:1,blob:1,float:1,noEar:1};
+    const bp=ell(cx,cy,R,R,1);ell(cx,cy+R*.55,R*.95,R*.38,3,{m:1});cap(cx-R,cy+R*.15,cx+R,cy+R*.15,.6,6,{m:1});
+    const g=R*.34;addEye(cx-g,cy-R*.2,eR(R*.15+1),true);addEye(cx+g,cy-R*.2,eR(R*.15+1),true);mouths.push({x:cx,y:cy+R*.3,w:R*.25,front:1});
+  }
+
+  // ---- named extras (from the Wyldkin's name) ----
+  (function(){const X=CN.x;if(!X.length||!A.face)return;const has=k=>X.includes(k);
+    const[fx,fy]=A.face,hr=A.hr||5,[hx,hy]=A.head,[bx,by]=A.back,[tx,ty]=A.tail||A.back,B=A.body||[fx,fy+hr,hr,hr];const fw=A.front;const dir=fw?0:-1;
+    const snoutX=fw?fx:fx-hr*(f.snoutLong?1.55:f.snout?1.15:.85),snoutY=fy+hr*(fw?.45:.3);
+    if(has('whiskers')){const W=(sx,sy,sgn)=>{cap(sx,sy,sx+sgn*5,sy-1.5,.35,6);cap(sx,sy+1,sx+sgn*5,sy+2,.35,6);};if(fw){W(fx-hr*.45,fy+hr*.35,-1);W(fx+hr*.45,fy+hr*.35,1);}else W(snoutX+1,snoutY,-1);}
+    if(has('blush')){if(fw){ell(fx-hr*.55,fy+hr*.28,hr*.17,hr*.11,7,{m:1});ell(fx+hr*.55,fy+hr*.28,hr*.17,hr*.11,7,{m:1});}else ell(fx-hr*.15,fy+hr*.35,hr*.2,hr*.12,7,{m:1});}
+    if(has('spines')){const n=4+st;for(let i=0;i<n;i++){const u=i/(n-1);const x=B[0]-B[2]*.75+u*B[2]*1.5,y=B[1]-B[3]*(.95-Math.abs(u-.5)*.5);tri(x-2,y+2,x+2,y+2,x+1.5,y-4-st,3,{m:2});tri(x-1.6,y+2,x+1.6,y+2,x+1.5,y-3.5-st,3);}}
+    if(has('spikes')&&!has('spines')){const n=3+st;for(let i=0;i<n;i++){const x=bx-6+i*4,y=by+1;tri(x-1.8,y+1,x+1.8,y+1,x+.8,y-4-st,3);}}
+    if(has('antlers')){const L=5+st*3.5;[fw?-1:0,1].forEach((o,k)=>{if(fw&&o===0)return;const ox=hx+(fw?o*hr*.45:(k?hr*.35:-hr*.15)),oy=hy+2;const ex=ox+(o||1)*L*.45,ey=oy-L;cap(ox,oy,ex,ey,1+st*.15,8);cap(ox+(ex-ox)*.45,oy+(ey-oy)*.45,ox+(ex-ox)*.45-(o||1)*3,oy+(ey-oy)*.45-3-st,.8,8);if(st>=1)cap(ox+(ex-ox)*.75,oy+(ey-oy)*.75,ox+(ex-ox)*.75+(o||1)*3.5,oy+(ey-oy)*.75-2.5,.8,8);});}
+    if(has('bullhorns')){[-1,1].forEach(o=>{const ox=hx+o*hr*.55+(fw?0:2),oy=hy+hr*.3;cap(ox,oy,ox+o*(4+st*1.5),oy-1,1.5+st*.3,8);cap(ox+o*(4+st*1.5),oy-1,ox+o*(5+st*1.5),oy-4-st,1+st*.2,8,{r2:.4});});}
+    if(has('rhinohorn')){tri(snoutX+2,snoutY-hr*.25,snoutX+5,snoutY-hr*.3,snoutX+1-dir*0,snoutY-hr*.9-3-st*2,8);}
+    if(has('ramhorns')||has('goathorns')){[-1,1].forEach(o=>{if(!fw&&o<0)return;const ox=hx+(fw?o*hr*.5:hr*.25),oy=hy+hr*.35;if(has('ramhorns')){const R=2.6+st*.8;ell(ox+o*R*.6,oy+R*.4,R+1,R+1,8);ell(ox+o*R*.6,oy+R*.4,R*.45,R*.45,6,{m:1});}else{cap(ox,oy,ox+o*2+2,oy-5-st*1.5,1.1+st*.2,8,{r2:.5});cap(ox+o*2+2,oy-5-st*1.5,ox+o*2+5,oy-3-st,.8,8);}});}
+    if(has('beard')){tri(snoutX-1,snoutY+1,snoutX+3,snoutY+1,snoutX+.5,snoutY+5+st,9);}
+    if(has('mane')){const n=6+st;for(let i=0;i<n;i++){const a=(fw?-Math.PI:-.3*Math.PI)+i*(fw?Math.PI*2:Math.PI*1.3)/n;ell(fx+Math.cos(a)*hr*1.05+(fw?0:2),fy+Math.sin(a)*hr*1.0,hr*.42,hr*.42,3,{m:2});}if(!fw)for(let i=0;i<3+st;i++)ell(fx+hr*.9+i*2.5,fy-hr*.5+i*2.2,2.4,2.4,3,{m:2});}
+    if(has('ruff')){for(let i=0;i<4;i++)tri(fx-hr*.4+i*1.5,fy+hr*.6,fx-hr*.4+i*1.5+2,fy+hr*.6,fx-hr*.9+i*1.2,fy+hr*1.3,9,{m:2});}
+    if(has('wool')){const r=mulberry32(sp.seed+21);const n=10+st*3;for(let i=0;i<n;i++){const a=r()*Math.PI*2,d=r()*.75;ell(B[0]+Math.cos(a)*B[2]*d,B[1]+Math.sin(a)*B[3]*d-B[3]*.2,2.6+st*.5,2.4+st*.5,9);}
+      for(let i=0;i<4;i++){const a=-Math.PI*.9+i*.5;ell(fx+hr*.3+Math.cos(a)*hr*.75,fy+Math.sin(a)*hr*.75,hr*.32,hr*.3,9);}}
+    if(has('hump')){ell(B[0]+1,B[1]-B[3]*.95,B[2]*.38,B[3]*.55,1,{m:2});if(st>=1)ell(B[0]+B[2]*.45,B[1]-B[3]*.85,B[2]*.3,B[3]*.45,1,{m:2});}
+    if(has('volcano')){tri(B[0]-3,B[1]-B[3]*1.2,B[0]+5,B[1]-B[3]*1.2,B[0]+1,B[1]-B[3]*1.2-5-st*2,46);ell(B[0]+1,B[1]-B[3]*1.2-5-st*2,2,1.4,11);}
+    if(has('trunk')){cap(snoutX+1,snoutY-1,snoutX-3,snoutY+4,hr*.22+.6,1);cap(snoutX-3,snoutY+4,snoutX-3,snoutY+9+st,hr*.18+.5,1,{p:pid,r2:hr*.14+.4});}
+    if(has('tusks')){const tx0=fw?fx:snoutX+3,ty0=snoutY+1;[fw?-2:0,fw?2:3].forEach(o=>{cap(tx0+o,ty0,tx0+o-2,ty0+3+st,.9,9);cap(tx0+o-2,ty0+3+st,tx0+o,ty0+5+st,.7,9);});}
+    if(has('crown')||has('icecrown')){const cx_=hx+(fw?0:1),cy_=hy+.5,w=hr*.75;const L=has('icecrown')?13:42;tri(cx_-w,cy_+1,cx_+w,cy_+1,cx_,cy_+1,L);for(let i=-1;i<=1;i++)tri(cx_+i*w*.7-1.6,cy_+1.5,cx_+i*w*.7+1.6,cy_+1.5,cx_+i*w*.7,cy_-3-(i?0:1.5),L);cap(cx_-w*.8,cy_+1,cx_+w*.8,cy_+1,.8,L);}
+    if(has('bow')){const cx_=hx+(fw?hr*.45:hr*.2),cy_=hy+1;tri(cx_,cy_,cx_-3.5,cy_-2.5,cx_-3.5,cy_+2.5,44);tri(cx_,cy_,cx_+3.5,cy_-2.5,cx_+3.5,cy_+2.5,44);ell(cx_,cy_,1.2,1.2,44);}
+    if(has('coin')){ell(fx-(fw?0:hr*.15),fy-hr*.6,1.8+st*.3,1.8+st*.3,42);}
+    if(has('gem')){const gx=fx-(fw?0:hr*.15),gy_=fy-hr*.62;tri(gx-1.6,gy_,gx+1.6,gy_,gx,gy_-2.4,44);tri(gx-1.6,gy_,gx+1.6,gy_,gx,gy_+2,44);}
+    if(has('nursecap')){const cy_=hy+.5;rell(hx,cy_,hr*.55,1.8,0,9);ell(hx,cy_-.2,1.2,1.2,44,{m:1});}
+    if(has('eartufts')){tri(fx-hr*.85,fy-hr*.5,fx-hr*.4,fy-hr*.85,fx-hr*1.0,fy-hr*1.35-st,1);tri(fx+hr*.85,fy-hr*.5,fx+hr*.4,fy-hr*.85,fx+hr*1.0,fy-hr*1.35-st,1);}
+    if(has('crest')){for(let i=0;i<2+st;i++)tri(hx+1+i*1.5,hy+1.5,hx+3.5+i*1.5,hy+1.5,hx+4+i*2.2,hy-3-st-i,3);}
+    if(has('longtail')){for(let i=0;i<3;i++)cap(tx,ty,tx+6+i*2,ty+6+i*3,.8,3);}
+    if(has('forktail')){tri(tx-1,ty-1,tx+6,ty-4,tx+4,ty,1);tri(tx-1,ty+1,tx+6,ty+4,tx+4,ty,1);}
+    if(has('hookbeak')){cap(fx-hr-2.5,fy+1.5,fx-hr-2,fy+3.5,.6,8);}
+    if(has('parrotbeak')){const p=ell(fx-hr*.95,fy+1,2.6,2.8,8);tri(fx-hr*1.3,fy+1,fx-hr*.8,fy+3.5,fx-hr*1.25,fy+5,8,{p});}
+    if(has('yellowbeak')){tri(fx-hr*.6,fy-1,fx-hr*.6,fy+2.5,fx-hr-4,fy+1.2,48);}
+    if(has('fluffruff')){for(let i=0;i<5;i++)ell(fx+hr*.3+i*1.5,fy+hr*.7+((i%2)*1.2),2,2,9,{m:2});}
+    if(has('totemstripes')){for(let i=0;i<3;i++)cap(B[0]-B[2]*.8,B[1]-B[3]*.3+i*4,B[0]+B[2]*.8,B[1]-B[3]*.3+i*4,.7,i%2?44:42,{m:1});}
+    if(has('duckbill')){const bx_=fw?fx:fx-hr*.85,by_=fw?fy+hr*.35:fy+hr*.25;rell(bx_-(fw?0:2),by_,fw?hr*.55:hr*.6,hr*.26,0,48);cap(bx_-(fw?hr*.45:hr*.8),by_+.3,bx_+(fw?hr*.45:0),by_+.3,.35,6,{m:1});}
+    if(has('wingarms')&&A.arm){rell(A.arm[0]+2,A.arm[1],2.6,5,.4,3);}
+    if(has('hood')&&plan==='serpent'){rell(fx+2,fy+hr*.6,hr*1.05,hr*1.25,0,3,{m:2});}
+    if(has('seahorse')){cap(fx-hr*.6,fy+hr*.2,fx-hr*1.7,fy+hr*.35,hr*.22+.3,1);}
+    if(has('sharkfin')){tri(B[0]-3,B[1]-B[3]*.8,B[0]+5,B[1]-B[3]*.8,B[0]+3,B[1]-B[3]-7-st*2,1);}
+    if(has('barbels')){cap(snoutX+1,snoutY+1,snoutX-2,snoutY+6,.45,6);cap(snoutX+2,snoutY+1,snoutX+1,snoutY+6,.45,6);}
+    if(has('spout')){for(let i=-1;i<=1;i++)cap(hx+2,hy,hx+2+i*3,hy-5-st,.7,12);ell(hx+2,hy-1,1.5,1,12);}
+    if(has('lure')){cap(hx,hy+1,hx-3,hy-4,.45,6);cap(hx-3,hy-4,hx-7,hy-2,.45,6);ell(hx-7,hy-1.5,1.8,1.8,47);}
+    if(has('mantawings')){tri(B[0]-B[2]*.5,B[1]-2,B[0]+B[2]*.4,B[1]-2,B[0],B[1]-B[3]-9-st*2,3);tri(B[0]-B[2]*.5,B[1]+2,B[0]+B[2]*.4,B[1]+2,B[0],B[1]+B[3]+8+st*2,3);}
+    if(has('coralbranches')){for(let i=0;i<3;i++){const x=B[0]-4+i*4;cap(x,B[1]-B[3]*.6,x+(i-1)*2,B[1]-B[3]-4-st*2,.9,40);}}
+    if(has('clamshell')){const R=B[2]*1.12;const p=rell(B[0],B[1]-B[3]*.8,R,B[3]*.5,0,3);for(let i=-2;i<=2;i++)cap(B[0],B[1]-B[3]*.4,B[0]+i*R*.4,B[1]-B[3]*1.2,.5,6,{m:1});rell(B[0],B[1]+B[3]*.85,R,B[3]*.3,0,3,{m:2});}
+    if(has('urchin')){for(let k=0;k<12;k++){const a=k*Math.PI/6;tri(B[0]+Math.cos(a)*B[2]*.75-1.4,B[1]+Math.sin(a)*B[3]*.75,B[0]+Math.cos(a)*B[2]*.75+1.4,B[1]+Math.sin(a)*B[3]*.75,B[0]+Math.cos(a)*(B[2]+6+st*2),B[1]+Math.sin(a)*(B[3]+6+st*2),3);}}
+    if(has('scorptail')){let x=tx,y=ty;for(let i=0;i<4;i++){const nx=x+2,ny=y-4;ell(nx,ny,2,2,1);x=nx;y=ny;}tri(x-2,y-1,x+2,y-1,x-3,y+3,8);}
+    if(has('mandibles')){cap(fx-hr*.6,fy+hr*.4,fx-hr*1.5,fy+hr*.1,.8,8);cap(fx-hr*.6,fy+hr*.6,fx-hr*1.5,fy+hr*.9,.8,8);}
+    if(has('armor')){for(let i=0;i<3+st;i++)rell(B[0]-B[2]*.55+i*B[2]*.4,B[1]-B[3]*.55,B[2]*.24,B[3]*.4,0,3,{m:1});}
+    if(has('mothwings')){rell(bx-2,by-6,9*s+3,6*s+2,-.9,3,{m:2});rell(bx+7,by-2,7*s+2,4.5*s+2,-.4,3,{m:2});ell(bx-5,by-10,2.2,2.2,9,{m:1});ell(bx+7,by-4,1.6,1.6,9,{m:1});}
+    if(has('fuzz')){for(let i=0;i<3;i++)ell(fx+hr*.6+i*2,fy+hr*.8,1.6,1.6,9,{m:2});}
+    if(has('featherantennae')){cap(hx-1,hy+1,hx-4,hy-6,.6,6);cap(hx+1,hy+1,hx+3,hy-6,.6,6);for(let i=0;i<3;i++){cap(hx-2-i,hy-1-i*1.6,hx-4-i,hy-2-i*1.6,.4,6);cap(hx+1.5+i*.6,hy-1-i*1.6,hx+3.5+i*.6,hy-2-i*1.6,.4,6);}}
+    if(has('stinger')){tri(tx-1,ty-2,tx-1,ty+2,tx+6,ty+1,6);}
+    if(has('bugstripes')){for(let i=0;i<3;i++)cap(B[0]+i*3,B[1]-B[3]*.9,B[0]+i*3,B[1]+B[3]*.9,.8,43,{m:1});}
+    if(has('beetlehorn')){cap(fx-2,fy-1,fx-8,fy-11-st*2,1.9+st*.2,8,{r2:.6});cap(fx-6,fy-8-st*2,fx-9,fy-8-st*2,.7,8);}
+    if(has('scythes')){cap(fx+1,fy+3,fx-6,fy+5,1.1,9);tri(fx-6,fy+3,fx-6,fy+7,fx-10,fy+2,9);}
+    if(has('ladybug')){const R=B[2];ell(B[0],B[1]-B[3]*.2,R*1.02,B[3]*.92,44,{m:1});cap(B[0],B[1]-B[3],B[0],B[1]+B[3]*.6,.6,43,{m:1});for(let i=0;i<5;i++){const a=i*1.25+.5;ell(B[0]+Math.cos(a)*R*.55,B[1]-B[3]*.2+Math.sin(a)*B[3]*.5,1.5+st*.3,1.5+st*.3,43,{m:1});}}
+    if(has('glowtail')){ell(tx,ty,3+st,2.6+st,47);ell(tx,ty,1.4,1.2,9,{m:1});}
+    if(has('eyespots')){ell(bx-3,by-6,2.2,2.2,42,{m:1});ell(bx-3,by-6,1,1,43,{m:1});ell(bx+5,by-3,1.8,1.8,42,{m:1});}
+    if(has('longlegs')){for(let i=0;i<3;i++){const lx=fx+4+i*5;cap(lx,fy+4,lx-6+i*3,gy-3,.6,6);}}
+    if(has('ninjamask')){cap(fx-hr,fy-.5,fx+hr*.9,fy-.5,1.3,43,{m:1});cap(fx+hr*.8,fy-.5,fx+hr*1.6,fy+3,.6,44);}
+    if(has('pinecone')){const n=4+st;for(let i=0;i<n;i++)for(let j=0;j<3;j++){const x=B[0]-B[2]*.6+i*B[2]*.35+(j%2)*1.5,y=B[1]-B[3]*.6+j*B[3]*.45;tri(x-1.6,y,x+1.6,y,x,y+2.4,46,{m:1});}}
+    if(has('honeypot')){ell(B[0]+B[2]*.4,gy-4,3.2,3,46);ell(B[0]+B[2]*.4,gy-6.5,2.6,.9,42);}
+    if(has('shellback')){ell(B[0],B[1]-B[3]*.55,B[2]*.95,B[3]*.75,3,{m:2});for(let i=-1;i<=1;i++)ell(B[0]+i*B[2]*.45,B[1]-B[3]*.7,B[2]*.18,B[3]*.22,46,{m:1});}
+    if(has('rocks')){for(let i=0;i<3;i++)ell(B[0]-B[2]*.5+i*B[2]*.5,B[1]-B[3]*.85,2.4+st*.4,2+st*.4,53,{m:2});}
+    if(has('dirt')){for(let i=0;i<4;i++)ell(B[0]-B[2]+i*B[2]*.6,gy-1,2.5,1.4,46,{m:2});}
+    if(has('claws')){const cxl=fw&&A.arm?A.arm[0]:fx+hr*.4,cyl=fw&&A.arm?A.arm[1]+3:gy-1.5;for(let i=0;i<3;i++)tri(cxl-2+i*1.6,cyl,cxl-1+i*1.6,cyl,cxl-2.6+i*1.6,cyl+2.2,9);}
+    if(has('drillnose')){tri(snoutX+2,snoutY-2,snoutX+2,snoutY+2,snoutX-6-st,snoutY,53);}
+    if(has('crest')&&plan==='quad'){}
+    if(has('furtufts')){for(let i=0;i<5;i++)tri(fx-hr+i*hr*.5,fy-hr*.75,fx-hr+i*hr*.5+2.4,fy-hr*.75,fx-hr+i*hr*.5+1,fy-hr*1.15-1,1);if(A.arm)ell(A.arm[0],A.arm[1]+2,2.6,2.2,9);}
+    if(has('leafcrown')){for(let i=-1;i<=1;i++)rell(hx+i*3,hy-1,1.6,3.6+st*.5,i*.6,49);}
+    if(has('vines')){cap(B[0]-B[2],B[1]-B[3]*.6,B[0]+B[2],B[1]+B[3]*.4,.7,49,{m:1});cap(B[0]-B[2],B[1]+B[3]*.2,B[0]+B[2]*.8,B[1]-B[3]*.7,.7,49,{m:1});}
+    if(has('lilypad')){ell(hx,hy+1,hr*.95,hr*.3,49);tri(hx,hy+1,hx+hr*.5,hy-.5,hx+hr*.6,hy+1.5,1,{m:1});}
+    if(has('wingsmall')){rell(bx+3,by-3,4+st*1.5,2.4,-.7,41,{m:2});}
+    if(has('mushroomcap')){const w=hr*1.35+st,cy_=hy+hr*.2;const p=rell(hx+(fw?0:1),cy_,w,hr*.7,0,3);ell(hx+(fw?0:1),cy_+hr*.55,w*.95,hr*.25,3,{p});for(let i=0;i<4;i++)ell(hx-w*.55+i*w*.38,cy_-hr*.2+(i%2)*2,1.4,1.2,9,{m:1});}
+    if(has('cactusspines')){const r=mulberry32(sp.seed+5);for(let i=0;i<9;i++){const x=Math.round(B[0]+(r()-.5)*B[2]*1.6),y=Math.round(B[1]+(r()-.5)*B[3]*1.6);dots.push([x,y]);}}
+    if(has('flowertop')){for(let k=0;k<5;k++){const a=k*Math.PI*2/5;ell(hx+Math.cos(a)*2,hy-1+Math.sin(a)*1.6,1.6,1.4,40);}ell(hx,hy-1,1,1,42);}
+    if(has('acorncap')){const p=rell(hx,hy+hr*.25,hr*1.05,hr*.55,0,46);for(let i=-2;i<=2;i++)cap(hx+i*hr*.35,hy-hr*.15,hx+i*hr*.35,hy+hr*.55,.35,6,{m:1});cap(hx,hy-hr*.2,hx+1,hy-hr*.2-2.5,.7,46);}
+    if(has('leafblade')&&A.arm){rell(A.arm[0]-2,A.arm[1]-5,1.8,6,-.4,49);}
+    if(has('bellhead')){tri(hx-hr*.9,hy+hr*.4,hx+hr*.9,hy+hr*.4,hx,hy-hr*.9,3,{m:2});}
+    if(has('trapjaw')){for(let i=0;i<4;i++){tri(fx-hr*.7+i*hr*.45,fy+hr*.2,fx-hr*.5+i*hr*.45,fy+hr*.2,fx-hr*.6+i*hr*.45,fy+hr*.55,9);}}
+    if(has('pitcher')){ell(hx,hy+1,hr*.85,hr*.35,3,{m:2});}
+    if(has('flowerhead')&&!A.plant){for(let k=0;k<6;k++){const a=k*Math.PI/3;ell(hx+Math.cos(a)*3.2,hy-1.5+Math.sin(a)*2.6,2.2,1.8,40);}ell(hx,hy-1.5,1.4,1.4,42);}
+    if(has('sunpetals')){for(let k=0;k<10;k++){const a=k*Math.PI/5;tri(B[0]+Math.cos(a)*B[2]*.9,B[1]+Math.sin(a)*B[3]*.9,B[0]+Math.cos(a+.3)*B[2]*.9,B[1]+Math.sin(a+.3)*B[3]*.9,B[0]+Math.cos(a+.15)*(B[2]+4+st*2),B[1]+Math.sin(a+.15)*(B[3]+4+st*2),42,{m:2});}}
+    if(has('palmfronds')){for(let i=-2;i<=2;i++)rell(hx+i*3,hy-2-Math.abs(i)*-.5,1.8,5+st,i*.45,49,{m:2});}
+    if(has('dandelion')){for(let k=0;k<8;k++){const a=k*Math.PI/4;cap(hx,hy,hx+Math.cos(a)*5,hy-3+Math.sin(a)*4,.45,9);ell(hx+Math.cos(a)*5,hy-3+Math.sin(a)*4,1.4,1.4,9);}}
+    if(has('sprout')){cap(hx,hy+1,hx,hy-3,.6,49);rell(hx-2,hy-3.5,2.2,1.2,.4,49);rell(hx+2,hy-4,2.2,1.2,-.4,49);}
+    if(has('clockface')){ell(B[0],B[1],3,3,9,{m:1});cap(B[0],B[1],B[0],B[1]-2,.4,6,{m:1});cap(B[0],B[1],B[0]+1.6,B[1],.4,6,{m:1});}
+    if(has('brain')){for(let i=-1;i<=1;i++)ell(hx+i*hr*.45,hy+1.5,hr*.32,hr*.28,40);cap(hx,hy+.5,hx,hy+3,.4,6,{m:1});}
+    if(has('wisptail')){for(let i=0;i<3;i++)tri(B[0]-B[2]*.6+i*B[2]*.6,B[1]+B[3]*.6,B[0]-B[2]*.3+i*B[2]*.6,B[1]+B[3]*.6,B[0]-B[2]*.5+i*B[2]*.6+2,B[1]+B[3]+5+st,1,{m:2});}
+    if(has('lantern')){cap(hx,hy+1,hx,hy-3,.5,6);ell(hx,hy-5,2.4+st*.4,3+st*.4,47);cap(hx-2.4,hy-7.5,hx+2.4,hy-7.5,.6,6);}
+    if(has('skullmask')){ell(fx,fy,hr*.95,hr*.85,45,{m:1});if(!fw)ell(fx-hr*.6,fy+hr*.35,hr*.4,hr*.3,45,{m:1});}
+    if(has('stitches')){for(let i=0;i<3;i++){const x=B[0]-B[2]*.4+i*B[2]*.4,y=B[1]+B[3]*.2;cap(x-1.2,y-1.2,x+1.2,y+1.2,.35,6,{m:1});cap(x-1.2,y+1.2,x+1.2,y-1.2,.35,6,{m:1});}}
+    if(has('button')){ell(B[0]+B[2]*.35,B[1]-B[3]*.1,1.6,1.6,44,{m:1});}
+    if(has('sheet')){for(let i=0;i<4;i++)tri(B[0]-B[2]+i*B[2]*.55,B[1]+B[3]*.6,B[0]-B[2]+i*B[2]*.55+B[2]*.55,B[1]+B[3]*.6,B[0]-B[2]+i*B[2]*.55+B[2]*.27,B[1]+B[3]+4+st,1,{m:2});}
+    if(has('tombstone')){rell(B[0]+B[2]+3,gy-6,3,6,0,53,{m:2});ell(B[0]+B[2]+3,gy-11,3,3,53,{m:2});cap(B[0]+B[2]+3,gy-10,B[0]+B[2]+3,gy-5,.4,6,{m:1});}
+    if(has('hood')&&plan==='biped'){ell(hx,hy+hr*.6,hr*1.15,hr*1.05,43,{m:2});}
+    if(has('gems')){ell(B[0],B[1],2.2,2.2,44,{m:1});ell(B[0]-3,B[1]+3,1.6,1.6,49,{m:1});ell(B[0]+3,B[1]+3,1.6,1.6,42,{m:1});}
+    if(has('gas')){for(let i=0;i<5;i++){const a=i*1.3;ell(B[0]+Math.cos(a)*(B[2]+3),B[1]+Math.sin(a)*(B[3]+3),3,2.6,3,{m:2});}}
+    if(has('skullmark')){ell(B[0],B[1]+B[3]*.25,2.4,2.2,9,{m:1});dots.push([B[0]-1,B[1]+B[3]*.22],[B[0]+1,B[1]+B[3]*.22]);}
+    if(has('drips')){for(let i=0;i<4;i++){const x=B[0]-B[2]*.7+i*B[2]*.45;cap(x,B[1]+B[3]*.6,x,B[1]+B[3]+2+(i%2)*2,1.2,1,{r2:.6,m:2});}}
+    if(has('starmarks')){[[-.45,-.4],[.5,-.2],[.1,.45]].forEach(([u,v])=>{const x=B[0]+u*B[2],y=B[1]+v*B[3];cap(x-1.6,y,x+1.6,y,.4,42,{m:1});cap(x,y-1.6,x,y+1.6,.4,42,{m:1});});}
+    if(has('eggshell')){const yy=B[1]+B[3]*.05;for(let i=0;i<6;i++)tri(B[0]-B[2]+i*B[2]*.36,yy,B[0]-B[2]+i*B[2]*.36+B[2]*.36,yy,B[0]-B[2]+i*B[2]*.36+B[2]*.18,yy-3,9,{m:1});ell(B[0],B[1]+B[3]*.5,B[2]*1.02,B[3]*.55,9,{m:1});}
+    if(has('clownface')){ell(fx,fy+hr*.45,hr*.35,hr*.22,44,{m:1});}
+    if(has('speakerears')){[-1,1].forEach(o=>{ell(hx+o*hr*.95,hy+hr*.8,hr*.42,hr*.42,3,{m:2});ell(hx+o*hr*.95,hy+hr*.8,hr*.2,hr*.2,43,{m:1});});}
+    if(has('fuse')){cap(hx,hy+1,hx+2,hy-4,.7,6);ell(hx+2.5,hy-5,1.6,1.6,47);}
+    if(has('coils')){for(let i=-1;i<=1;i+=2){ell(fx+i*hr*1.25,fy,hr*.35,hr*.35,54);ell(fx+i*hr*1.25,fy,hr*.15,hr*.15,6,{m:1});}}
+    if(has('antenna')){cap(hx,hy+1,hx,hy-4-st,.5,6);ell(hx,hy-5-st,1.4,1.4,44);}
+    if(has('pixelblocks')){for(let i=0;i<4;i++){const x=Math.round(B[0]-B[2]+i*B[2]*.6),y=Math.round(B[1]+B[3]*.75+(i%2)*2);for(let a=0;a<3;a++)for(let b=0;b<3;b++)put(x+a,y+b,3,0,pid+1);}pid++;}
+    if(has('bolts')){[[-.6,-.4],[.6,-.4],[-.6,.4],[.6,.4]].forEach(([u,v])=>{ell(B[0]+u*B[2],B[1]+v*B[3],1.2,1.2,9,{m:1});});}
+    if(has('gear')){const gx=B[0]+B[2]*.15,gy2=B[1];for(let k=0;k<8;k++){const a=k*Math.PI/4;ell(gx+Math.cos(a)*4,gy2+Math.sin(a)*4,1.2,1.2,6,{m:1});}ell(gx,gy2,3,3,6,{m:1});ell(gx,gy2,1.4,1.4,9,{m:1});}
+    if(has('bigjaw')){rell(fx,fy+hr*.85,hr*.9,hr*.5,0,3);}
+    if(has('gloves')&&A.arm){ell(A.arm[0]-1,A.arm[1]+2,3+st*.4,2.8+st*.4,44);ell(B[0]+B[2]*1.25,B[1]+2,2.8+st*.4,2.6+st*.4,44,{m:2});}
+    if(has('headband')){cap(hx-hr*.95,hy+hr*.55,hx+hr*.95,hy+hr*.55,1,44,{m:1});cap(hx+hr*.9,hy+hr*.55,hx+hr*1.5,hy+hr*1.1,.6,44);}
+    if(has('belt')){cap(B[0]-B[2],B[1]+B[3]*.3,B[0]+B[2],B[1]+B[3]*.3,1.3,43,{m:1});ell(B[0],B[1]+B[3]*.3,2,1.6,42,{m:1});}
+    if(has('topknot')){ell(hx,hy+.5,1.8,1.6,43);}
+    if(has('beads')){for(let i=0;i<5;i++)ell(B[0]-B[2]*.6+i*B[2]*.3,B[1]-B[3]*.55+Math.abs(i-2)*1.2,1,1,42,{m:1});}
+    if(has('boneclub')&&A.arm){cap(A.arm[0],A.arm[1]+2,A.arm[0]-3,A.arm[1]-6,1,45);ell(A.arm[0]-3,A.arm[1]-7,1.8,1.6,45);}
+    if(has('dress')){tri(B[0]-B[2]*1.3,B[1]+B[3]*1.05,B[0]+B[2]*1.3,B[1]+B[3]*1.05,B[0],B[1]-B[3]*.2,3,{m:2});}
+    if(has('compass')){cap(B[0],B[1]-2,B[0],B[1]-6,.7,44,{m:1});cap(B[0],B[1]+2,B[0],B[1]+5,.7,9,{m:1});}
+    if(has('claybands')){for(let i=0;i<2;i++)cap(B[0]-B[2],B[1]-B[3]*.2+i*B[3]*.5,B[0]+B[2],B[1]-B[3]*.2+i*B[3]*.5,.7,44,{m:1});}
+    if(has('crystals')){for(let i=0;i<3+st;i++){const x=B[0]-B[2]*.5+i*B[2]*.35,y=B[1]-B[3]*.7;tri(x-1.6,y+1,x+1.6,y+1,x,y-5-((i%2)?1:3)-st,50,{m:2});}}
+    if(has('moonmark')){ell(fx,fy-hr*.45,2.4,2.4,42,{m:1});ell(fx+1,fy-hr*.5,2,2,1,{m:1});}
+    if(has('sunrays')){for(let k=0;k<8;k++){const a=k*Math.PI/4;tri(B[0]+Math.cos(a-.2)*B[2],B[1]+Math.sin(a-.2)*B[3],B[0]+Math.cos(a+.2)*B[2],B[1]+Math.sin(a+.2)*B[3],B[0]+Math.cos(a)*(B[2]+4+st),B[1]+Math.sin(a)*(B[3]+4+st),42,{m:2});}}
+    if(has('auroraribbon')){cap(tx,ty,tx+4,ty-6,1,49);cap(tx+4,ty-6,tx+1,ty-11,1,40);}
+    if(has('branches')){cap(hx,hy+1,hx-5,hy-5,1,46);cap(hx,hy+1,hx+5,hy-6,1,46);ell(hx-5,hy-6,2.6,2.2,49);ell(hx+5,hy-7,2.8,2.4,49);}
+    if(has('flippers')){rell(B[0]-B[2]-1,B[1]+B[3]*.3,2,4,.6,1,{m:2});rell(B[0]+B[2]+1,B[1]+B[3]*.3,2,4,-.6,1,{m:2});}
+  })();
+  if(f.eye==='top')eyes.forEach(e=>{ell(e.x,e.y-1.5,e.r+1.4,e.r+1.2,1);e.y-=2;});
+  if(f.eye==='cyclops'&&eyes.length>=2&&eyes[0].front){const a=eyes[0],b=eyes[1];eyes.splice(0,eyes.length,{x:(a.x+b.x)/2,y:(a.y+b.y)/2,r:a.r*1.5,front:true});}
+  if(f.eye==='cyclops')f.eye='round';
   // ---- type decorations ----
   function decor(T,L,major){
     const[bx,by]=A.back,[tx,ty]=A.tail||A.back,[hx,hy]=A.head;const n=2+st;
@@ -1158,7 +1584,7 @@ function genSprite(sp){
       case 'Fighting':if(A.arm)ell(A.arm[0],A.arm[1],2.5,1.4,L,{m:1});break;
       case 'Dark':if(!A.pupa&&!A.larva&&A.face)ell(A.face[0]-(A.front?0:A.hr*.3),A.face[1]-A.hr*.08,A.hr*(A.front?.85:.55),A.hr*.3,L,{m:1});if(st>=1&&!A.noEar)tri(hx-3,hy+3,hx+3,hy+3,hx+5,hy-4-st,L);break;
       case 'Ground':if(A.body)for(let i=0;i<2+st;i++)ell(A.body[0]-A.body[2]*.4+i*4,A.body[1]-A.body[3]*.7,1,A.body[3]*.25,L,{m:1});break;
-      case 'Flying':if(!['bird','bug','bat','drake'].includes(plan)&&A.body){const w=rell(A.body[0]+3,A.body[1]-A.body[3]-2,6+st*2,3,-.6,41);}break;
+      case 'Flying':if(!['bird','bug','bat','drake','owl','puff','orb','plant','star','spider','seal'].includes(plan)&&!CN.x.includes('wingsmall')&&!CN.x.includes('mantawings')&&A.body){const w=rell(A.body[0]+3,A.body[1]-A.body[3]-2,6+st*2,3,-.6,41);}break;
       case 'Normal':break;
     }
   }
@@ -1166,11 +1592,14 @@ function genSprite(sp){
   // ---- palette ----
   const pr=mulberry32(sp.seed+11);
   let main=adj(hex2rgb(TYPE_COLOR[T1]),(pr()-.5)*.14,(pr()-.5)*.18,(pr()-.5)*.07);
-  if(T1==='Normal')main=adj(main,0,0,(pr()-.5)*.15);
+  const NATURAL=['#b08858','#8a6a50','#a0a0a8','#d8c8a0','#c07a48','#707888','#c8a070','#9a7a68'];
+  if(T1==='Normal')main=adj(hex2rgb(NATURAL[Math.floor(pr()*NATURAL.length)]),(pr()-.5)*.08,(pr()-.5)*.1);
+  if(CN.col)main=adj(hex2rgb(CN.col),(pr()-.5)*.06,(pr()-.5)*.08,(pr()-.5)*.02);
   if(sp.rar==='L'||sp.rar==='M')main=adj(main,.03,.12);
-  const bellyC=T2?mix(hex2rgb(TYPE_COLOR[T2]),[248,240,216],.5):mix(main,[250,242,220],.62);
-  const accent=T2?adj(hex2rgb(TYPE_COLOR[T2]),-.04):adj(main,-.16,.05,.06);
-  const pal={1:main,2:bellyC,3:accent,6:adj(main,-.35,-.25),7:[240,150,170],8:[240,220,160],9:[250,250,250],40:[255,140,180],41:[230,240,255]};
+  const bellyC=T2&&!CN.col?mix(hex2rgb(TYPE_COLOR[T2]),[248,240,216],.5):mix(main,[250,242,220],.62);
+  let accent=T2?adj(hex2rgb(TYPE_COLOR[T2]),-.04):adj(main,-.16,.05,.06);
+  if(CN.col2)accent=hex2rgb(CN.col2);else if(CN.col&&TYPE_COLOR[T1]){const tc=hex2rgb(TYPE_COLOR[T1]);const d=Math.abs(rgb2hsl(tc)[0]-rgb2hsl(main)[0]);if(d>.06&&!T2)accent=tc;}
+  const pal={1:main,2:bellyC,3:accent,6:adj(main,-.35,-.25),7:[240,150,170],8:[240,220,160],9:[250,250,250],40:[255,140,180],41:[230,240,255],42:[240,200,60],43:[44,40,52],44:[220,60,70],45:[236,228,206],46:[150,100,60],47:[255,236,120],48:[240,160,50],49:[80,170,70],50:[200,236,255],51:[70,140,230],53:[150,150,160],54:[250,220,70]};
   TYPES.forEach((t,i)=>{pal[10+i]=hex2rgb(DECOR_COL[t]);});
   const ramps={};const rampOf=l=>ramps[l]||(ramps[l]=makeRamp(pal[l]||main));
   // ---- distance field per part ----
@@ -1207,31 +1636,65 @@ function genSprite(sp){
   }
   // toe dots
   dots.forEach(([x,y])=>{const X=Math.round(x),Y=Math.round(y);if(get(X,Y))setPx(X,Y,adj(main,-.4,-.2));});
-  // mouths
-  mouths.forEach(m=>{const dk=adj(main,-.45,-.2);const X=Math.round(m.x),Y=Math.round(m.y);
-    if(m.front){const w=Math.max(1,Math.round(m.w));for(let k=-w;k<=w;k++){const yy=Y+(Math.abs(k)===w?-1:0);if(get(X+k,yy))setPx(X+k,yy,dk);}if(m.fang){setPx(X-1,Y+1,[255,255,255]);setPx(X+1,Y+1,[255,255,255]);}}
-    else{const w=Math.max(1,Math.round(m.w));for(let k=0;k<=w;k++){if(get(X+k,Y))setPx(X+k,Y,dk);}if(m.fang&&get(X+1,Y+1))setPx(X+1,Y+1,[255,255,255]);}});
+  // mouths (style comes from the name / species)
+  const MS=f.mouth||'smile';
+  mouths.forEach(m=>{const dk=adj(main,-.45,-.2);const X=Math.round(m.x),Y=Math.round(m.y);const W_=[255,255,255],PK=[230,110,140];
+    const on=(x,y)=>get(x,y);const P=(x,y,c)=>{if(on(x,y))setPx(x,y,c);};
+    if(m.front){const w=Math.max(1,Math.round(m.w));
+      if(MS==='o'){P(X,Y,dk);P(X-1,Y,dk);P(X,Y+1,dk);P(X-1,Y+1,dk);return;}
+      if(MS==='big'){const ww=w+1;for(let k=-ww;k<=ww;k++)for(let d=0;d<=2;d++){if(d===2&&Math.abs(k)>=ww-1)continue;P(X+k,Y+d,d===2?PK:dk);}for(let k=-ww+1;k<ww;k+=2)P(X+k,Y,W_);return;}
+      if(MS==='w'){for(let k=-w;k<=w;k++)P(X+k,Y+((Math.abs(k)%2)?0:-1)*(k===0?0:1)+(k===0?0:0),dk);P(X,Y-1,dk);return;}
+      if(MS==='zig'){const ww=w+1;for(let k=-ww;k<=ww;k++){P(X+k,Y,dk);P(X+k,Y+1,dk);if(k%2===0)P(X+k,Y,W_);else P(X+k,Y+1,W_);}return;}
+      if(MS==='stitch'){for(let k=-w;k<=w;k++){P(X+k,Y,dk);if(k%2===0){P(X+k,Y-1,dk);P(X+k,Y+1,dk);}}return;}
+      const curve=MS==='frown'?1:MS==='line'?0:-1;const ww=MS==='grin'?Math.round(w*1.7)+1:w;
+      for(let k=-ww;k<=ww;k++)P(X+k,Y+(Math.abs(k)===ww?curve:0),dk);
+      if(MS==='buck'){P(X,Y+1,W_);P(X-1,Y+1,W_);}
+      if(MS==='tongue'){P(X,Y+1,PK);P(X+1,Y+1,PK);}
+      if(m.fang||MS==='fangs'){P(X-ww+1,Y+1,W_);P(X+ww-1,Y+1,W_);}
+    } else {const w=Math.max(1,Math.round(m.w));
+      if(MS==='o'){P(X,Y,dk);P(X+1,Y,dk);P(X,Y-1,dk);return;}
+      const ww=MS==='grin'||MS==='big'?w+2:w;for(let k=0;k<=ww;k++)P(X+k,Y,dk);
+      if(MS==='smile'||MS==='grin'||MS==='tongue')P(X+ww,Y-1,dk);if(MS==='frown')P(X+ww,Y+1,dk);
+      if(MS==='big'){for(let k=0;k<ww;k++)P(X+k,Y+1,PK);}
+      if(MS==='w'){P(X+1,Y+1,dk);}
+      if(MS==='zig'){for(let k=0;k<=ww;k+=2)P(X+k,Y+1,W_);}
+      if(MS==='buck'){P(X,Y+1,W_);P(X+1,Y+1,W_);}
+      if(MS==='tongue')P(X+1,Y+1,PK);
+      if(m.fang||MS==='fangs')P(X+1,Y+1,W_);}});
   // eyes
-  const irisC=hex2rgb(f.iris);
-  eyes.forEach(e=>{const r=e.r,rx=r*.85,ry=r;const cxx=e.x,cyy=e.y;const lid=adj(main,-.5,-.1);
+  const irisC=hex2rgb(f.iris);const E=f.eye;const dark=[28,22,32];
+  const glowC=T1==='Ghost'?[190,255,235]:T1==='Psychic'?[255,170,230]:T1==='Fire'?[255,220,120]:T1==='Poison'?[230,160,255]:T1==='Dark'?[255,90,90]:[200,245,255];
+  const lid=adj(main,-.5,-.1);
+  const fillE=(cxx,cyy,rx,ry,fn)=>{for(let y=Math.floor(cyy-ry-1);y<=cyy+ry+1;y++)for(let x=Math.floor(cxx-rx-1);x<=cxx+rx+1;x++){const dx=(x+.5-cxx)/rx,dy=(y+.5-cyy)/ry;if(dx*dx+dy*dy<=1){const c=fn(x,y,dx,dy);if(c)setPx(x,y,c);}}};
+  const ring=(cxx,cyy,rx,ry,c,topOnly)=>{const inE=(x,y)=>{const dx=(x+.5-cxx)/rx,dy=(y+.5-cyy)/ry;return dx*dx+dy*dy<=1;};for(let y=Math.floor(cyy-ry-1);y<=cyy+ry+1;y++)for(let x=Math.floor(cxx-rx-1);x<=cxx+rx+1;x++){if(inE(x,y))continue;if(inE(x+1,y)||inE(x-1,y)||inE(x,y+1)||inE(x,y-1)){if(!topOnly||y<=cyy)setPx(x,y,c);}}};
+  if(E!=='visor')eyes.forEach(e=>{const r=e.r,cxx=e.x,cyy=e.y;
     if(e.slit){for(let k=-1;k<=1;k++)setPx(Math.round(cxx+k),Math.round(cyy),[40,30,40]);return;}
+    if(E==='beady'){const rr=Math.max(1.1,r*.6);fillE(cxx,cyy,rr*.85,rr,()=>dark);setPx(Math.round(cxx-rr*.3),Math.round(cyy-rr*.4),[255,255,255]);return;}
+    if(E==='happy'){const w=Math.max(1,Math.round(r*.9));for(let k=-w;k<=w;k++){const y=Math.round(cyy-(1-(k/w)*(k/w))*r*.7);setPx(Math.round(cxx+k),y,dark);if(r>2.2)setPx(Math.round(cxx+k),y+1,dark);}return;}
+    if(E==='button'){fillE(cxx,cyy,r*.85,r*.85,()=>[30,24,34]);setPx(Math.round(cxx-.5),Math.round(cyy-.5),[110,100,120]);setPx(Math.round(cxx+.5),Math.round(cyy+.5),[110,100,120]);return;}
+    if(E==='hollow'){fillE(cxx,cyy,r*1.05,r*1.1,()=>[18,14,22]);setPx(Math.round(cxx),Math.round(cyy),glowC);return;}
+    if(E==='glow'){fillE(cxx,cyy,r*.9,r,(x,y,dx,dy)=>dy>.45?adj(glowC,-.12):glowC);ring(cxx,cyy,r*.9,r,lid);setPx(Math.round(cxx-r*.3),Math.round(cyy-r*.4),[255,255,255]);return;}
+    if(E==='compound'){fillE(cxx,cyy,r*1.15,r*1.25,(x,y)=>((x+y)%3===0)?[70,58,100]:[36,28,56]);setPx(Math.round(cxx-r*.4),Math.round(cyy-r*.5),[255,255,255]);setPx(Math.round(cxx-r*.4)+1,Math.round(cyy-r*.5),[200,210,255]);return;}
+    if(E==='pixel'){const h=Math.max(1,Math.round(r*.8));for(let y=-h;y<=h;y++)for(let x=-h;x<=h;x++)setPx(Math.round(cxx)+x,Math.round(cyy)+y,(Math.abs(x)===h||Math.abs(y)===h)?[20,40,50]:[120,255,210]);return;}
+    if(E==='gem'){const h=Math.max(1.5,r);for(let y=Math.floor(cyy-h);y<=cyy+h;y++)for(let x=Math.floor(cxx-h);x<=cxx+h;x++){if(Math.abs(x+.5-cxx)+Math.abs(y+.5-cyy)<=h)setPx(x,y,(y<cyy?[255,140,200]:[200,60,140]));}setPx(Math.round(cxx-.5),Math.round(cyy-h*.4),[255,255,255]);return;}
+    const rx=r*.85,ry=r;const ox=e.front?0:-r*.28;const owl=E==='owl',slit=E==='slit';const ic=owl?[245,170,40]:irisC;
     const inE=(x,y)=>{const dx=(x+.5-cxx)/rx,dy=(y+.5-cyy)/ry;return dx*dx+dy*dy<=1;};
-    const ox=e.front?0:-r*.28;
     for(let y=Math.floor(cyy-ry-1);y<=cyy+ry+1;y++)for(let x=Math.floor(cxx-rx-1);x<=cxx+rx+1;x++){
-      if(!inE(x,y))continue;
-      const top=(y+.5-cyy)/ry;
-      if(f.eye==='sleepy'&&top<-.1){setPx(x,y,top>-.35?lid:null||lid);continue;}
-      if(f.eye==='angry'&&(y+.5)<cyy-ry*.35+((x+.5-cxx)*(e.front?(cxx<32?-.5:.5):-.5))){continue;}
-      if(f.eye==='almond'&&Math.abs(top)>.7)continue;
+      if(!inE(x,y))continue;const top=(y+.5-cyy)/ry;
+      if(E==='sleepy'&&top<-.1){setPx(x,y,lid);continue;}
+      if(E==='angry'&&(y+.5)<cyy-ry*.35+((x+.5-cxx)*(e.front?(cxx<A.face[0]?-.5:.5):-.5))){continue;}
+      if(E==='almond'&&Math.abs(top)>.7)continue;
       let col=[252,252,252];
-      const ix=(x+.5-cxx-ox)/(rx*.62),iy=(y+.5-cyy-r*.1)/(ry*.75);
-      if(ix*ix+iy*iy<=1){col=irisC;if(iy>.2)col=adj(irisC,-.15);const px_=(x+.5-cxx-ox)/(rx*.32),py_=(y+.5-cyy-r*.1)/(ry*.42);if(px_*px_+py_*py_<=1)col=[28,22,32];}
-      setPx(x,y,col);
-    }
-    // outline ring & highlight
-    for(let y=Math.floor(cyy-ry-1);y<=cyy+ry+1;y++)for(let x=Math.floor(cxx-rx-1);x<=cxx+rx+1;x++){if(inE(x,y))continue;if(inE(x+1,y)||inE(x-1,y)||inE(x,y+1)||inE(x,y-1)){if(y<=cyy)setPx(x,y,lid);}}
+      const ir=owl?.85:.62;const ix=(x+.5-cxx-ox)/(rx*ir),iy=(y+.5-cyy-r*.1)/(ry*(owl?.85:.75));
+      if(ix*ix+iy*iy<=1){col=ic;if(iy>.2)col=adj(ic,-.15);const px_=(x+.5-cxx-ox)/(rx*(slit?.12:.32)),py_=(y+.5-cyy-r*.1)/(ry*(slit?.7:.42));if(px_*px_+py_*py_<=1)col=[28,22,32];}
+      setPx(x,y,col);}
+    ring(cxx,cyy,rx,ry,lid,true);
     setPx(Math.round(cxx+ox-r*.3),Math.round(cyy-r*.35),[255,255,255]);if(r>2.2)setPx(Math.round(cxx+ox+r*.2),Math.round(cyy+r*.35),[230,240,255]);
   });
+  if(E==='visor'&&eyes.length){const xs=eyes.map(e=>e.x),y0=Math.round(eyes[0].y),r=eyes[0].r;const x0=Math.round(Math.min(...xs)-r-.5),x1=Math.round(Math.max(...xs)+r+.5);
+    for(let x=x0;x<=x1;x++){for(let d=-1;d<=1;d++)if(get(x,y0+d))setPx(x,y0+d,d===0?[150,255,250]:[60,200,230]);if(get(x,y0-2))setPx(x,y0-2,[30,30,40]);if(get(x,y0+2))setPx(x,y0+2,[30,30,40]);}}
+  if(f.brow&&!['visor','hollow','glow','happy','pixel','button'].includes(E))eyes.forEach(e=>{const r=e.r,y=Math.round(e.y-r-1.2);const inner=e.front?(e.x<A.face[0]?1:-1):-1;
+    for(let k=-1;k<=1;k++){const x=Math.round(e.x+k*r*.6);const dy=f.brow==='angry'?(k*inner>0?1:k===0?0:-1):(k*inner>0?-1:k===0?0:1);setPx(x,y+dy,[30,24,30]);if(r>2)setPx(x+inner,y+dy,[30,24,30]);}});
   cx.putImageData(img,0,0);
   const b=mkCanvas(N,N),bx=b.getContext('2d');bx.translate(N,0);bx.scale(-1,1);bx.drawImage(c,0,0);
   return{front:c,back:b,float:!!A.float};
