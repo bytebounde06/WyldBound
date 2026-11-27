@@ -3435,7 +3435,7 @@ function say(str,opts={}){str=glitchText(friendText(str));window.LASTSAY=str;
   });
 }
 // choose(): vertical menu box
-function choose(items,o={}){
+function choose(items,o={}){if(o.prompt)o=Object.assign({},o,{prompt:friendText(o.prompt)});
   return new Promise(res=>{
     const w=o.w||Math.max(...items.map(s=>{font(ctx,9);return ctx.measureText(s).width;}))+26,h=items.length*14+10;
     const x=o.x!=null?o.x:W-w-2,y=o.y!=null?o.y:H-46-h;
