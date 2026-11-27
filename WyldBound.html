@@ -41,6 +41,15 @@ html,body{margin:0;height:100%;background:#3a2e6e;overflow:hidden;touch-action:n
  #ba{position:fixed;right:calc(env(safe-area-inset-right) + 20px);top:calc(50% - 80px)}#bb{position:fixed;right:calc(env(safe-area-inset-right) + 100px);top:calc(50% - 20px)}
  #bsel{position:fixed;left:calc(env(safe-area-inset-left) + 30px);bottom:20px}#bst{position:fixed;left:auto;right:calc(env(safe-area-inset-right) + 30px);bottom:20px}
 }
+#keys{display:none;flex:none;text-align:center;color:#c8c0e8;font-size:13px;height:30px;line-height:30px;letter-spacing:.5px}
+#keys b{color:#fff;background:#1c1830;border-radius:4px;padding:1px 6px;margin:0 2px;font-weight:600}
+/* PC / laptop with a mouse: hide the touch controls and fit the whole screen in the window */
+@media (hover:hover) and (pointer:fine) and (min-width:700px){
+ #pad{display:none}
+ #bezel{position:static;transform:none;height:calc(100% - 30px);width:min(100vw,(100vh - 30px)*4/3);margin:0 auto;padding:0}
+ #sw{align-items:center}
+ #keys{display:block}
+}
 </style></head><body>
 <div id="gb">
  <div id="bezel"><div id="sw"><canvas id="screen"></canvas></div></div>
@@ -49,6 +58,7 @@ html,body{margin:0;height:100%;background:#3a2e6e;overflow:hidden;touch-action:n
   <button class="btn" id="bb" data-k="b">B</button><button class="btn" id="ba" data-k="a">A</button>
   <button class="pill" id="bsel" data-k="select">SELECT</button><button class="pill" id="bst" data-k="start">START</button>
  </div>
+ <div id="keys"><b>Arrows</b> move &nbsp; <b>A</b> A button &nbsp; <b>S</b> B button &nbsp; <b>Shift</b> Start &nbsp; <b>Ctrl</b> Select (quick save)</div>
 </div>
 <div id="overlay"></div>
 <script>
@@ -3385,7 +3395,8 @@ let G=null;let scene='boot';const ui=[];let lock=false;let frame=0;const timers=
 let fade=0,fadeTarget=0,fadeSpeed=0,flashA=0,saveIcon=0;
 const held={},holdF={};let pressed=new Set();
 const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};const OPP={up:'down',down:'up',left:'right',right:'left'};
-const KEYMAP={arrowup:'up',arrowdown:'down',arrowleft:'left',arrowright:'right',w:'up',s:'down',a:'left',d:'right',z:'a',x:'b',k:'a',j:'b',enter:'start',shift:'select',' ':'a',backspace:'b',escape:'b'};
+// Keyboard (PC): arrows move, A = A button, S = B button, Shift = START, Ctrl = SELECT. Z/X, Enter, Space and Esc also work.
+const KEYMAP={arrowup:'up',arrowdown:'down',arrowleft:'left',arrowright:'right',a:'a',s:'b',shift:'start',control:'select',z:'a',x:'b',enter:'start',' ':'a',backspace:'b',escape:'b'};
 addEventListener('keydown',e=>{unlockAudio();if(e.target&&e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;const k=KEYMAP[e.key.toLowerCase()];if(k){if(!held[k])pressed.add(k);held[k]=true;e.preventDefault();}});
 addEventListener('keyup',e=>{const k=KEYMAP[e.key.toLowerCase()];if(k)held[k]=false;});
 function press(k){if(!held[k])pressed.add(k);held[k]=true;}function release(k){held[k]=false;}
