@@ -2827,49 +2827,61 @@ STORY_AFTER_BUILD.push(()=>{
 // ---------- Bunny and Smashed talk like themselves when they're your rival or best friend ----------
 // Each entry: [pattern for the regular line (without "Rowan: "/"Wren: "), Bunny's version, Smashed's version]. $1, $2 = captured bits.
 const EGG_VOICE_LINES=[
- [/^(?:Gramps-- er, )?The Professor said the three of us could each pick one/,'Sweetie, there you are! The Professor said we each get a partner today. I saved you a spot. Did you eat breakfast?','Finally. The Professor said we each get one. You\'re late. Again. Some things never change.'],
- [/^Can you believe it\? The three of us/,'Can you believe it? Partners! All three of us, just like we always dreamed. Pick whichever one you love, sweetie. I\'ll look after whoever\'s left.','Pick already. And don\'t bother looking at the fire one. That one\'s mine.'],
- [/^Then I'll take (.+)!$/,'Then I\'ll take $1! Oh, look at its little face!','Then I\'m taking $1. Not up for debate.'],
- [/^(I'll take|And that leaves) (.+) for me\. Hi there, little one!$/,'$1 $2 for me. Hi, sweetie! Mama\'s got you now.','$1 $2 for me. Don\'t get attached. ...Too late, I\'m attached.'],
- [/^Okay, here's the deal\. Winner stays on/,'Okay, everyone! Winner stays on, just like when we were kids. And nobody cries. ...Much.','Winner stays on. Same rules as when we were kids. No crying.'],
- [/^(Champion or not, )?I'm first! Come on, (.+)!$/,'$1I\'ll go first! Don\'t worry, I\'ll be gentle, $2.','$1I\'m first. Come on, $2. Hold back and I\'ll be insulted.'],
- [/^Hmph\. Beginner's luck\.$/,'Aww, you won! I\'m so proud of you. ...Even if it was a teeny bit of luck.','Tch. Lucky. ...Okay, that was decent.'],
- [/^Winner stays on! (.+), you're up against me now!$/,'Winner stays on! $1, it\'s my turn, sweetie!','My turn. Winner stays on, $1. Get ready.'],
- [/^Two wins in a row!/,'Two in a row! Somebody\'s been practicing. I\'m making you a snack after this.','Two in a row. Don\'t let it go to your head.'],
- [/^I did it! Sorry, not sorry!$/,'I won! Oh, don\'t make that face. Come here, let me fix your hair.','Told you. Fix your weak spots.'],
- [/^Ha! Told you I'd win!$/,'I won! Oh no, are you okay? Here, have a tissue.','Ha. Called it.'],
- [/^Winner stays on! (.+), you're mine!$/,'Winner stays on! $1, be nice to me, okay?','Winner stays on. $1, you\'re next.'],
- [/^No way\.\.\. Rematch later/,'Oh! You beat me! Good job, sweetie. Rematch later, okay?','...Whatever. Rematch later. Count on it.'],
- [/^Aww\. Next time, (.+)!$/,'Aww. Next time, $1! I\'ll bake you something anyway.','Tch. Next time, $1.'],
- [/^(.+), want to battle me too\?$/,'$1, want to battle me too? I\'ll go easy on you. Probably.','$1. Want a round with me too, or are you scared?'],
- [/^Okay, okay, you're good!$/,'You\'re so good! I\'m telling everyone.','Fine. You\'re good. Happy now?'],
- [/^Hehe, I'm on a roll!$/,'Hehe! Mama\'s on a roll!','Yeah, I\'m on a roll. Deal with it.'],
- [/^Next time, then!$/,'Next time, then! Stay hydrated!','Your loss.'],
- [/^(?:Remember when we used to pretend sticks were Wyldkin\? Now they're real!|New region, same three of us\.) I'll be training up ahead, (.+)\.$/,'I packed you snacks for the road. Don\'t argue. I\'ll be training up ahead, $1. Call me if you need anything!','I\'m heading out. Try to keep up, $1.'],
- [/^Don't get lost on Route 1 without me/,'Call me if anything happens on Route 1, okay? Anything at all. Bye, sweetie!','Don\'t get flattened on Route 1. I\'m not coming back to save you. ...I probably am.'],
- [/^Hey, wait up! So you got Brenna's badge too/,'Sweetie, wait! You got Brenna\'s badge too? Let me see how much you\'ve grown!','So you got Brenna\'s badge too. Let\'s see if you actually earned it.'],
- [/^You're getting good\. I'm heading to Ferrowick/,'You\'re getting so strong! I\'m heading to Ferrowick. Wear a jacket in Whisperwood, it gets chilly.','Not bad. I\'m going to Ferrowick. Try not to get lost in Whisperwood.'],
- [/^Hey! I knew you'd come this way\. I've been training on the mountain/,'There you are! I\'ve been training on the mountain. Let\'s see how you\'re doing, sweetie!','Knew you\'d come this way. I\'ve been training on the mountain. Let\'s go.'],
- [/^The League is past Saltmarsh Harbor/,'The League is past Saltmarsh Harbor. I\'ll be there cheering for you, with snacks!','The League\'s past Saltmarsh. I\'ll be there. Don\'t keep me waiting.'],
- [/^The border lock took my whole team/,'They took all my babies at the border! Go see the Professor so we can get new partners, sweetie.','Border lock took my whole team. Even my Champion team. Go talk to the Professor before I break something.'],
- [/^Starting over in a new region\?/,'Starting over? That\'s okay. New little ones to take care of!','Starting over. Whatever. More fire types to find.'],
- [/^What\?! I picked the wrong one!$/,'Oh! You did so well, sweetie!','Tch. Wrong pick. Won\'t happen again.'],
- [/^Aww! You two always were the strong ones\.$/,'Aww, you two were always the strong ones. I\'m so proud of you.','...Fine. You win this one.'],
- [/^Argh! Not again!$/,'Oh my, not again! You\'re amazing.','Again? Tch.'],
- [/^Again\?! How do you keep doing that\?$/,'How do you keep doing that? You have to teach me later!','How do you keep doing that? ...Don\'t answer.'],
- [/^(.+)! I caught my first wild Wyldkin! Want to see how strong my team is\?$/,'$1! Look at my new babies! Want to see how strong they\'ve gotten?',null],
- [/^(.+)! I've been studying type matchups\. Let's test my notes!$/,'$1! I\'ve been studying type matchups. Let\'s test my notes, sweetie!',null],
- [/^(.+)! I've seen so many Wyldkin out here\. My team is ready for anything!$/,'$1! I\'ve met so many sweet Wyldkin out here. My team is ready for anything!',null],
- [/^Wow, you're good! I'll keep training\.$/,'You\'re so good! I\'ll keep training, I promise.',null],
- [/^Yay! My first trainer win!$/,'Yay! I won! Don\'t be sad, come here.',null],
- [/^My notes said I'd win\.\.\. I need better notes!$/,'My notes said I\'d win... Oh well! I\'m proud of you anyway.',null],
- [/^Ha! The notes were right!$/,'The notes were right! Now let\'s get your team healed up, sweetie.',null],
- [/^You really are something\. Good luck with the League!$/,'You really are something. Good luck at the League! I\'ll be cheering the loudest.',null],
- [/^I won! I can't believe it!$/,'I won! Oh, I can\'t believe it! Group hug!',null],
+ [/^(?:Gramps-- er, )?The Professor said the three of us could each pick one/,'Sweetie, there you are! The Professor said we each get a partner today. I saved you a spot. Did you eat breakfast?','Finally. The Professor said we each get one. You\'re late. Again. Some things never change.','Hey. The Professor said we each get one today. I\'ve been here since 4 AM. I don\'t really sleep.'],
+ [/^Can you believe it\? The three of us/,'Can you believe it? Partners! All three of us, just like we always dreamed. Pick whichever one you love, sweetie. I\'ll look after whoever\'s left.','Pick already. And don\'t bother looking at the fire one. That one\'s mine.','Three partners, three of us. The math works. You pick first. I\'ll take whatever\'s left. I always do.'],
+ [/^Then I'll take (.+)!$/,'Then I\'ll take $1! Oh, look at its little face!','Then I\'m taking $1. Not up for debate.','Then $1 it is. It looked at me like it already knew me.'],
+ [/^(I'll take|And that leaves) (.+) for me\. Hi there, little one!$/,'$1 $2 for me. Hi, sweetie! Mama\'s got you now.','$1 $2 for me. Don\'t get attached. ...Too late, I\'m attached.','$1 $2 for me. Hey, little guy. Welcome to the party.'],
+ [/^Okay, here's the deal\. Winner stays on/,'Okay, everyone! Winner stays on, just like when we were kids. And nobody cries. ...Much.','Winner stays on. Same rules as when we were kids. No crying.','Okay, here\'s the deal. Winner stays on. Like the old days, minus the lag.'],
+ [/^(Champion or not, )?I'm first! Come on, (.+)!$/,'$1I\'ll go first! Don\'t worry, I\'ll be gentle, $2.','$1I\'m first. Come on, $2. Hold back and I\'ll be insulted.','$1I\'ll go first. Don\'t worry, $2, no exploits. Probably.'],
+ [/^Hmph\. Beginner's luck\.$/,'Aww, you won! I\'m so proud of you. ...Even if it was a teeny bit of luck.','Tch. Lucky. ...Okay, that was decent.','Beginner\'s luck. Or a bug. I\'m filing a report either way.'],
+ [/^Winner stays on! (.+), you're up against me now!$/,'Winner stays on! $1, it\'s my turn, sweetie!','My turn. Winner stays on, $1. Get ready.','Winner stays on. $1, you\'re up. Try not to blink.'],
+ [/^Two wins in a row!/,'Two in a row! Somebody\'s been practicing. I\'m making you a snack after this.','Two in a row. Don\'t let it go to your head.','Two in a row. My chat is going wild right now.'],
+ [/^I did it! Sorry, not sorry!$/,'I won! Oh, don\'t make that face. Come here, let me fix your hair.','Told you. Fix your weak spots.','I won. Logging that one. Permanently.'],
+ [/^Ha! Told you I'd win!$/,'I won! Oh no, are you okay? Here, have a tissue.','Ha. Called it.','Called it. I ran the numbers.'],
+ [/^Winner stays on! (.+), you're mine!$/,'Winner stays on! $1, be nice to me, okay?','Winner stays on. $1, you\'re next.','Winner stays on. $1, you\'re next in the queue.'],
+ [/^No way\.\.\. Rematch later/,'Oh! You beat me! Good job, sweetie. Rematch later, okay?','...Whatever. Rematch later. Count on it.','...Huh. Rematch later. I\'ll patch my strategy.'],
+ [/^Aww\. Next time, (.+)!$/,'Aww. Next time, $1! I\'ll bake you something anyway.','Tch. Next time, $1.','Next time, $1. I\'ll be watching.'],
+ [/^(.+), want to battle me too\?$/,'$1, want to battle me too? I\'ll go easy on you. Probably.','$1. Want a round with me too, or are you scared?','$1. Want a round with me too? I promise not to glitch. Much.'],
+ [/^Okay, okay, you're good!$/,'You\'re so good! I\'m telling everyone.','Fine. You\'re good. Happy now?','Okay. You\'re good. Noted.'],
+ [/^Hehe, I'm on a roll!$/,'Hehe! Mama\'s on a roll!','Yeah, I\'m on a roll. Deal with it.','Win streak: two. Chat\'s spamming E06.'],
+ [/^Next time, then!$/,'Next time, then! Stay hydrated!','Your loss.','Next time, then. I\'ll keep the server warm.'],
+ [/^(?:Remember when we used to pretend sticks were Wyldkin\? Now they're real!|New region, same three of us\.) I'll be training up ahead, (.+)\.$/,'I packed you snacks for the road. Don\'t argue. I\'ll be training up ahead, $1. Call me if you need anything!','I\'m heading out. Try to keep up, $1.','I\'ll be up ahead, $1. If you need me, just look at the nearest screen.'],
+ [/^Don't get lost on Route 1 without me/,'Call me if anything happens on Route 1, okay? Anything at all. Bye, sweetie!','Don\'t get flattened on Route 1. I\'m not coming back to save you. ...I probably am.','Don\'t get lost on Route 1. If you do, find a TV. I\'ll find you.'],
+ [/^Hey, wait up! So you got Brenna's badge too/,'Sweetie, wait! You got Brenna\'s badge too? Let me see how much you\'ve grown!','So you got Brenna\'s badge too. Let\'s see if you actually earned it.','You got Brenna\'s badge too. Let\'s see your stats.'],
+ [/^You're getting good\. I'm heading to Ferrowick/,'You\'re getting so strong! I\'m heading to Ferrowick. Wear a jacket in Whisperwood, it gets chilly.','Not bad. I\'m going to Ferrowick. Try not to get lost in Whisperwood.','Not bad. I\'m heading to Ferrowick. Whisperwood messes with my signal, so don\'t expect texts.'],
+ [/^Hey! I knew you'd come this way\. I've been training on the mountain/,'There you are! I\'ve been training on the mountain. Let\'s see how you\'re doing, sweetie!','Knew you\'d come this way. I\'ve been training on the mountain. Let\'s go.','Knew you\'d come this way. The mountain has great reception. Let\'s go.'],
+ [/^The League is past Saltmarsh Harbor/,'The League is past Saltmarsh Harbor. I\'ll be there cheering for you, with snacks!','The League\'s past Saltmarsh. I\'ll be there. Don\'t keep me waiting.','The League\'s past Saltmarsh Harbor. I\'ll be there. Probably inside the scoreboard.'],
+ [/^The border lock took my whole team/,'They took all my babies at the border! Go see the Professor so we can get new partners, sweetie.','Border lock took my whole team. Even my Champion team. Go talk to the Professor before I break something.','The border lock grabbed my whole team. Something in it tried to grab me too. Weird. Go see the Professor.'],
+ [/^Starting over in a new region\?/,'Starting over? That\'s okay. New little ones to take care of!','Starting over. Whatever. More fire types to find.','New region, clean install. Kind of refreshing.'],
+ [/^What\?! I picked the wrong one!$/,'Oh! You did so well, sweetie!','Tch. Wrong pick. Won\'t happen again.',null],
+ [/^Aww! You two always were the strong ones\.$/,'Aww, you two were always the strong ones. I\'m so proud of you.','...Fine. You win this one.',null],
+ [/^Argh! Not again!$/,'Oh my, not again! You\'re amazing.','Again? Tch.',null],
+ [/^Again\?! How do you keep doing that\?$/,'How do you keep doing that? You have to teach me later!','How do you keep doing that? ...Don\'t answer.',null],
+ [/^(.+)! I caught my first wild Wyldkin! Want to see how strong my team is\?$/,'$1! Look at my new babies! Want to see how strong they\'ve gotten?',null,'$1! I caught a new one. Want to run a stress test on my team?'],
+ [/^(.+)! I've been studying type matchups\. Let's test my notes!$/,'$1! I\'ve been studying type matchups. Let\'s test my notes, sweetie!',null,'$1! I compiled a type chart. Let\'s test it.'],
+ [/^(.+)! I've seen so many Wyldkin out here\. My team is ready for anything!$/,'$1! I\'ve met so many sweet Wyldkin out here. My team is ready for anything!',null,'$1! I\'ve scanned every Wyldkin on this route. My team\'s optimized.'],
+ [/^Wow, you're good! I'll keep training\.$/,'You\'re so good! I\'ll keep training, I promise.',null,null],
+ [/^Yay! My first trainer win!$/,'Yay! I won! Don\'t be sad, come here.',null,'First trainer win. Screenshotting this.'],
+ [/^My notes said I'd win\.\.\. I need better notes!$/,'My notes said I\'d win... Oh well! I\'m proud of you anyway.',null,null],
+ [/^Ha! The notes were right!$/,'The notes were right! Now let\'s get your team healed up, sweetie.',null,'The chart was right. Data never lies.'],
+ [/^You really are something\. Good luck with the League!$/,'You really are something. Good luck at the League! I\'ll be cheering the loudest.',null,null],
+ [/^I won! I can't believe it!$/,'I won! Oh, I can\'t believe it! Group hug!',null,'I won? Running diagnostics. ...Yep. I won.'],
 ];
 function eggVoice(s){if(typeof s!=='string'||!G||!G.friends)return s;const m=/^(Rowan|Wren): ([\s\S]*)$/.exec(s);if(!m)return s;
-  const f=FR();const kd=eggKind(m[1]==='Rowan'?f.riv.name:f.pal.name);const col=kd==='bunny'?1:kd==='smashed'?2:0;if(!col)return s;
+  const f=FR();const kd=eggKind(m[1]==='Rowan'?f.riv.name:f.pal.name);const col=kd==='bunny'?1:kd==='smashed'?2:kd==='static'?3:0;if(!col)return s;
   for(const L of EGG_VOICE_LINES){const mm=L[0].exec(m[2]);if(mm&&L[col])return m[1]+': '+L[col].replace(/\$(\d)/g,(_,i)=>mm[+i]||'');}return s;}
+
+// ---------- what your rival / best friend says each time you beat them: a new line every battle ----------
+// Early lines never mention ByteBound (nobody knows about them yet); later ones can.
+const FRIEND_LOSE_LINES={
+ rowan:['What?! I picked the wrong one!','Argh! Not again!','Okay, that one was close. Really close. Don\'t smile like that.','Hmph. I was just warming up.','You got lucky with that crit. ...Fine, it wasn\'t luck.','Again?! How do you keep doing that?','Gramps is going to hear about this. From you, probably.','I\'ll train twice as hard. Three times. Watch me.','Ugh. You\'re actually good now. I hate it.','One of these days I\'m going to beat you, and you\'re going to have to admit it.','Losing to you never gets easier.','Fine. You\'re the better trainer. Today.','Even ByteBound couldn\'t stop you. I should\'ve known I couldn\'t either.','Okay. Okay. Rematch when we\'re old and gray.'],
+ wren:['Aww! You two always were the strong ones.','Wow, you\'re good! I\'ll keep training.','My notes said I\'d win... I need better notes!','That was so much fun, win or lose!','You make it look easy. Teach me that trick later?','I\'m writing this battle in my journal. The part where I lost is in very small letters.','Ooh, my team almost had you that time!','Every time I lose to you, I learn something new.','You really are something. Good luck with the League!','I\'m proud of you. Even if I\'m a little sad for me.','Nobody\'s ever going to catch up to you, are they?','One more CODEX page for you, one more lesson for me.','After everything with ByteBound... you\'re still the best trainer I know.','Win or lose, I\'m glad we\'re on this journey together.'],
+ bunny:['Aww, you won! I\'m so proud of you, sweetie.','Oh my, look at you go! Mama\'s impressed.','Okay, okay, you win. Now come here and let me fix your collar.','You beat me fair and square. Did you remember to drink water today?','My poor babies need a nap. And so do you. You look tired.','You\'re getting so strong. I might cry. Happy tears!','That\'s my sweetie! ...Even if you just flattened my team.','I\'m not mad. I\'m making you soup anyway.','You\'re amazing! Static would\'ve loved to see that... n-not that I was thinking about him.','Just promise me you\'ll stay away from hospitals out there, okay?','You\'ve grown up so fast. Who taught you that? ...Me? Aww.','Win or lose, you\'re still my favorite. Don\'t tell the others.','You took on ByteBound and still have energy for me? Go rest, sweetie.','My team\'s tired, but my heart\'s full. Good battle.'],
+ smashed:['Tch. Fine. You won. Don\'t let it go to your head.','...Okay, that was decent. Barely.','Your team\'s still sloppy. You just got lucky.','Whatever. My fire\'s having an off day.','Not bad. I still wouldn\'t trust you to make toast.','Hmph. You hit harder than you look.','Fine, you win. I\'m not saying good job. ...Good job.','Next time I\'m not holding back. I wasn\'t holding back this time either. Shut up.','You beat me. Don\'t make it weird.','Your type matchups are actually getting good. Gross.','Okay. You\'re the real deal. Happy?','Lost again. I\'m going to go set something on fire. Calmly.','You beat ByteBound and me in the same week. Show-off.','...You know I\'ve got your back, right? Even when you beat me. Especially then.'],
+ static:['Huh. Outcome logged: you win. I\'ll pretend I let you.','Error: unexpected loss. Rebooting my ego.','Nice. My chat would\'ve clipped that.','Okay, you found a bug in my strategy. Patch incoming.','My screen just went blank. That\'s my version of a sigh.','Recalculating... nope, still lost.','GG. No rematch. ...Okay, rematch later.','I ran ten thousand simulations of this battle. You won all of them. Rude.','I\'d say I lagged, but I am the network.','You keep winning. I\'m starting to think you\'re the glitch.','Saving the replay. For research. Definitely not to rewatch it.','That was good. Like, actually good. Don\'t tell anyone I said that.','ByteBound calls me a faulty process. You\'re the one breaking things.','Every time I lose to you, I feel a little more... real. Weird.']};
+function nextFriendLoseLine(slot){const f=FR();const kd=eggKind(slot==='riv'?f.riv.name:f.pal.name);const list=FRIEND_LOSE_LINES[kd||(slot==='riv'?'rowan':'wren')];
+  G.loseIdx=G.loseIdx||{};const i=G.loseIdx[slot]||0;G.loseIdx[slot]=i+1;
+  return list[i<list.length?i:3+((i-list.length)%(list.length-3))];}
 
 // =====================================================================
 //  Talking portraits: detailed 64x64 busts for story conversations and the intro.
@@ -4208,7 +4220,7 @@ async function startBattle(opts){
   if(tr&&(tr.name==='Rowan'||tr.name==='Wren')){const fn=tr.name==='Rowan'?FR().riv.name:FR().pal.name,kd=eggKind(fn);
     if(kd==='bunny'&&tr.party.length>1){tr.party=bunnyParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}
     if(kd&&eggHates(kd))tr.grudge=1;}
-  if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}tr.lose='Tch. Fine. You won. Your team\'s still sloppy though. Fix your weak spots before ByteBound finds them.';}
+  if(tr&&smashedTrainer(tr.name)){if(tr.party.length>1){tr.party=smashedParty(tr.party);tr.mons=tr.party.map(([n,l])=>makeMon(SP_BY[n].id,l));}}
   if(tr&&((tr.name==='Rowan'&&isBunny(FR().riv.name))||(tr.name==='Wren'&&isBunny(FR().pal.name))))tr.mons.forEach(m=>m._pink=1);
   if(tr&&tr.grudge)tr.mons.forEach(m=>{const pk=m._pink;Object.assign(m,makeMon(m.sid,Math.min(100,m.lvl+Math.max(1,Math.min(tr.party.length>1?4:2,Math.floor(m.lvl/12))))));if(pk)m._pink=1;});
   const assists=opts.assist?[].concat(opts.assist):[];
@@ -4236,7 +4248,7 @@ async function startBattle(opts){
   if(result==='win'||result==='caught')jingle('victory');
   if(result==='win'&&tr){
     await bsay(`${G.name} defeated ${tr.cls} ${tr.name}!`);B.fx.tf={look:tr.look,x:0};B.f.hidden=true;
-    await say(`${tr.name}: ${tr.lose}`);const money=tr.reward*tr.mons[tr.mons.length-1].lvl;G.money+=money;await bsay(`${G.name} got $${money} for winning!`);
+    await say(`${tr.name}: ${(tr.cls==='RIVAL'&&(tr.name==='Rowan'||tr.name==='Wren'))?nextFriendLoseLine(tr.name==='Rowan'?'riv':'pal'):tr.lose}`);const money=tr.reward*tr.mons[tr.mons.length-1].lvl;G.money+=money;await bsay(`${G.name} got $${money} for winning!`);
   }
   await fadeTo(1,12);
   for(const m of B.leveled){const sp=SPECIES[m.sid];if(G.party.includes(m)&&m.hp>0&&sp.evo&&m.lvl>=sp.evo.lvl)await evolveScene(m);}
