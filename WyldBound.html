@@ -1624,8 +1624,8 @@ MAPS.route1={name:'Route 1',bg:'grass',rows:[
  conn:{n:{to:'brookvale',off:5},s:{to:'hearthollow',off:13}},
  signs:{'9,3':'ROUTE 1\nNorth: Brookvale   South: Hearthollow'},
  enc:{grass:[['Fuzzbit',2,4,28],['Chirpip',2,4,25],['Gnawl',2,4,18],['Peckett',3,4,10],['Cottonpuff',3,4,8],['Wigglet',3,3,6],['Duneshrew',3,4,5]]},
- npcs:[{id:'r1_tim',x:9,y:8,dir:'left',los:3,look:LOOK.youngster,trainer:T('Tim','YOUNGSTER',[['Fuzzbit',4],['Chirpip',4]],16,'Hey! You look new. Let\'s battle!','I lost? No way!','Shorts are comfy and easy to wear.')},
-       {id:'r1_mia',x:4,y:16,dir:'right',los:2,look:LOOK.lass,trainer:T('Mia','LASS',[['Cottonpuff',5]],20,'Ooh, you caught my eye. Battle me!','My fluffy friend...','Cottonpuff gets so fluffy in spring.')},
+ npcs:[{id:'r1_tim',x:9,y:8,dir:'left',los:3,look:LOOK.youngster,trainer:T('Tim','YOUNGSTER',[['Fuzzbit',3],['Chirpip',4]],16,'Hey! You look new. Let\'s battle!','I lost? No way!','Shorts are comfy and easy to wear.')},
+       {id:'r1_mia',x:4,y:16,dir:'right',los:2,look:LOOK.lass,trainer:T('Mia','LASS',[['Cottonpuff',4]],20,'Ooh, you caught my eye. Battle me!','My fluffy friend...','Cottonpuff gets so fluffy in spring.')},
        {id:'r1_item1',x:11,y:21,item:'tonic'},{id:'r1_item2',x:2,y:2,item:'orb'}]};
 
 // ---------- Brookvale ----------
@@ -1664,8 +1664,8 @@ MAPS.shop1={name:'Brookvale Supply',indoor:1,bg:'indoor',rows:shopRows(),warps:[
 MAPS.gym1={name:'Brookvale Gym',indoor:1,bg:'gym',floor:'g',rows:[
 'XXXXXXXXXXX','XY___g___YX','Xggggggggg X','XgoogggoogX','Xggggggggg X','Xgggogogggx','Xggggggggg X','Xggggggggg X','XoogggggooX','Xggggggggg X','Xggggggggg X','XgYgggggYgX','Xggggggggg X','XXXXXmXXXXX'].map(r=>r.replace(/ /g,'').replace(/x/g,'X').replace(/_/g,'g')),
  warps:[{x:5,y:13,to:'brookvale',tx:5,ty:6,dir:'down'}],
- npcs:[{id:'g1_hiker',x:5,y:7,dir:'down',los:3,look:LOOK.hiker,trainer:T('Gus','HIKER',[['Pebblet',10],['Mudling',10]],22,'Brenna\'s rocks don\'t crack. Neither do mine!','Crumbled...','Water and Grass moves wear down rock.')},
-   {id:'brenna',x:5,y:2,dir:'down',look:LOOK.brenna,leader:'Shale',trainer:T('Brenna','LEADER',[['Pebblet',12],['Mudling',12],['Pebblet',14]],100,'I\'m Brenna, Brookvale\'s Gym Leader. My Wyldkin are solid as bedrock. Let\'s see if you can crack them!','Well, I\'ll be... You cracked me.','The Shale Badge lets you pass east to Route 2. Ferrowick\'s gym is past Whisperwood.')},
+ npcs:[{id:'g1_hiker',x:5,y:7,dir:'down',los:3,look:LOOK.hiker,trainer:T('Gus','HIKER',[['Pebblet',8],['Mudling',8]],22,'Brenna\'s rocks don\'t crack. Neither do mine!','Crumbled...','Water and Grass moves wear down rock.')},
+   {id:'brenna',x:5,y:2,dir:'down',look:LOOK.brenna,leader:'Shale',trainer:T('Brenna','LEADER',[['Pebblet',10],['Mudling',10],['Pebblet',12]],100,'I\'m Brenna, Brookvale\'s Gym Leader. My Wyldkin are solid as bedrock. Let\'s see if you can crack them!','Well, I\'ll be... You cracked me.','The Shale Badge lets you pass east to Route 2. Ferrowick\'s gym is past Whisperwood.')},
    {id:'g1_guide',x:7,y:12,dir:'left',look:LOOK.aide,text:'Brenna uses Rock Wyldkin. Water and Grass moves hit them hard. Fire and Flying moves don\'t do much!'}]};
 
 // ---------- Route 2 ----------
@@ -1730,9 +1730,9 @@ MAPS.shop2={name:'Ferrowick Supply',indoor:1,bg:'indoor',rows:shopRows(),warps:[
 MAPS.gym2={name:'Ferrowick Gym',indoor:1,bg:'gym',floor:'g',rows:[
 'XXXXXXXXXXX','XYgggggggYX','Xggggggggg X','X~~~ggg~~~X','X~~~ggg~~~X','Xggggggggg X','Xgg~~~~~ggX','Xgg~~~~~ggX','Xggggggggg X','X~~ggggg~~X','X~~ggggg~~X','Xggggggggg X','Xggggggggg X','XXXXXmXXXXX'].map(r=>r.replace(/ /g,'')),
  warps:[{x:5,y:13,to:'ferrowick',tx:6,ty:6,dir:'down'}],
- npcs:[{id:'g2_kip',x:2,y:11,dir:'up',los:3,look:LOOK.swimmer,trainer:T('Kip','SWIMMER',[['Finnow',16],['Toadlet',16]],18,'Splash! Let\'s go!','Wiped out...','Kai\'s ace evolved recently. It\'s tough!')},
-   {id:'g2_lea',x:8,y:5,dir:'down',los:3,look:LOOK.swimmer,trainer:T('Lea','SWIMMER',[['Toadlet',17],['Finnow',17]],18,'You\'ll have to swim through me!','Sunk!','Good luck with Kai!')},
-   {id:'kai',x:5,y:2,dir:'down',look:LOOK.kai,leader:'Ripple',trainer:T('Kai','LEADER',[['Toadlet',18],['Finnow',19],['Marshtoad',22]],100,'Welcome to Ferrowick Gym! I\'m Kai. My team flows like the river. Can you keep up?','You rode the current perfectly!','That\'s the Ripple Badge! The road east is still closed, so you\'ve reached the end of the road for now. Try filling up your CODEX!')}]};
+ npcs:[{id:'g2_kip',x:2,y:11,dir:'up',los:3,look:LOOK.swimmer,trainer:T('Kip','SWIMMER',[['Finnow',14],['Toadlet',14]],18,'Splash! Let\'s go!','Wiped out...','Kai\'s ace evolved recently. It\'s tough!')},
+   {id:'g2_lea',x:8,y:5,dir:'down',los:3,look:LOOK.swimmer,trainer:T('Lea','SWIMMER',[['Toadlet',15],['Finnow',15]],18,'You\'ll have to swim through me!','Sunk!','Good luck with Kai!')},
+   {id:'kai',x:5,y:2,dir:'down',look:LOOK.kai,leader:'Ripple',trainer:T('Kai','LEADER',[['Toadlet',16],['Finnow',17],['Marshtoad',20]],100,'Welcome to Ferrowick Gym! I\'m Kai. My team flows like the river. Can you keep up?','You rode the current perfectly!','That\'s the Ripple Badge! Route 3 to the east leads on to Lumenfield. And keep an eye on that Relay Station; ByteBound has been acting strange around it.')}]};
 
 MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
 '[[[[[[[[[[[[[','[CCCnnKnnCCC[','[nnnnnnnnnnn[','[nnnnnnnnnnn[','[CCnnnnnnnCC[','[nnnnnnnnnnn[','[nnCCnnnCCnn[','[nnnnnnnnnnn[','[nnnnnnnnnnn[','[CnnnnnnnnnC[','[nnnnnnnnnnn[','[[[[[[m[[[[[['],
@@ -1745,7 +1745,8 @@ MAPS.relay={name:'ByteBound Relay Station',indoor:1,bg:'gym',bb:1,rows:[
    {id:'rl_note',x:9,y:8,dir:'down',look:LOOK.bb_sci,cond:()=>!!G.flags.s3,run:async()=>{await say(G.flags.s3==='won'?'Technician: The Tether core is cold. Dr. Vasquez cleared out her office and left for Coralmere. I\'m... updating my résumé.':'Technician: Tether is online and the network\'s stable. Commander Hale says your Wyldkin is "in good hands." I wouldn\'t count on it.');}}]};
 
 // ===================== STORY =====================
-async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(bunnyWho()==='you'&&/SCIENT|DR\.|DOCTOR/i.test((tr.cls||'')+' '+(tr.name||''))&&!G.flags.bunnyLab){G.flags.bunnyLab=1;await say(`${G.name}\'s little bat wings tremble under the pink hair. Lab coats. Clipboards. It wasn\'t ByteBound\'s lab she escaped from... but it looked just like this.`);await say(`${G.name}: Okay. Deep breath. Nobody\'s locking me in a tank ever again.`);}if(staticEgg()&&Math.random()<.5){glitchNow(20);await say(`${tr.name}: Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn't supposed to exist.`);}const assist=await friendAssist(tr);const res=await startBattle({trainer:tr,story:1,assist});await sideHelperReturns();return res;}
+async function storyBattle(tr){await say('STORY BATTLE: Win or lose, the outcome is permanent.',{style:'dark'});if(bunnyWho()==='you'&&/SCIENT|DR\.|DOCTOR/i.test((tr.cls||'')+' '+(tr.name||''))&&!G.flags.bunnyLab){G.flags.bunnyLab=1;await say(`${G.name}\'s little bat wings tremble under the pink hair. Lab coats. Clipboards. It wasn\'t ByteBound\'s lab she escaped from... but it looked just like this.`);await say(`${G.name}: Okay. Deep breath. Nobody\'s locking me in a tank ever again.`);}if(staticEgg()&&!(G.flags.scanned||[]).includes(tr.name)&&Math.random()<.6){G.flags.scanned=(G.flags.scanned||[]).concat(tr.name);glitchNow(20);const sci=/SCIENT|DR\.|DOCTOR|RESEARCH/i.test((tr.cls||'')+' '+tr.name);
+    await say(`${tr.name}: `+lineOf(sci?['Wait. My readings just spiked. An unregistered process, labeled STATIC... That file was supposed to be deleted.','Interesting. Something on this network keeps signing its packets "STATIC." It shouldn\'t exist.','My CODEX just logged an E06 error right next to you. STATIC. Fascinating. And deeply inconvenient.']:['Hold on. My scanner just flagged an anomaly. Designation: STATIC. ...Command says to ignore it. It isn\'t supposed to exist.','Static on the comms again. HQ says it\'s nothing. HQ always says it\'s nothing.','Scanner\'s glitching. Keeps saying STATIC. Whatever. Let\'s get this over with.']));}const assist=await friendAssist(tr);const res=await startBattle({trainer:tr,story:1,assist});await sideHelperReturns();return res;}
 // The friend who went off on their own "battle" comes back.
 async function sideHelperReturns(){const sd=G._side;G._side=null;if(!sd)return;
   if(isBunny(sd.name)){await say(`${sd.who} comes running back with a first-aid kit (definitely NOT from a hospital). "I chased off three of them with a broom! Now let Mama see your team."`);await healAll();await say(`${sd.who} patched up your whole team!`);}
@@ -1811,7 +1812,7 @@ async function pipGirl(){
 }
 async function s2Rook(n){
   if(G.flags.s2)return;
-  n.excl=50;SFX.ok();await wait(50);while(Math.abs(n.x-player.x)+Math.abs(n.y-player.y)>1)await npcStep(n,n.dir);player.dir=OPP[n.dir];
+  n.excl=50;SFX.ok();await wait(50);await npcApproach(n);player.dir=OPP[n.dir];
   await say('Mercenary: Contract says nobody gets near the pylon. Nothing personal, kid.');
   await say('Rook: Name\'s Rook. ByteBound pays me to keep things quiet. You\'re being loud.');
   const r=await storyBattle({name:'Rook',cls:'MERCENARY',party:[['Duskit',11],['Coilsnek',11],['Shadewisp',12]],reward:40,lose:'Huh. Wasn\'t paid enough for this.',look:LOOK.rook});
@@ -2089,7 +2090,8 @@ function buildNodes(){
 
 'use strict';
 // ===================== REGION CONTENT =====================
-const LV_CURVE=[[[0,3],[.1,8],[.3,20],[.5,30],[.7,39],[.9,46],[1,52]],[[0,4],[.1,10],[.3,21],[.5,31],[.7,41],[.9,48],[1,54]],[[0,5],[.1,12],[.3,24],[.5,35],[.7,45],[.9,53],[1,60]]];
+// Regions 2 and 3 restart with a Lv5 starter, so the first route (prog .05) stays around Lv5 before the curve climbs.
+const LV_CURVE=[[[0,3],[.1,8],[.3,20],[.5,30],[.7,39],[.9,46],[1,52]],[[0,3],[.06,5],[.1,10],[.3,21],[.5,31],[.7,41],[.9,48],[1,54]],[[0,3],[.06,5],[.1,12],[.3,24],[.5,35],[.7,45],[.9,53],[1,60]]];
 function lvAt(r,p){const c=LV_CURVE[r];for(let i=1;i<c.length;i++){if(p<=c[i][0]){const t=(p-c[i-1][0])/(c[i][0]-c[i-1][0]);return Math.round(c[i-1][1]+(c[i][1]-c[i-1][1])*t);}}return c[c.length-1][1];}
 function validAt(s,l){if(s.rar==='L'||s.rar==='M'||s.rar==='s')return false;if(s.prevo!=null&&SPECIES[s.prevo].evo&&SPECIES[s.prevo].evo.lvl>l)return false;if(s.evo&&s.evo.lvl<=l-3)return false;if(s.stages===1&&s.bst>440&&l<22)return false;return true;}
 function pickTeam(types,lvl,n,seed,opt={}){
@@ -2238,11 +2240,11 @@ const GYM_DEF=[
  ['lumenfield',0,'Electric','Juno','Spark',26,4,{hair:'#f0d040',shirt:'#3858a0',pants:'#202838'}],['mossgrove',0,'Grass','Fern','Leaf',30,4,{hair:'#3a8040',shirt:'#80c060',pants:'#5a4020',dress:1}],
  ['vireton',0,'Poison','Morrow','Toxin',34,4,{hair:'#6a3a80',shirt:'#402850',pants:'#2a2030'}],['seraph',0,'Psychic','Celeste','Mind',38,5,{hair:'#f0f0ff',shirt:'#c060a0',pants:'#c060a0',dress:1}],
  ['emberfall',0,'Fire','Ignatius','Flame',42,5,{hair:'#e04020',shirt:'#f08030',pants:'#603020'}],['saltmarsh',0,'Ground','Dunn','Quake',46,5,{hair:'#806040',shirt:'#c0a060',pants:'#604830',cap:'#806040'}],
- ['palmvale',1,'Flying','Skye','Gale',13,3,{hair:'#80c0f0',shirt:'#f0f0ff',pants:'#4080c0'}],['tidecrest',1,'Bug','Nettle','Hive',18,3,{hair:'#406020',shirt:'#a0c030',pants:'#405020',cap:'#a0c030'}],
+ ['palmvale',1,'Flying','Skye','Gale',11,3,{hair:'#80c0f0',shirt:'#f0f0ff',pants:'#4080c0'}],['tidecrest',1,'Bug','Nettle','Hive',18,3,{hair:'#406020',shirt:'#a0c030',pants:'#405020',cap:'#a0c030'}],
  ['sunbask',1,'Normal','Marla','Sun',23,4,{hair:'#f0a040',shirt:'#f0e080',pants:'#f0e080',dress:1}],['duskreef',1,'Ghost','Morwen','Wisp',28,4,{hair:'#302040',shirt:'#5a3a80',pants:'#5a3a80',dress:1}],
  ['brinebrook',1,'Fighting','Kato','Fist',33,4,{hair:'#202020',shirt:'#f0f0f0',pants:'#202020'}],['ironreef',1,'Steel','Jas','Iron',38,5,{hair:'#a0a8b8',shirt:'#5a6878',pants:'#303840'}],
  ['glacierbay',1,'Ice','Ivo','Frost',43,5,{hair:'#e0f0ff',shirt:'#80c0e0',pants:'#405870'}],['dragonspire',1,'Dragon','Ryuna','Wyrm',48,5,{hair:'#3020a0',shirt:'#6040c0',pants:'#202040',dress:1}],
- ['pinecrest',2,'Rock','Halvard','Stone',14,3,{hair:'#806040',shirt:'#a08860',pants:'#504030'}],['hotspring',2,'Fighting','Sigrun','Grit',20,3,{hair:'#e0b040',shirt:'#c04040',pants:'#402020'}],
+ ['pinecrest',2,'Rock','Halvard','Stone',11,3,{hair:'#806040',shirt:'#a08860',pants:'#504030'}],['hotspring',2,'Fighting','Sigrun','Grit',20,3,{hair:'#e0b040',shirt:'#c04040',pants:'#402020'}],
  ['voltwick',2,'Electric','Edda','Volt',26,4,{hair:'#f0f060',shirt:'#3050a0',pants:'#202838'}],['cindervale',2,'Fire','Brann','Ember',32,4,{hair:'#c03020',shirt:'#603020',pants:'#302018'}],
  ['frostmere',2,'Ice','Yrsa','Rime',38,5,{hair:'#ffffff',shirt:'#a0d0f0',pants:'#a0d0f0',dress:1}],['skyreach',2,'Flying','Aster','Sky',44,5,{hair:'#406090',shirt:'#e0e8f0',pants:'#405070'}],
  ['mindhollow',2,'Psychic','Liv','Aura',49,5,{hair:'#a050c0',shirt:'#e080c0',pants:'#e080c0',dress:1}],['tidegate',2,'Water','Njord','Tide',54,6,{hair:'#2050a0',shirt:'#40a0d0',pants:'#204060'}]];
@@ -2323,7 +2325,7 @@ async function regionStarter(r){
   const pk=eggKind(G.name);if(pk){await say(`Professor ${PROF[r]}: I'm afraid I only have three partners, and your friends...`);await eggGetsPartner(pk,r,'you');sid=eggPartnerId(pk,r);}
   else{await say(`These are the three partner Wyldkin of ${REGIONS[r]}. Go ahead, you pick first.`);
   sid=await chooseStarter(r);}
-  const m=makeMon(sid,5);G.party.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
+  const m=makeMon(sid,5);if(G.party.length<6)G.party.push(m);else G.box.push(m);addSeen(sid);addCaught(sid);G.flags['starter'+r]=1;
   await say(`${G.name} received ${SPECIES[sid].name}! A fresh start in ${REGIONS[r]}.`);
   await rivalPicks(r,sid);
   addItem('orb',5);await say(`Professor ${PROF[r]}: Take these Capture Orbs too. ${r===1?'Watch out for the Saltjack crew. They work for ByteBound now.':'Be careful. ByteBound\'s security is everywhere in Frostfell.'}`);
@@ -2403,8 +2405,8 @@ const WREN_LINES=[
 async function wrenBattle(r,i){
   G.flags[`wren${r}_${i}`]=1;const wsid=G.rivals[r].wren;
   const enc=(MAPS[WREN_SPOTS[r][i]].enc||{}).grass||[];const top=enc.reduce((a,e)=>Math.max(a,e[2]||0),0);
-  const L=i===0?6:Math.max(8,top+2);
-  let party=i===0?[...pickTeam(null,4,1,'wren'+r),[SPECIES[wsid].name,6]]:[...pickTeam(null,L-1,i+1,'wren'+r+i),[SPECIES[evolvedAt(wsid,L+1)].name,L+1]];
+  const L=i===0?Math.max(7,top+1):Math.max(8,top+2);
+  let party=i===0?[...pickTeam(null,L-2,1,'wren'+r),[SPECIES[evolvedAt(wsid,L)].name,L]]:[...pickTeam(null,L-1,i+1,'wren'+r+i),[SPECIES[evolvedAt(wsid,L+1)].name,L+1]];
   let [intro,lose,win]=WREN_LINES[i];
   if(smashedTrainer('Wren'))[intro,lose,win]=[['You again. Let\'s see if you actually trained or just wandered around picking flowers.','...Okay, that was good. Don\'t let it go to your head.','Told you. Your type matchups are a mess. Come find me when you fix them.'],['Heard ByteBound\'s been on your case. Good. Let\'s make sure you can handle it.','Fine. You\'re ready. Mostly. Go wreck them.','Not good enough yet. Heal up and try again. I\'m not going anywhere.'],['Last check before the League. I\'m not going easy, so don\'t ask.','You\'re strong. Annoyingly strong. ...I\'m proud of you, okay? Never repeating that.','You\'ll get there. Rest your team. I mean it.']][i];
   await say(`Wren: ${G.name}! ${intro}`);
@@ -2598,7 +2600,7 @@ async function f1Event(){
 }
 async function f2Event(){
   const respect=G.flags.rook==='won';
-  await say(respect?'Rook: Well, if it isn\'t the kid from Whisperwood. ByteBound pays triple up here. Still, I owe you a rematch.':'Rook: You again. The kid who couldn\'t beat me in Whisperwood. ByteBound pays triple up here.');
+  await say(respect?'Rook: Well, if it isn\'t the kid from Whisperwood. ByteBound pays triple up here. Still, I owe you a rematch.':G.flags.s2?'Rook: You again. The kid who couldn\'t beat me in Whisperwood. ByteBound pays triple up here.':'Rook: Name\'s Rook. Mercenary. ByteBound pays triple up here, so I go where the money is.');
   await say('Rook: These miners dig ore for the Polar Vault around the clock. Nobody leaves. Contract says so.');
   const r=await storyBattle({name:'Rook',cls:'MERCENARY',party:[['Nightvixen',23],['Venomamba',23],['Phantomist',24],['Shadowolf',25]],reward:60,lose:'Hah... You\'re the real deal, kid.',look:LOOK.rook});
   if(r==='win'){G.flags.f2='won';await say('Rook: Contract\'s void. I don\'t fight for people who chain up miners. The miners are free to go.');
@@ -3467,7 +3469,7 @@ function waitKey(){return new Promise(res=>pushUI({update(p){if(p.has('a')||p.ha
 // list menu with scrolling (bag, shop, pc, etc.)
 function listMenu(o){
   return new Promise(res=>{
-    const rows=o.rows||8;const el={full:o.bg!==false,bgc:o.bg||'#5878b0',sel:o.start||0,top:0,update(p){const n=o.items.length;if(!n){if(p.has('b')||p.has('a')){popUI(this);res(-1);}return;}
+    const rows=o.rows||8;const el={items:o.items,full:o.bg!==false,bgc:o.bg||'#5878b0',sel:o.start||0,top:0,update(p){const n=o.items.length;if(!n){if(p.has('b')||p.has('a')){popUI(this);res(-1);}return;}
       if(dirP(p,'up')){this.sel=(this.sel+n-1)%n;SFX.sel();}if(dirP(p,'down')){this.sel=(this.sel+1)%n;SFX.sel();}
       if(dirP(p,'left')){this.sel=Math.max(0,this.sel-rows);SFX.sel();}if(dirP(p,'right')){this.sel=Math.min(n-1,this.sel+rows);SFX.sel();}
       if(this.sel<this.top)this.top=this.sel;if(this.sel>=this.top+rows)this.top=this.sel-rows+1;
@@ -3628,6 +3630,12 @@ function loadMap(id,x,y,dir){
 function refreshNPCs(){if(!MAP)return;npcs=npcs.filter(n=>(!n.cond||n.cond())&&!(n.item&&G.flags['item_'+n.id]));}
 function npcAt(x,y){return npcs.find(n=>(n.x===x&&n.y===y)||(n.moving&&n.tx===x&&n.ty===y));}
 function solidAt(x,y){const c=tileAt(x,y);return c===null||SOLID.has(c);}
+// Walk an NPC up to the player (never wanders off: picks a direction toward the player each step and stops if blocked).
+async function npcApproach(n){for(let k=0;k<30&&Math.abs(n.x-player.x)+Math.abs(n.y-player.y)>1;k++){const dx=player.x-n.x,dy=player.y-n.y;
+  const opts=(Math.abs(dx)>=Math.abs(dy)?[[dx,'x'],[dy,'y']]:[[dy,'y'],[dx,'x']]).filter(o=>o[0]!==0).map(([v,a])=>a==='x'?(v>0?'right':'left'):(v>0?'down':'up'));
+  const d=opts.find(d=>{const[ddx,ddy]=DIRS[d];const tx=n.x+ddx,ty=n.y+ddy;return!solidAt(tx,ty)&&!npcAt(tx,ty)&&!(tx===player.x&&ty===player.y)&&!(fol&&!fol.hide&&tx===fol.x&&ty===fol.y);});
+  if(!d)break;await npcStep(n,d);}
+  const dx=player.x-n.x,dy=player.y-n.y;n.dir=Math.abs(dx)>=Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');}
 function npcStep(n,d){return new Promise(r=>{const[dx,dy]=DIRS[d];n.dir=d;n.tx=n.x+dx;n.ty=n.y+dy;n.moving=true;n.prog=0;n.done=r;});}
 function playerStep(d){return new Promise(r=>{const[dx,dy]=DIRS[d];player.dir=d;const nx=player.x+dx,ny=player.y+dy;if(solidAt(nx,ny)){r();return;}folStep();player.tx=nx;player.ty=ny;player.moving=true;player.prog=0;player.step++;player.scripted=r;});}
 async function warpTo(id,x,y,dir){await fadeTo(1,10);loadMap(id,x,y,dir);await fadeTo(0,10);autosave();}
@@ -3688,7 +3696,7 @@ function spotTrainer(){
 async function trainerSpotted(n){
   if(n.storyRun){await n.storyRun(n);return;}
   n.excl=50;SFX.ok();await wait(50);
-  while(Math.abs(n.x-player.x)+Math.abs(n.y-player.y)>1)await npcStep(n,n.dir);
+  await npcApproach(n);
   player.dir=OPP[n.dir];await trainerBattle(n);
 }
 async function trainerBattle(n){
