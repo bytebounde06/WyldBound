@@ -2123,11 +2123,37 @@ const BADGE_REGION={Shale:0,Ripple:0};
 
 // ---------- GYMS ----------
 const LEADERS={};
+
+// Each generated gym leader's own voice: [intro, lose, after]. {B} becomes the badge name.
+const LEADER_LINES={
+ Juno:['Lumenfield never goes dark, and neither do my Electric Wyldkin. Ready for a shock?','Bzzt... okay, you short-circuited me. The {B} Badge is yours.','The {B} Badge! North on Route 4 is Mossgrove. Fern\'s Grass types drink up Water moves, so plan ahead.'],
+ Fern:['Shh. Listen to the old trees. My Grass Wyldkin have grown here for a hundred years. Let\'s see if you have roots.','You weathered the storm. Take the {B} Badge, and walk gently through my forest.','Seeds take time. So do trainers. You\'re growing faster than most.'],
+ Morrow:['Vireton breathes fumes and grit, and so do I. My Poison Wyldkin don\'t play fair. Neither does the world.','Tch. Clean win. I hate that. The {B} Badge is yours.','Keep an eye on that ByteBound Data Center here in town. They\'ve been venting things I don\'t like.'],
+ Celeste:['I saw you coming three days ago. I even saw how this battle ends... but I\'d still like to watch it.','Hm. The vision was blurry on this part. The {B} Badge belongs to you.','The road to Emberfall is hot and bright. I see a lot of fire in your future. Pack Water types.'],
+ Ignatius:['Emberfall was built on a volcano, and my temper was too! Bring the heat or get burned!','HA! You put out my fire! Take the {B} Badge and wear it proudly!','Saltmarsh is next, and Dunn\'s Ground types laugh at Electric moves. Don\'t say I didn\'t warn you!'],
+ Dunn:['Out here, the ground decides who stands and who falls. My Ground Wyldkin have never lost their footing. Let\'s dig in.','The earth shifted under me. That\'s a first. The {B} Badge is yours.','Eight badges. Victory Cave is north. Past it, the League. Don\'t look back.'],
+ Skye:['Welcome to Palmvale! My Flying Wyldkin ride the sea breeze. Try to keep your feet on the ground!','Whoa! You knocked me right out of the sky. The {B} Badge is yours, fresh off the boat and already flying.','Starting over in a new region takes guts. You\'ve got them. Tidecrest is north, past Route 22.'],
+ Nettle:['Bugs outnumber every trainer in Coralmere a million to one. My Bug Wyldkin work as a swarm. Hope you brought Fire.','You squashed the whole hive. Respect. The {B} Badge is yours.','Sunbask is north. Marla\'s team looks plain, but plain doesn\'t mean weak.'],
+ Marla:['Sunbask is all beaches and ice cream, and my Normal Wyldkin are just as easygoing. Until they aren\'t.','Well, aren\'t you a ray of sunshine. Here\'s the {B} Badge, sweetie.','Normal types don\'t have fancy weaknesses. Neither do good trainers. Keep it simple out there.'],
+ Morwen:['The reef glows after dark because of the ones who never left. My Ghost Wyldkin remember every trainer who lost here.','You\'re still warm. Lucky you. Take the {B} Badge and go before the lights fade.','Normal and Fighting moves pass right through my team. You learned that the hard way, didn\'t you?'],
+ Kato:['I trained in the waterfall behind this gym for twelve years. My Fighting Wyldkin don\'t know the word "quit." Bow, then fight!','A clean strike. I am honored. The {B} Badge is yours.','Strength without discipline breaks. Remember that when ByteBound tests you.'],
+ Jas:['Ironreef forges the strongest hulls in the world. My Steel Wyldkin were hammered out the same way. Let\'s see you dent them.','Cracked my armor clean through. Fine work. The {B} Badge is yours.','Fire and Ground melt and crumble steel. Fighting dents it too. Write that down.'],
+ Ivo:['Glacier Bay is cold enough to freeze a heartbeat. My Ice Wyldkin keep perfectly still... right up until they strike.','You thawed me out. The {B} Badge is yours, and it\'s colder than it looks.','Dragonspire is the last gym in Coralmere. Ryuna\'s dragons hate the cold. Remember that.'],
+ Ryuna:['The dragons of Dragonspire choose their trainers, not the other way around. Mine chose me. Let\'s see if they respect you.','My dragons... are bowing to you. Then so will I. Take the {B} Badge.','Victory Isle is beyond the spire. The Coralmere League waits for you there.'],
+ Halvard:['Frostfell is hard rock under hard snow, and so are we. A fresh start, eh? My Rock Wyldkin will test what you\'re made of.','Ha! You split the stone. Good. The {B} Badge is yours.','Up here the cold tests everyone. Stay warm, keep moving, and check in at every Rest Center.'],
+ Sigrun:['The hot springs keep us strong all winter. My Fighting Wyldkin train in steam and snow. Show me your guard!','Ooh, that one stung! The {B} Badge is yours. Go soak your team in the springs, they earned it.','Voltwick is north. Bring a Ground type. Trust me.'],
+ Edda:['Voltwick runs on the storm. Every light in town is wired to my Electric Wyldkin. Brace yourself!','Power outage! You beat me fair. The {B} Badge is yours.','The Deep Mine under town has gone quiet since ByteBound moved in. Something\'s wrong down there.'],
+ Brann:['Cindervale\'s forges never cool. My Fire Wyldkin were born in the embers below the mountain. Come close and feel the heat.','You smothered my flames. Few can. The {B} Badge is yours.','The ice past Route 35 will try to put you out. Don\'t let it.'],
+ Yrsa:['Frostmere\'s lake hasn\'t thawed in a hundred years. My Ice Wyldkin are just as patient. Shall we begin?','You cracked the ice. How lovely. The {B} Badge is yours.','Skyreach is north. The air up there is thin, and Aster\'s Flying types love it.'],
+ Aster:['Skyreach touches the clouds. My Flying Wyldkin were born up here, above the storms. Look up!','Brought down to earth. Nicely done. The {B} Badge is yours.','From up here you can see the Polar Vault\'s lights. Whatever ByteBound is doing, it\'s getting bigger.'],
+ Liv:['Mindhollow is very quiet. That\'s so we can hear what people are really thinking. You\'re nervous. That\'s fine.','You stopped thinking and just battled. That\'s why you won. The {B} Badge is yours.','One gym left. Tidegate. Njord is the strongest leader in Frostfell. Clear your mind before you go.'],
+ Njord:['The tide rises for no one, trainer. I am the last gym of Frostfell, and my Water Wyldkin have sunk every challenger this season.','The tide... turned. The {B} Badge is yours, and with it, the road to the Frostfell League.','Victory Peak is past the town. And beyond it... whatever ByteBound has waiting. Go.'],
+};
 function L(map,region,type,name,badge,lvl,n,look,intro){
   BADGE_REGION[badge]=region;
   LEADERS[map]={id:'leader_'+map,name,type,badge,look,party:pickTeam([type],lvl,n,'L'+name,{ace:2}),region,lvl,
-    intro:intro||`I'm ${name}, ${MAPS[map]?MAPS[map].name:''} Gym's leader. My ${type} Wyldkin are ready. Show me what you've got!`,
-    lose:`You beat me fair and square. The ${badge} Badge is yours.`,after:`With the ${badge} Badge, you\'re one step closer to the ${REGIONS[region]} League.`};
+    intro:intro||(LEADER_LINES[name]?LEADER_LINES[name][0]:`I'm ${name}, ${MAPS[map]?MAPS[map].name:''} Gym's leader. My ${type} Wyldkin are ready. Show me what you've got!`),
+    lose:LEADER_LINES[name]?LEADER_LINES[name][1].replace('{B}',badge):`You beat me fair and square. The ${badge} Badge is yours.`,after:LEADER_LINES[name]?LEADER_LINES[name][2].replace('{B}',badge):`With the ${badge} Badge, you\'re one step closer to the ${REGIONS[region]} League.`};
 }
 // ---------- NODES: ALDERA ----------
 function defineAldera(){
@@ -2373,7 +2399,7 @@ async function rivalPicks(r,sid){
   const bf=isBunny(FR().pal.name)?'Wren':isBunny(FR().riv.name)?'Rowan':null;
   if(bf&&r===0){await say(`${bf}: Aww, look at its little face! Don\'t you worry, sweetie, I\'ll take such good care of you.`);await say(`${bf}: Hey ${G.name}... have you ever noticed the TV static sometimes looks like it\'s smiling? N-never mind! Forget I said anything!`);}
   await say(r===0?`Wren: Remember when we used to pretend sticks were Wyldkin? Now they're real! I'll be training up ahead, ${G.name}.`:`Wren: New region, same three of us. I'll be training up ahead, ${G.name}.`);
-  await say('Rowan: Smell ya-- I mean, see you around!');
+  await say('Rowan: Don\'t get lost on Route 1 without me, okay? Kidding. Mostly. See you up ahead!');
   if(nuzOn()){G.nuz.active=true;G.party.forEach(healMon);await say('NUZLOCKE: The rules are now in effect. Good luck.',{style:'dark'});}
 }
 // Rowan and Wren's Wyldkin spar in the lab for a few seconds. Returns true if Wren wins.
@@ -3309,6 +3335,10 @@ function assignEncounters(){
     const natFish=fishers.filter(s=>s.region===r);
     natFish.forEach((s,i)=>{if(fishMaps.length)add(fishMaps[i%fishMaps.length].id,s,s.rar==='u'?5:12,'fish');if(fishMaps.length>1)add(fishMaps[(i+3)%fishMaps.length].id,s,6,'fish');});
     fishMaps.forEach(m=>{const R=mulberry32(hashStr(m.id+'f'));if(r===0)add(m.id,SP_BY.Flopfish,14,'fish');while(tables[m.id].fish.length<4)add(m.id,fishers[Math.floor(R()*fishers.length)],6,'fish');(RARE_FISH[m.id]||[]).forEach(([nm,w])=>add(m.id,SP_BY[nm],w,'fish'));});
+    // Crowded grass tables (lots of common natives on one route) get tiered odds and a little level spread, so some Wyldkin feel rare.
+    maps.forEach(m=>{const g=tables[m.id].grass;const com=g.filter(e=>e[3]>=12);if(com.length<6)return;const R=mulberry32(hashStr(m.id+'tier'));
+      for(let i=com.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[com[i],com[j]]=[com[j],com[i]];}
+      const W=[22,18,15,12,10,8,6,5,4,3,3,2,2,2,1,1];com.forEach((e,i)=>{e[3]=W[Math.min(i,W.length-1)];const lo=e[1]+Math.floor(R()*3)-1,hi=e[2]+Math.floor(R()*3)-1;e[1]=Math.max(2,Math.min(lo,hi));e[2]=Math.max(e[1],hi);});});
     maps.forEach(m=>{MAPS[m.id].enc={grass:tables[m.id].grass,fish:tables[m.id].fish.length?tables[m.id].fish:null};});
   }
   // fishing on hand-made Aldera maps
