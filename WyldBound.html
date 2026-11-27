@@ -1301,6 +1301,7 @@ function drawWindow(x,steel){const g=PAL.glass;const F=steel?PAL.metal:PAL.wood;
 function drawDoor(x,steel){if(steel){const m=PAL.metal;px(x,m[0],3,2,10,14);px(x,m[2],4,3,4,13);px(x,m[3],8,3,4,13);px(x,m[0],8,3,1,13);px(x,'#40e0d8',6,7,4,1);px(x,'#a0fff8',7,7,2,1);return;}
   const w=PAL.wood;px(x,w[0],3,2,10,14);px(x,w[1],4,3,8,13);px(x,w[2],5,4,6,5);px(x,w[2],5,10,6,5);px(x,w[3],5,4,1,5);px(x,w[3],5,10,1,5);px(x,'#f0d060',10,9,1,2);px(x,'#9a9090',2,15,12,1);px(x,'#c8c0b8',3,15,10,1);}
 function variant(key,fn){return TCACHE[key]||(TCACHE[key]=tileCanvas(fn));}
+function getPC(){return variant('P',x=>{floorBase(x,3,1);const m=PAL.metal;px(x,m[0],2,1,12,14);px(x,m[2],3,2,10,8);px(x,'#183048',4,3,8,6);px(x,'#40c8f0',5,4,6,4);px(x,'#c0f8ff',5,4,3,1);px(x,m[1],4,11,8,3);px(x,m[3],4,11,8,1);});}
 function getTile(ch,nb,X,Y,frame,indoor){
   const f=frame%2;
   switch(ch){
@@ -1309,7 +1310,7 @@ function getTile(ch,nb,X,Y,frame,indoor){
     case ';':{const v=(X*3+Y*5)%4;return variant(';'+v,x=>sandBase(x,v));}
     case 'q':{const v=(X*3+Y*5)%4;return variant('q'+v,x=>caveBase(x,v));}
     case 'v':return variant('v'+((X+Y)%2),x=>{snowBase(x,(X+Y)%2);const g=RP('#7ab890');for(let row=0;row<2;row++)for(let col=0;col<2;col++){const ox=col*8,oy=row*8+1;px(x,g[0],ox+1,oy+5,7,2);[[1,2,4],[3,0,6],[5,1,5],[7,2,4]].forEach(([bx,t,h])=>{px(x,g[1],ox+bx,oy+t+1,1,h);px(x,'#ffffff',ox+bx,oy+t,1,1);});[[2,1,5],[4,0,6],[6,1,5]].forEach(([bx,t,h])=>{px(x,g[2],ox+bx,oy+t+1,1,h);px(x,g[4],ox+bx,oy+t,1,1);});}});
-    case 'P':return variant('P'+((X*7+Y*3)%3),x=>{const sd=(X*7+Y*3)%3;groundBase(x,sd,GROUND===':'?':':'.');const t=PAL.pine,k=PAL.trunk;px(x,'rgba(0,0,0,.2)',3,14,11,2);px(x,k[1],7,12,2,3);
+    case 'P':if(indoor)return getPC();return variant('P'+((X*7+Y*3)%3),x=>{const sd=(X*7+Y*3)%3;groundBase(x,sd,GROUND===':'?':':'.');const t=PAL.pine,k=PAL.trunk;px(x,'rgba(0,0,0,.2)',3,14,11,2);px(x,k[1],7,12,2,3);
       for(let i=0;i<4;i++){const y=1+i*3,w=3+i*2;px(x,t[0],8-w-1,y+3,w*2+2,1);px(x,t[1],8-w,y+1,w*2,3);px(x,t[2],8-w,y+1,w,2);px(x,t[3],8-w+1,y+1,2,1);if(GROUND===':'){px(x,'#f4f8ff',8-w,y,w+1,1);px(x,'#d8e4f0',8,y,w-1,1);}}});
     case 'p':return variant('p'+((X*7+Y*3)%3),x=>{const sd=(X*7+Y*3)%3;groundBase(x,sd,GROUND===';'?';':'.');const t=PAL.palm,k=PAL.trunk;px(x,'rgba(0,0,0,.2)',4,14,10,2);
       for(let i=0;i<10;i++){px(x,i%2?k[1]:k[2],7+Math.round(Math.sin(i/3)*1),5+i,2,1);}
@@ -1340,7 +1341,7 @@ function getTile(ch,nb,X,Y,frame,indoor){
     case 't':return variant('t'+((X+Y)%5),x=>{floorBase(x,(X+Y)%5,1);const w=PAL.wood;px(x,'rgba(0,0,0,.2)',2,13,13,2);px(x,w[0],1,3,14,10);px(x,w[2],2,3,12,8);px(x,w[3],2,3,12,2);px(x,w[4],3,3,4,1);px(x,w[1],2,10,12,1);px(x,w[0],2,13,2,3);px(x,w[0],12,13,2,3);});
     case 'b':return variant('b',x=>{floorBase(x,1,1);const w=PAL.wood,B=RP('#4870c8');px(x,w[0],1,0,14,16);px(x,'#f8f8f8',2,1,12,4);px(x,'#d8d8e8',2,4,12,1);px(x,B[2],2,5,12,10);px(x,B[3],2,5,12,2);px(x,B[1],2,13,12,2);px(x,B[4],3,5,3,1);});
     case 'c':return variant('c',x=>{floorBase(x,2,2);const w=PAL.wood;px(x,w[0],0,2,16,14);px(x,'#f4ece0',0,2,16,4);px(x,'#ffffff',0,2,16,1);px(x,'#c8c0b0',0,6,16,1);px(x,w[2],0,7,16,8);px(x,w[1],0,11,16,1);px(x,w[3],0,7,16,1);});
-    case 'P':return variant('P',x=>{floorBase(x,3,1);const m=PAL.metal;px(x,m[0],2,1,12,14);px(x,m[2],3,2,10,8);px(x,'#183048',4,3,8,6);px(x,'#40c8f0',5,4,6,4);px(x,'#c0f8ff',5,4,3,1);px(x,m[1],4,11,8,3);px(x,m[3],4,11,8,1);});
+    // (PC tiles indoors are handled at the snow-pine case above; both use 'P')
     case 'H':return variant('H',x=>{floorBase(x,1,2);const R=RP('#d04858');px(x,R[0],1,2,14,12);px(x,R[2],2,3,12,10);px(x,'#f4f4f4',2,3,12,5);[[4,5],[8,5],[12,5]].forEach(([a,b])=>{px(x,R[2],a-1,b-1,3,3);px(x,R[4],a-1,b-1,1,1);});px(x,R[1],2,10,12,3);px(x,R[3],2,10,12,1);});
     case 'm':return variant('m',x=>{floorBase(x,4,0);const R=RP('#c84848');px(x,R[0],1,3,14,10);px(x,R[2],2,4,12,8);px(x,R[3],2,4,12,1);px(x,'#f8f0d0',4,7,8,2);});
     case 'V':return variant('V'+f,x=>{floorBase(x,2,0);const m=PAL.metal;px(x,'rgba(0,0,0,.2)',2,14,13,2);px(x,'#383038',1,3,14,11);px(x,'#585058',2,4,12,8);for(let yy=5;yy<11;yy++)for(let xx=3;xx<13;xx++){const v=hsh(xx,yy,f+9);px(x,v<.33?'#a8b0c0':v<.66?'#e8f0ff':'#6878a0',xx,yy);}px(x,'#282028',4,14,2,2);px(x,'#282028',10,14,2,2);px(x,'#e04848',12,12,1,1);});
