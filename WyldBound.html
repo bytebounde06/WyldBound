@@ -3511,8 +3511,8 @@ function staticEgg(){return!!G&&(isStatic(G.name)||(G.friends&&(isStatic(G.frien
 const GL={t:0,len:0,cd:6000,err:0};
 function glitchNow(len){GL.t=GL.len=len||18;if(AC&&G&&G.opts.sound){for(let i=0;i<4;i++)setTimeout(()=>beep(80+Math.random()*1800,.03,'sawtooth',.03),i*40);}}
 function glitchTick(){if(!staticEgg()||scene==='title')return;if(GL.t>0)GL.t--;if(GL.err>0)GL.err--;
-  // Ambient effect stays subtle: no full-screen glitch, just a rare ERROR E06 tag flickering in the corner every few minutes.
-  if(--GL.cd<=0){GL.cd=12000+Math.floor(Math.random()*12000);if(scene==='world')GL.err=110;}}
+  // Ambient effect stays subtle: no full-screen glitch, just a rare ERROR E06 tag in the corner every few minutes, and only when the player is Static.
+  if(isStatic(G.name)&&--GL.cd<=0){GL.cd=12000+Math.floor(Math.random()*12000);if(scene==='world')GL.err=110;}}
 function glitchDraw(c){if(!staticEgg()||scene==='title')return;
   if(GL.t>0){const cv=c.canvas;c.save();c.setTransform(1,0,0,1,0,0);const Wd=cv.width,Hd=cv.height;
     for(let i=0;i<5;i++){const y=Math.floor(Math.random()*Hd),h=Math.floor(4+Math.random()*Hd/10),dx=Math.floor((Math.random()-.5)*Wd*.12);c.drawImage(cv,0,y,Wd,h,dx,y,Wd,h);}
