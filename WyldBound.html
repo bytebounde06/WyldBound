@@ -2643,7 +2643,7 @@ async function s3Event(){
 }
 function applyMods(){if(!MAP)return;MAP.cur=MAP.rows.map(r=>r.split(''));const m=MAP.mods?MAP.mods():[];m.forEach(([x,y,c])=>{if(MAP.cur[y])MAP.cur[y][x]=c;});}
 
-const ENC_RATE=0.1, DRIFTER_RATE=0.05;
+const ENC_RATE=0.1, DRIFTER_RATE=0.02;
 // Region rules: wild Wyldkin in a region come from that region or earlier ones (R1 everywhere, R2 in R2+R3, R3 only in R3)
 function driftPool(region){return SPECIES.filter(s=>s.stage===0&&!s.prevo&&(s.rar==='c'||s.rar==='u')&&s.region<=region).map(s=>s.id);}
 function rollEncounter(table){const DRIFTERS=driftPool(MAP.region||0);
@@ -2651,7 +2651,7 @@ function rollEncounter(table){const DRIFTERS=driftPool(MAP.region||0);
   for(const e of table){r-=e[3];if(r<=0){pick=e;break;}}
   const lvl=pick[1]+Math.floor(Math.random()*(pick[2]-pick[1]+1));
   const rg=MAP.region||0;if((G.champs||[]).includes(rg)&&!MAP.town&&Math.random()<.03)return makeMon(STARTERS[rg*3+Math.floor(Math.random()*3)],lvl);
-  if(Math.random()<DRIFTER_RATE){const sid=DRIFTERS[Math.floor(Math.random()*DRIFTERS.length)];return makeMon(sid,lvl);}
+  if(MAPID!=='route1'&&Math.random()<DRIFTER_RATE){const sid=DRIFTERS[Math.floor(Math.random()*DRIFTERS.length)];return makeMon(sid,lvl);}
   return makeMon(SP_BY[pick[0]].id,lvl);
 }
 
