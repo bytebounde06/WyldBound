@@ -5029,7 +5029,7 @@ async function startBattle(opts){
   return result;
 }
 async function whiteout(){
-  const lost=Math.floor(G.money/2);G.money-=lost;const h=G.lastHeal;loadMap(h.map,h.x,h.y,'down');G.party.forEach(healMon);
+  const top=Math.max(1,...G.party.map(m=>m.lvl));const per=[8,16,24,36,48,64,80,100,120][Math.min(8,(G.badges||[]).length)];const lost=Math.min(G.money,per*top);G.money-=lost; // Gen 4 style: scales with badges and your highest level, not half your walletconst h=G.lastHeal;loadMap(h.map,h.x,h.y,'down');G.party.forEach(healMon);
   await fadeTo(0,20);await say(`${G.name} dropped $${lost} and hurried back to safety. Your Wyldkin were healed.`);autosave();
 }
 
