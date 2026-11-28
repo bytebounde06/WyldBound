@@ -2466,7 +2466,7 @@ MAPS.woods={name:'Whisperwood',bg:'forest',dark:()=>G.flags.s2==='lost'?.4:.22,m
  conn:{w:{to:'route2',off:-4},e:{to:'ferrowick',off:0}},
 encFn:()=>{const e=MAPS.woods.encBase;if(G.flags.s2==='lost')return{grass:[['Coilorb',10,12,25],['Sparkfly',10,12,15],['Coilsnek',9,11,12],['Batling',9,11,12],['Stingmite',8,10,10],['Husklet',9,10,8],['Sporemite',9,11,8],['Blastorb',10,12,10]]};if(G.flags.s2==='won')return{grass:e.grass.concat([['Lanternwisp',13,14,2],['Wisplet',10,12,4]])};return e;},
  encBase:{grass:[['Wigglet',7,9,10],['Cocoonix',8,9,6],['Stingmite',7,9,10],['Husklet',8,9,6],['Mossnail',8,11,9],['Sparkfly',9,11,7],['Mothfuzz',9,11,8],['Sporemite',9,11,8],['Batling',9,11,8],['Fuzzbit',9,11,5],['Ashkit',10,11,3],['Wisplet',10,11,3],['Shadewisp',10,11,3],['Mindlet',10,10,3],['Coilorb',10,11,3],['Bladewing',11,11,1],['Slumbear',11,11,1]]},
- npcs:[{id:'ww_lou',x:13,y:12,dir:'up',los:3,look:LOOK.bug,trainer:T('Lou','BUG CATCHER',[['Husklet',10],['Waspire',12]],14,'The woods are full of bugs. Mine are the best!','Buzz off...','Whisperwood goes on for a while. Watch for Wyldkin that only come out at dusk.')},
+ npcs:[{id:'ww_lou',x:13,y:12,dir:'up',los:3,look:LOOK.bug,trainer:T('Lou','BUG CATCHER',[['Husklet',10],['Waspire',12]],14,'The woods are full of bugs. Mine are the best!','Buzz off...','Whisperwood goes on for a while. Some Wyldkin here only come out at night. Bring a light!')},
    {id:'ww_ivy',x:2,y:7,dir:'down',los:2,look:LOOK.lass,trainer:T('Ivy','LASS',[['Mossnail',12],['Fuzzbit',11]],22,'Isn\'t the forest pretty? Let\'s battle!','Oh, the leaves fell...','I heard a Lanternwisp lights up these woods at night.')},
    {id:'ww_ray',x:12,y:3,dir:'left',los:3,look:LOOK.bug,trainer:T('Ray','BUG CATCHER',[['Flutterwing',12],['Dotbug',12]],14,'Zap! Flutter! Get ready!','My wings are clipped...','Sparkfly glow when it\'s about to storm.')},
    {id:'ww_nora',x:23,y:6,dir:'left',los:1,look:LOOK.mystic,trainer:T('Nora','MYSTIC',[['Wisplet',12],['Gloomling',13]],24,'The spirits told me you would come...','The spirits are... surprised.','Ghost moves can\'t touch Normal Wyldkin, and Normal moves pass right through ghosts.')},
@@ -2643,10 +2643,32 @@ async function s3Event(){
 }
 function applyMods(){if(!MAP)return;MAP.cur=MAP.rows.map(r=>r.split(''));const m=MAP.mods?MAP.mods():[];m.forEach(([x,y,c])=>{if(MAP.cur[y])MAP.cur[y][x]=c;});}
 
+
+// ===================== DAY / NIGHT (phone clock, Gen 2 style) =====================
+// Morning 4:00-9:59, Day 10:00-17:59, Night 18:00-3:59.
+function dayPhase(d){const h=(d||new Date()).getHours();return h>=4&&h<10?'morn':h>=10&&h<18?'day':'night';}
+const PHASE_NAME={morn:'MORNING',day:'DAY',night:'NIGHT'};
+function outdoorMap(){return MAP&&!MAP.indoor&&!MAP.cave;}
+const NIGHT_RX=/night|dusk|moon|luna|gloom|shade|wisp|lantern|bat|owl|hoot|noct|shadow|umbra|star|grave|ghoul|phantom|spook|haunt/i;
+const DAY_RX=/sun|sol|bloom|petal|flower|butter|bee|wasp|lily|blossom|day|dawn|bright|honey|daisy|bask/i;
+const _tk={};
+function timeKind(sp){if(_tk[sp.id]!==undefined)return _tk[sp.id];const c=conceptOf(sp);
+  const n=sp.types.includes('Ghost')||sp.types.includes('Dark')||c.plan==='owl'||c.plan==='bat'||NIGHT_RX.test(sp.name);
+  return _tk[sp.id]=n?'night':DAY_RX.test(sp.name)?'day':'';}
+const TIME_MUL={night:{morn:.6,day:.12,night:2.5},day:{morn:1.2,day:1.6,night:.12}};
+// Extra Wyldkin that only show up after dark on certain routes.
+const NIGHT_EXTRA={woods:[['Wisplet',10,12,6],['Lanternwisp',13,14,2]],route1:[['Batling',3,4,5]],route2:[['Batling',6,8,5],['Shadewisp',7,8,3]]};
+function timeTable(table){if(!outdoorMap())return table;const ph=dayPhase();
+  let t=table.map(e=>{const k=timeKind(SP_BY[e[0]]);return k?[e[0],e[1],e[2],e[3]*TIME_MUL[k][ph]]:e;});
+  if(ph==='night'){(NIGHT_EXTRA[MAPID]||[]).forEach(x=>{if(!t.some(e=>e[0]===x[0]))t.push(x.slice());});
+    if(!NIGHT_EXTRA[MAPID]&&!MAP.town&&!t.some(e=>timeKind(SP_BY[e[0]])==='night')){
+      const rg=MAP.region||0;const pool=SPECIES.filter(s=>s.prevo==null&&(s.rar==='c'||s.rar==='u')&&s.region===rg&&timeKind(s)==='night'&&!s.types.includes('Water'));
+      if(pool.length){const sp=pool[hashStr(MAPID+'night')%pool.length];const lv=Math.max(...t.map(e=>e[2]));t.push([sp.name,Math.max(2,lv-2),lv,5]);}}}
+  return t;}
 const ENC_RATE=0.1, DRIFTER_RATE=0.02;
 // Region rules: wild Wyldkin in a region come from that region or earlier ones (R1 everywhere, R2 in R2+R3, R3 only in R3)
 function driftPool(region){return SPECIES.filter(s=>s.stage===0&&!s.prevo&&(s.rar==='c'||s.rar==='u')&&s.region<=region).map(s=>s.id);}
-function rollEncounter(table){const DRIFTERS=driftPool(MAP.region||0);
+function rollEncounter(table){const DRIFTERS=driftPool(MAP.region||0);table=timeTable(table);
   const tot=table.reduce((a,e)=>a+e[3],0);let r=Math.random()*tot,pick=table[0];
   for(const e of table){r-=e[3];if(r<=0){pick=e;break;}}
   const lvl=pick[1]+Math.floor(Math.random()*(pick[2]-pick[1]+1));
@@ -4605,6 +4627,15 @@ function camera(){
 function tileImg(ch,x,y){
   return getTile(ch,(dx,dy)=>{const t=tileAt(x+dx,y+dy);return t===null?ch:t;},x,y,Math.floor(frame/32),!!MAP.indoor);
 }
+function drawDayNight(c,cx,cy,x0,y0){if(!outdoorMap())return;const ph=dayPhase();if(ph==='day')return;
+  if(ph==='morn'){c.fillStyle='rgba(255,180,110,.14)';c.fillRect(0,0,W,H);return;}
+  c.save();c.globalCompositeOperation='multiply';c.fillStyle='#5462a8';c.fillRect(0,0,W,H);c.restore();
+  c.save();c.globalCompositeOperation='lighter';
+  const glow=(gx,gy,r,a,col)=>{const g=c.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(1,`rgba(${col},0)`);c.fillStyle=g;c.fillRect(gx-r,gy-r,r*2,r*2);};
+  for(let y=y0;y<=y0+Math.ceil(H/16)+1;y++)for(let x=x0;x<=x0+15;x++){const ch=tileAt(x,y);
+    if(ch==='w'||ch===']')glow(x*16-cx+8,y*16-cy+8,16,.5,'255,200,110');else if(ch==='D'||ch==='{')glow(x*16-cx+8,y*16-cy+12,18,.38,'255,190,100');}
+  const[,,ppx,ppy]=camera();glow(ppx-cx+8,ppy-cy+4,40,.16,'200,210,255');
+  c.restore();}
 function drawWorld(c){
   c.fillStyle='#101010';c.fillRect(0,0,W,H);
   const[cx,cy,ppx,ppy]=camera();
@@ -4624,6 +4655,7 @@ function drawWorld(c){
     const under=tileAt(player.moving&&player.prog>8?player.tx:player.x,player.moving&&player.prog>8?player.ty:player.y);
     if(under==='"'||under==='r')c.drawImage(getTile(under,()=>under,0,0,0,false),0,10,16,6,ppx-cx,ppy-cy+10,16,6);}});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw());
+  drawDayNight(c,cx,cy,x0,y0);
   if(MAP.dark){const d=typeof MAP.dark==='function'?MAP.dark():.22;c.fillStyle=`rgba(10,30,20,${d})`;c.fillRect(0,0,W,H);}
   if(mapLabel&&mapLabel.t>0){mapLabel.t--;const yy=mapLabel.t>130?-(mapLabel.t-130)*1.5:mapLabel.t<20?-(20-mapLabel.t)*1.5:0;box(c,4,4+yy,Math.max(90,mapLabel.text.length*6+20),20,'std');text(c,mapLabel.text,12,9+yy,'#404040',9);}
   if(player.bump>0)player.bump--;
@@ -4647,7 +4679,7 @@ async function startMenu(){
     else await trainerCard();
   }
 }
-function drawCard(c){box(c,8,8,150,96);text(c,'TRAINER CARD',16,14,'#e05050',9);text(c,`NAME: ${G.name}`,16,30);text(c,`MONEY: $${G.money}`,16,43);text(c,`CODEX: ${G.caught.length} caught / ${G.seen.length} seen`,16,56);text(c,`TIME: ${fmtTime(G.time)}`,16,69);text(c,`BADGES: ${G.badges.length?G.badges.join(', '):'none'}`,16,82);if((G.keys||[]).length){wrapText(c,`KEY ITEMS: ${G.keys.join(', ')}`,140,7).slice(0,2).forEach((l,i)=>text(c,l,16,92+i*8,'#605848',7));}if((G.champs||[]).length)text(c,`CHAMPION: ${G.champs.map(r=>REGIONS[r]).join(', ')}`,16,72+0,'#c04040',6);}
+function drawCard(c){box(c,8,8,150,96);text(c,'TRAINER CARD',16,14,'#e05050',9);text(c,`NAME: ${G.name}`,16,30);text(c,`MONEY: $${G.money}`,16,43);text(c,`CODEX: ${G.caught.length} caught / ${G.seen.length} seen`,16,56);text(c,`PLAY TIME: ${fmtTime(G.time)}`,16,69);text(c,`${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} ${PHASE_NAME[dayPhase()]}`,150,14,'#605848',7,true,'right');text(c,`BADGES: ${G.badges.length?G.badges.join(', '):'none'}`,16,82);if((G.keys||[]).length){wrapText(c,`KEY ITEMS: ${G.keys.join(', ')}`,140,7).slice(0,2).forEach((l,i)=>text(c,l,16,92+i*8,'#605848',7));}if((G.champs||[]).length)text(c,`CHAMPION: ${G.champs.map(r=>REGIONS[r]).join(', ')}`,16,72+0,'#c04040',6);}
 async function trainerCard(){const el=pushUI({update(p){if(p.has('a')||p.has('b')){popUI(el);done();}},draw:drawCard});let done;await new Promise(r=>done=r);}
 async function saveConfirm(){
   const card=pushUI({update(){},draw:drawCard});
@@ -5255,9 +5287,10 @@ function drawBattle(c){
   if(scene==='evo'||!B){drawEvo(c);return;}
   const bg=BG[B.bg]||BG.grass;const g=c.createLinearGradient(0,0,0,114+OY);g.addColorStop(0,bg[0]);g.addColorStop(1,bg[1]);c.fillStyle=g;c.fillRect(0,0,W,H);
   c.fillStyle='rgba(255,255,255,.35)';for(let i=0;i<5+Math.floor(OY/18);i++)c.fillRect(0,20+i*18,W,1);
+  const nt=outdoorMap()&&dayPhase();if(nt==='night'){c.save();c.globalCompositeOperation='multiply';c.fillStyle='#7480c0';c.fillRect(0,0,W,H);c.restore();}else if(nt==='morn'){c.fillStyle='rgba(255,180,110,.12)';c.fillRect(0,0,W,H);}
   c.save();c.translate(0,OY);
   const sl=B.fx.slide*160;
-  const plat=(x,y,rx,ry)=>{c.fillStyle=bg[3];c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fill();c.fillStyle=bg[2];c.beginPath();c.ellipse(x,y-1,rx-3,ry-2.5,0,0,7);c.fill();};
+  const plat=(x,y,rx,ry)=>{c.fillStyle=bg[3];c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fill();c.fillStyle=bg[2];c.beginPath();c.ellipse(x,y-1,rx-3,ry-2.5,0,0,7);c.fill();if(nt==='night'){c.fillStyle='rgba(30,40,90,.35)';c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fill();}};
   plat(178-sl,64,48,11);plat(62+sl,108,56,12);
   if(B.fx.tf){const s=charSprite(B.fx.tf.look).down[0];c.drawImage(s,0,0,16,21,178-24+B.fx.tf.x-sl,64-60,48,63);}
   if(B.fx.tp){const s=charSprite(LOOK.player).up[0];c.drawImage(s,0,0,16,21,62-27+B.fx.tp.x+sl,108-68,54,71);}
